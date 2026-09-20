@@ -9,7 +9,7 @@ export default async function ProductosPage() {
   return (
     <main className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6">
       <div>
-        <h1 className="text-2xl font-semibold">Productos</h1>
+        <h1 className="text-2xl font-light tracking-tight">Productos</h1>
         <p className="text-muted-foreground text-sm">
           Consulta de catálogo y stock. Solo lectura.
         </p>

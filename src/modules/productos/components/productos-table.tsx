@@ -62,12 +62,12 @@ export function ProductosTable({ productos }: { productos: Producto[] }) {
                   <TableCell className="hidden sm:table-cell">
                     {p.categoriaNombre ?? "—"}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right tabular-nums">
                     {formatCurrency(p.precio)}
                   </TableCell>
                   <TableCell
                     className={cn(
-                      "text-right",
+                      "text-right tabular-nums",
                       bajoMinimo &&
                         "font-semibold text-red-600 dark:text-red-400",
                     )}

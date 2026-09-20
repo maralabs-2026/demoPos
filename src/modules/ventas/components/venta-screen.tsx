@@ -237,7 +237,7 @@ export function VentaScreen({
             <div key={item.productoId} className="flex items-center gap-3 p-3">
               <div className="flex-1">
                 <p className="text-sm font-medium">{item.nombre}</p>
-                <p className="text-muted-foreground text-xs">
+                <p className="text-muted-foreground text-xs tabular-nums">
                   {formatCurrency(item.precio)} c/u
                 </p>
               </div>
@@ -251,7 +251,7 @@ export function VentaScreen({
                 }
                 className="w-16 text-center"
               />
-              <p className="w-24 text-right text-sm font-medium">
+              <p className="w-24 text-right text-sm font-medium tabular-nums">
                 {formatCurrency(item.precio * item.cantidad)}
               </p>
               <Button
@@ -269,7 +269,9 @@ export function VentaScreen({
       <div className="space-y-4 rounded-md border p-4">
         <div>
           <p className="text-muted-foreground text-sm">Total</p>
-          <p className="text-4xl font-bold">{formatCurrency(total)}</p>
+          <p className="text-4xl font-light tracking-tight tabular-nums">
+            {formatCurrency(total)}
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -281,7 +283,7 @@ export function VentaScreen({
                 type="button"
                 onClick={() => setMedioPagoId(medio.id)}
                 className={cn(
-                  "rounded-md border px-3 py-1.5 text-sm",
+                  "rounded-full border px-3 py-1.5 text-sm",
                   medio.id === medioPagoId
                     ? "border-primary bg-primary text-primary-foreground"
                     : "hover:bg-accent",
@@ -308,7 +310,7 @@ export function VentaScreen({
             {vuelto !== null && (
               <p
                 className={cn(
-                  "text-sm",
+                  "text-sm tabular-nums",
                   vuelto < 0 ? "text-destructive" : "text-muted-foreground",
                 )}
               >

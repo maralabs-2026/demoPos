@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { NavBar } from "@/components/nav-bar";
 import { getComercioName } from "@/modules/config";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Sohne (la tipografía de la referencia de diseño) es propietaria y no la
+// bundleamos. Inter en peso liviano es el sustituto que la propia guía
+// recomienda como equivalente abierto.
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["300", "400"],
 });
 
 export const metadata: Metadata = {
@@ -33,9 +32,7 @@ export default async function RootLayout({
 
   return (
     <html lang="es-AR">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${inter.variable} antialiased`}>
         <NavBar comercioNombre={comercioNombre} />
         {children}
       </body>

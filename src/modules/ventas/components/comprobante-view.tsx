@@ -16,7 +16,7 @@ export function ComprobanteView({
   return (
     <div className="mx-auto max-w-sm space-y-6 rounded-lg border p-6">
       <div className="text-center">
-        <p className="text-lg font-semibold">Venta cobrada</p>
+        <p className="text-lg font-light tracking-tight">Venta cobrada</p>
         <p className="text-muted-foreground text-xs">{fecha}</p>
       </div>
 
@@ -26,15 +26,19 @@ export function ComprobanteView({
             <span>
               {item.cantidad} × {item.nombre}
             </span>
-            <span>{formatCurrency(item.subtotal)}</span>
+            <span className="tabular-nums">
+              {formatCurrency(item.subtotal)}
+            </span>
           </li>
         ))}
       </ul>
 
       <div className="space-y-1 border-t pt-4 text-sm">
-        <div className="flex justify-between text-base font-semibold">
+        <div className="flex justify-between text-base font-normal">
           <span>Total</span>
-          <span>{formatCurrency(comprobante.total)}</span>
+          <span className="tabular-nums">
+            {formatCurrency(comprobante.total)}
+          </span>
         </div>
         <div className="text-muted-foreground flex justify-between">
           <span>Medio de pago</span>
@@ -43,7 +47,9 @@ export function ComprobanteView({
         {comprobante.vuelto !== null && (
           <div className="flex justify-between font-medium">
             <span>Vuelto</span>
-            <span>{formatCurrency(comprobante.vuelto)}</span>
+            <span className="tabular-nums">
+              {formatCurrency(comprobante.vuelto)}
+            </span>
           </div>
         )}
       </div>
