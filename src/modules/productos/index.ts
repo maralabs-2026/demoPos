@@ -1,2 +1,3 @@
 // Public API of the productos module. Other modules import only from here.
-export {};
+export { getProductos } from "./queries";
+export type { Producto } from "./queries";
