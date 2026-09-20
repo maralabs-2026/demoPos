@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { NavBar } from "@/components/nav-bar";
+import { getComercioName } from "@/modules/config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,16 +19,24 @@ export const metadata: Metadata = {
   description: "Punto de venta web",
 };
 
-export default function RootLayout({
+export const dynamic = "force-dynamic";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const comercioResult = await getComercioName();
+  const comercioNombre = comercioResult.ok
+    ? comercioResult.data
+    : "Punto de Venta";
+
   return (
     <html lang="es-AR">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <NavBar comercioNombre={comercioNombre} />
         {children}
       </body>
     </html>
