@@ -3,7 +3,7 @@
 Este archivo es el contexto permanente del proyecto. Leelo completo antes de cualquier tarea.
 Al final hay una secuencia de fases: ejecutá **una fase por vez**, corré la validación y **detenete a esperar aprobación** antes de seguir.
 
-Estado actual: **Etapa DEMO.** Todavía no hay contrato firmado. Se construye una demo comercial para la primera entrevista con el cliente, reutilizable como base del producto. Solo se ejecutan las Fases 0 y D hasta nuevo aviso.
+Estado actual: **Demo aprobada por el cliente.** Las Fases 0 y D están hechas y son la base del producto. Se ejecutan las Fases 1 a 7 en orden, una por vez y con aprobación explícita por fase.
 
 ---
 
