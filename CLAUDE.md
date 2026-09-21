@@ -121,8 +121,8 @@ Completar las migraciones: `perfiles` (vinculado a `auth.users`, con `rol` y `co
 **Validación:** script SQL que (a) intenta leer productos de otro comercio y falla, (b) registra una venta y verifica que el stock bajó y la caja sumó, (c) registra una venta con stock insuficiente y falla sin dejar rastro. Pegar la salida.
 
 ### Fase 2 — Autenticación y layout
-Login con email y contraseña, recuperación de contraseña, navegación según rol, selector de comercio desactivado (un solo comercio por ahora, pero el código lo soporta). Página de perfil. Eliminar la política RLS temporal de la demo.
-**Validación:** test Playwright: el cajero no puede acceder a `/reportes` ni a `/config`; el dueño sí. Capturas de las tres vistas.
+Login con email y contraseña en `/login`, con mensajes de error genéricos (nunca revelar si el correo existe). Sin recuperación por autoservicio: la contraseña la blanquea el dueño o el encargado (el encargado solo sobre cajeros) definiendo una temporal, y el usuario debe cambiarla en su primer ingreso. La pantalla de administración de usuarios con el blanqueo llega en la Fase 7; hasta entonces se blanquea desde el panel de Supabase. Navegación según rol. Página de perfil de solo lectura (nombre, correo, rol, comercio) con cierre de sesión. Sin selector de comercio: el sistema es de un solo comercio y este sale del perfil del usuario (la base sigue siendo multi-comercio). Eliminar la política RLS temporal de la demo.
+**Validación:** test Playwright: el cajero no puede acceder a `/reportes` ni a `/config`; el dueño sí; un usuario con contraseña temporal no accede a ninguna pantalla hasta cambiarla. Capturas de las tres vistas.
 
 ### Fase 3 — Productos y stock
 ABM de productos con categoría, código de barras, costo, precio, margen calculado, stock mínimo. Ingreso de mercadería. Ajuste manual con motivo. Actualización masiva de precios por categoría o porcentaje. Importación desde CSV con vista previa de errores.
@@ -141,7 +141,7 @@ Ventas por día/semana/mes con filtros, ranking de productos, ganancia estimada 
 **Validación:** los totales del reporte diario coinciden con el cierre de caja del mismo día. Ticket correcto en vista previa de impresión.
 
 ### Fase 7 — Cierre
-Configuración del comercio (datos del ticket, medios de pago, categorías, usuarios). Estados de carga, errores amigables, accesibilidad básica. README con guía de despliegue y checklist de puesta en marcha. Cero `TODO(demo)` restantes.
+Configuración del comercio (datos del ticket, medios de pago, categorías, usuarios con alta, desactivación y blanqueo de contraseña). Estados de carga, errores amigables, accesibilidad básica. README con guía de despliegue y checklist de puesta en marcha. Cero `TODO(demo)` restantes.
 **Validación:** `npm run build` limpio, tests en verde, Lighthouse > 90 en performance y accesibilidad en la pantalla de cobro. Demo grabada: abrir caja → vender → cerrar caja → ver reporte.
 
 ---
