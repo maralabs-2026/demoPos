@@ -84,3 +84,24 @@ join (values
   on true
 join public.categorias cat on cat.comercio_id = co.id and cat.nombre = p.categoria_nombre
 where co.nombre = 'Kiosko Demo';
+
+-- Configuración por comercio (Fase 1): moneda y datos del ticket viven en datos, no en código.
+insert into public.configuracion (comercio_id, clave, valor)
+select co.id, c.clave, c.valor
+from public.comercios co, (values
+  ('moneda', '{"codigo": "ARS", "locale": "es-AR"}'::jsonb),
+  ('ticket', '{"titulo": "Kiosko Demo"}'::jsonb)
+) as c(clave, valor)
+where co.nombre = 'Kiosko Demo';
+
+-- El stock es la suma de movimientos: el stock inicial de los productos se registra como
+-- movimiento. Se pone la caché en 0 antes para que el trigger la reconstruya sin duplicar.
+create temp table _stock_inicial as
+  select id, comercio_id, stock_actual from public.productos where stock_actual > 0;
+
+update public.productos set stock_actual = 0 where stock_actual > 0;
+
+insert into public.movimientos_stock (comercio_id, producto_id, tipo, cantidad, motivo)
+select comercio_id, id, 'ajuste', stock_actual, 'Stock inicial' from _stock_inicial;
+
+drop table _stock_inicial;
