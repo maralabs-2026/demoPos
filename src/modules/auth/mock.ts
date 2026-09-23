@@ -73,3 +73,8 @@ export function updateMockPassword(
   usuario.mustChangePassword = false;
   return { ok: true, data: usuario };
 }
+
+export function clearMockSession(): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+}

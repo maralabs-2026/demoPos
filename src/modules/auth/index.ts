@@ -2,6 +2,7 @@
 export { changePasswordSchema, loginSchema } from "./schemas";
 export type { ChangePasswordInput, LoginInput } from "./schemas";
 export {
+  clearMockSession,
   findMockUsuario,
   getMockSession,
   mockUsuarios,
