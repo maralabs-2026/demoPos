@@ -3,3 +3,4 @@ export { changePasswordSchema, loginSchema } from "./schemas";
 export type { ChangePasswordInput, LoginInput } from "./schemas";
 export { findMockUsuario, mockUsuarios } from "./mock";
 export type { MockUsuario, Rol } from "./mock";
+export { DEFAULT_NEXT, getNextRoute } from "./next-route";
