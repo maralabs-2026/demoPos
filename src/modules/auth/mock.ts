@@ -42,3 +42,34 @@ export const mockUsuarios: MockUsuario[] = [
 export function findMockUsuario(email: string): MockUsuario | undefined {
   return mockUsuarios.find((usuario) => usuario.email === email.trim().toLowerCase());
 }
+
+const SESSION_STORAGE_KEY = "demo-pos:mock-session";
+
+export function storeMockSession(usuario: MockUsuario): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(usuario));
+}
+
+export function getMockSession(): MockUsuario | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as MockUsuario;
+  } catch {
+    return null;
+  }
+}
+
+export function updateMockPassword(
+  email: string,
+  newPassword: string,
+): { ok: true; data: MockUsuario } | { ok: false; error: string } {
+  const usuario = findMockUsuario(email);
+  if (!usuario) {
+    return { ok: false, error: "No se pudo actualizar la contraseña" };
+  }
+  usuario.password = newPassword;
+  usuario.mustChangePassword = false;
+  return { ok: true, data: usuario };
+}
