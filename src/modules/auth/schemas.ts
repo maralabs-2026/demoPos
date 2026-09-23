@@ -4,6 +4,7 @@ const emailField = z
   .string()
   .trim()
   .toLowerCase()
+  .min(1, "El correo es obligatorio")
   .max(254, "El correo no puede superar los 254 caracteres")
   .pipe(z.email("Ingresá un correo válido"));
 

@@ -31,6 +31,16 @@ describe("loginSchema", () => {
     }
   });
 
+  it("flags an empty email as required", () => {
+    const result = loginSchema.safeParse({ email: "", password: "abc123" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map((issue) => issue.message)).toContain(
+        "El correo es obligatorio",
+      );
+    }
+  });
+
   it("rejects an email without a valid format", () => {
     const result = loginSchema.safeParse({ email: "no-es-un-correo", password: "abc123" });
     expect(result.success).toBe(false);
