@@ -1,10 +1,14 @@
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { buscarProductosSchema, type BuscarProductosInput } from "./schemas";
+import {
+  buscarProductosSchema,
+  type BuscarProductosInput,
+} from "./schemas";
 
 export type Producto = {
   id: string;
   nombre: string;
+  categoriaId: string | null;
   categoriaNombre: string | null;
   codigoBarras: string;
   precio: number;
@@ -18,6 +22,7 @@ export type Producto = {
 type ProductoRow = {
   id: string;
   nombre: string;
+  categoria_id: string | null;
   codigo_barras: string;
   precio: number;
   stock_actual: number;
@@ -34,29 +39,36 @@ export async function getProductos(
   }
 
   const parsed = buscarProductosSchema.safeParse(input ?? {});
+
   if (!parsed.success) {
     return fail("Búsqueda inválida");
   }
 
   const supabase = await createClient();
+
   let query = supabase
     .from("productos")
     .select(
-      "id, nombre, codigo_barras, precio, stock_actual, stock_minimo, unidad_venta, categorias(nombre)",
+      "id, nombre, categoria_id, codigo_barras, precio, stock_actual, stock_minimo, unidad_venta, categorias(nombre)",
     )
     .order("nombre", { ascending: true });
 
   const term = parsed.data.q;
+
   if (term) {
     query = query.or(`nombre.ilike.%${term}%,codigo_barras.ilike.%${term}%`);
   }
 
   const { data, error } = await query.overrideTypes<ProductoRow[]>();
-  if (error) return fail(error.message);
+
+  if (error) {
+    return fail(error.message);
+  }
 
   const productos: Producto[] = (data ?? []).map((row) => ({
     id: row.id,
     nombre: row.nombre,
+    categoriaId: row.categoria_id,
     categoriaNombre: row.categorias?.nombre ?? null,
     codigoBarras: row.codigo_barras,
     precio: Number(row.precio),
@@ -67,3 +79,4 @@ export async function getProductos(
 
   return ok(productos);
 }
+
