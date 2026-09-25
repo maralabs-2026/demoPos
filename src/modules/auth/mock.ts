@@ -21,7 +21,7 @@ export const mockUsuarios: MockUsuario[] = [
     password: "demo1234",
     rol: "dueno",
     nombre: "María López",
-    comercio: "Kiosko Central - Sucursal 01",
+    comercio: "Kiosko Demo",
     mustChangePassword: false,
   },
   {
@@ -29,7 +29,7 @@ export const mockUsuarios: MockUsuario[] = [
     password: "demo1234",
     rol: "encargado",
     nombre: "Carlos Giménez",
-    comercio: "Kiosko Central - Sucursal 01",
+    comercio: "Kiosko Demo",
     mustChangePassword: false,
   },
   {
@@ -37,7 +37,7 @@ export const mockUsuarios: MockUsuario[] = [
     password: "demo1234",
     rol: "cajero",
     nombre: "Juan Pérez",
-    comercio: "Kiosko Central - Sucursal 01",
+    comercio: "Kiosko Demo",
     mustChangePassword: true,
   },
 ];

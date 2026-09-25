@@ -6,7 +6,7 @@ const pendingSession = {
   email: "juan.perez@kioskodemo.com",
   rol: "cajero",
   nombre: "Juan Pérez",
-  comercio: "Kiosko Central - Sucursal 01",
+  comercio: "Kiosko Demo",
   mustChangePassword: true,
 };
 
@@ -14,7 +14,7 @@ const activeSession = {
   email: "admin@kioskodemo.com",
   rol: "dueno",
   nombre: "María López",
-  comercio: "Kiosko Central - Sucursal 01",
+  comercio: "Kiosko Demo",
   mustChangePassword: false,
 };
 
