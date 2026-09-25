@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { loginSchema } from "../schemas";
 import { findMockUsuario, type MockUsuario } from "../mock";
 
@@ -79,9 +80,8 @@ export function LoginForm({
     }
   }
 
-  const inputClasses = cn(
-    "h-[52px] w-full rounded-xl border border-border bg-background px-4 text-base text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring",
-  );
+  const inputClasses =
+    "h-[52px] w-full rounded-xl border-border bg-background px-4 py-0 text-base md:text-base placeholder:text-muted-foreground focus:border-ring aria-invalid:ring-0";
 
   return (
     <div className="w-full rounded-xl bg-background md:max-w-[420px] md:border md:border-border md:p-10">
@@ -95,7 +95,7 @@ export function LoginForm({
         <label htmlFor="login-email" className="text-sm text-foreground">
           Correo electrónico
         </label>
-        <input
+        <Input
           ref={emailRef}
           id="login-email"
           type="email"
@@ -104,10 +104,7 @@ export function LoginForm({
           onChange={(e) => setEmail(e.target.value)}
           placeholder="ejemplo@correo.com"
           aria-invalid={Boolean(fieldErrors.email)}
-          className={cn(
-            inputClasses,
-            fieldErrors.email ? "border-destructive" : "border-border",
-          )}
+          className={inputClasses}
         />
         {fieldErrors.email && (
           <p className="text-destructive text-sm">{fieldErrors.email}</p>
@@ -116,7 +113,7 @@ export function LoginForm({
         <label htmlFor="login-password" className="text-sm text-foreground">
           Contraseña
         </label>
-        <input
+        <Input
           ref={passwordRef}
           id="login-password"
           type="password"
@@ -125,10 +122,7 @@ export function LoginForm({
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"
           aria-invalid={Boolean(fieldErrors.password)}
-          className={cn(
-            inputClasses,
-            fieldErrors.password ? "border-destructive" : "border-border",
-          )}
+          className={inputClasses}
         />
         {fieldErrors.password && (
           <p className="text-destructive text-sm">{fieldErrors.password}</p>
@@ -140,13 +134,13 @@ export function LoginForm({
           </p>
         )}
 
-        <button
+        <Button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex h-[52px] w-full items-center justify-center rounded-xl bg-primary text-sm font-medium tracking-wide text-primary-foreground uppercase transition-colors hover:bg-primary/80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="h-[52px] w-full rounded-xl tracking-wide uppercase disabled:pointer-events-auto disabled:cursor-not-allowed"
         >
           Ingresar
-        </button>
+        </Button>
       </form>
     </div>
   );

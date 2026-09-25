@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { changePasswordSchema } from "../schemas";
 import { updateMockPassword, type MockSession } from "../mock";
 
 function EyeIcon() {
   return (
     <svg
+      className="size-5"
       width="20"
       height="20"
       viewBox="0 0 24 24"
@@ -27,6 +29,7 @@ function EyeIcon() {
 function EyeOffIcon() {
   return (
     <svg
+      className="size-5"
       width="20"
       height="20"
       viewBox="0 0 24 24"
@@ -100,9 +103,8 @@ export function ChangePasswordForm({
     }
   }
 
-  const inputClasses = cn(
-    "h-[48px] w-full rounded-xl border bg-background pl-4 pr-12 text-base text-foreground shadow-[0_1px_2px_rgba(13,37,61,0.05)] outline-none transition-colors placeholder:text-[#9CA3AF] focus:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-  );
+  const inputClasses =
+    "h-[48px] w-full rounded-xl border-border bg-background pl-4 pr-12 py-0 text-base md:text-base shadow-[0_1px_2px_rgba(13,37,61,0.05)] placeholder:text-[#9CA3AF] focus:border-ring aria-invalid:ring-0";
 
   return (
     <div className="w-full rounded-xl bg-background p-5 shadow-[0_4px_24px_rgba(13,37,61,0.04)] md:max-w-[440px] md:p-10">
@@ -125,7 +127,7 @@ export function ChangePasswordForm({
             Nueva contraseña
           </label>
           <div className="relative">
-            <input
+            <Input
               id="change-password-new"
               type={showNew ? "text" : "password"}
               autoComplete="new-password"
@@ -133,19 +135,18 @@ export function ChangePasswordForm({
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="••••••••"
               aria-invalid={Boolean(fieldErrors.newPassword)}
-              className={cn(
-                inputClasses,
-                fieldErrors.newPassword ? "border-destructive" : "border-border",
-              )}
+              className={inputClasses}
             />
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => setShowNew((v) => !v)}
-              className="absolute top-1/2 right-4 -translate-y-1/2 text-[#707D8A]"
               aria-label={showNew ? "Ocultar contraseña" : "Mostrar contraseña"}
+              className="absolute top-1/2 right-4 h-5 w-5 -translate-y-1/2 p-0 text-[#707D8A] hover:bg-transparent hover:text-[#707D8A] active:translate-y-0"
             >
               {showNew ? <EyeOffIcon /> : <EyeIcon />}
-            </button>
+            </Button>
           </div>
           {fieldErrors.newPassword && (
             <p className="text-destructive text-sm">{fieldErrors.newPassword}</p>
@@ -160,7 +161,7 @@ export function ChangePasswordForm({
             Confirmar contraseña
           </label>
           <div className="relative">
-            <input
+            <Input
               id="change-password-confirm"
               type={showConfirm ? "text" : "password"}
               autoComplete="new-password"
@@ -168,19 +169,18 @@ export function ChangePasswordForm({
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
               aria-invalid={Boolean(fieldErrors.confirmPassword)}
-              className={cn(
-                inputClasses,
-                fieldErrors.confirmPassword ? "border-destructive" : "border-border",
-              )}
+              className={inputClasses}
             />
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={() => setShowConfirm((v) => !v)}
-              className="absolute top-1/2 right-4 -translate-y-1/2 text-[#707D8A]"
               aria-label={showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
+              className="absolute top-1/2 right-4 h-5 w-5 -translate-y-1/2 p-0 text-[#707D8A] hover:bg-transparent hover:text-[#707D8A] active:translate-y-0"
             >
               {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
-            </button>
+            </Button>
           </div>
           {fieldErrors.confirmPassword && (
             <p className="text-destructive text-sm">{fieldErrors.confirmPassword}</p>
@@ -193,13 +193,13 @@ export function ChangePasswordForm({
           </p>
         )}
 
-        <button
+        <Button
           type="submit"
           disabled={isSubmitting}
-          className="mt-2 inline-flex h-[48px] w-full items-center justify-center rounded-xl bg-primary text-[15px] font-medium text-primary-foreground uppercase transition-colors hover:bg-primary/80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-2 h-[48px] w-full rounded-xl text-[15px] uppercase tracking-wide disabled:pointer-events-auto disabled:cursor-not-allowed"
         >
           Cambiar contraseña
-        </button>
+        </Button>
       </form>
     </div>
   );
