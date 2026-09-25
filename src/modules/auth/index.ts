@@ -11,3 +11,4 @@ export {
 } from "./mock";
 export type { MockUsuario, Rol } from "./mock";
 export { DEFAULT_NEXT, getNextRoute } from "./next-route";
+export { mustChangePassword } from "./session-guard";

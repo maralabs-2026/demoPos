@@ -42,7 +42,7 @@ export function Profile() {
 
   useEffect(() => {
     const session = getMockSession();
-    if (!session || session.mustChangePassword) {
+    if (!session) {
       router.replace("/login");
       return;
     }
