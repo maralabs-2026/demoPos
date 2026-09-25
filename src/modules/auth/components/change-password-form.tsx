@@ -1,51 +1,11 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { changePasswordSchema } from "../schemas";
 import { updateMockPassword, type MockSession } from "../mock";
-
-function EyeIcon() {
-  return (
-    <svg
-      className="size-5"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M2.06 12.35a1 1 0 0 1 0-.7C3.42 8.12 7.22 5 12 5s8.58 3.12 9.94 6.65a1 1 0 0 1 0 .7C20.58 15.88 16.78 19 12 19s-8.58-3.12-9.94-6.65Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function EyeOffIcon() {
-  return (
-    <svg
-      className="size-5"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c4.78 0 8.58 3.12 9.94 6.65a1 1 0 0 1 0 .7A10.4 10.4 0 0 1 17.15 16m-5.21-4.22C5.7 7.1 3.42 11.3 2.06 12.35a1 1 0 0 0 0 .7C3.42 15.88 7.22 19 12 19a10.05 10.05 0 0 0 3.91-.76" />
-      <line x1="3" x2="21" y1="3" y2="21" />
-    </svg>
-  );
-}
 
 export function ChangePasswordForm({
   email,
@@ -145,7 +105,7 @@ export function ChangePasswordForm({
               aria-label={showNew ? "Ocultar contraseña" : "Mostrar contraseña"}
               className="absolute top-1/2 right-4 h-5 w-5 -translate-y-1/2 p-0 text-[#707D8A] hover:bg-transparent hover:text-[#707D8A] active:translate-y-0"
             >
-              {showNew ? <EyeOffIcon /> : <EyeIcon />}
+              {showNew ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
             </Button>
           </div>
           {fieldErrors.newPassword && (
@@ -179,7 +139,7 @@ export function ChangePasswordForm({
               aria-label={showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
               className="absolute top-1/2 right-4 h-5 w-5 -translate-y-1/2 p-0 text-[#707D8A] hover:bg-transparent hover:text-[#707D8A] active:translate-y-0"
             >
-              {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
+              {showConfirm ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
             </Button>
           </div>
           {fieldErrors.confirmPassword && (
