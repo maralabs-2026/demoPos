@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, LogOut, UserRound } from "lucide-react";
-import { clearMockSession, getMockSession, type MockUsuario } from "@/modules/auth";
+import { clearMockSession, getMockSession, type MockSession } from "@/modules/auth";
 import type { Rol } from "@/modules/auth";
 
 const rolValue: Record<Rol, string> = {
@@ -38,7 +38,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function Profile() {
   const router = useRouter();
-  const [usuario, setUsuario] = useState<MockUsuario | null>(null);
+  const [usuario, setUsuario] = useState<MockSession | null>(null);
 
   useEffect(() => {
     const session = getMockSession();

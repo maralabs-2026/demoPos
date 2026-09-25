@@ -3,13 +3,16 @@
 
 export type Rol = "dueno" | "encargado" | "cajero";
 
-export interface MockUsuario {
+export interface MockSession {
   email: string;
-  password: string;
   rol: Rol;
   nombre: string;
   comercio: string;
   mustChangePassword: boolean;
+}
+
+export interface MockUsuario extends MockSession {
+  password: string;
 }
 
 export const mockUsuarios: MockUsuario[] = [
@@ -43,19 +46,29 @@ export function findMockUsuario(email: string): MockUsuario | undefined {
   return mockUsuarios.find((usuario) => usuario.email === email.trim().toLowerCase());
 }
 
-const SESSION_STORAGE_KEY = "demo-pos:mock-session";
-
-export function storeMockSession(usuario: MockUsuario): void {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(usuario));
+export function toMockSession(session: MockSession): MockSession {
+  return {
+    email: session.email,
+    rol: session.rol,
+    nombre: session.nombre,
+    comercio: session.comercio,
+    mustChangePassword: session.mustChangePassword,
+  };
 }
 
-export function getMockSession(): MockUsuario | null {
+const SESSION_STORAGE_KEY = "demo-pos:mock-session";
+
+export function storeMockSession(session: MockSession): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(toMockSession(session)));
+}
+
+export function getMockSession(): MockSession | null {
   if (typeof window === "undefined") return null;
   const raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as MockUsuario;
+    return JSON.parse(raw) as MockSession;
   } catch {
     return null;
   }
@@ -64,14 +77,14 @@ export function getMockSession(): MockUsuario | null {
 export function updateMockPassword(
   email: string,
   newPassword: string,
-): { ok: true; data: MockUsuario } | { ok: false; error: string } {
+): { ok: true; data: MockSession } | { ok: false; error: string } {
   const usuario = findMockUsuario(email);
   if (!usuario) {
     return { ok: false, error: "No se pudo actualizar la contraseña" };
   }
   usuario.password = newPassword;
   usuario.mustChangePassword = false;
-  return { ok: true, data: usuario };
+  return { ok: true, data: toMockSession(usuario) };
 }
 
 export function clearMockSession(): void {

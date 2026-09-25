@@ -4,7 +4,6 @@ const SESSION_KEY = "demo-pos:mock-session";
 
 const pendingSession = {
   email: "juan.perez@kioskodemo.com",
-  password: "demo1234",
   rol: "cajero",
   nombre: "Juan Pérez",
   comercio: "Kiosko Central - Sucursal 01",
@@ -13,7 +12,6 @@ const pendingSession = {
 
 const activeSession = {
   email: "admin@kioskodemo.com",
-  password: "demo1234",
   rol: "dueno",
   nombre: "María López",
   comercio: "Kiosko Central - Sucursal 01",

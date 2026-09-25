@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { cn } from "@/lib/utils";
 import { changePasswordSchema } from "../schemas";
-import { updateMockPassword, type MockUsuario } from "../mock";
+import { updateMockPassword, type MockSession } from "../mock";
 
 function EyeIcon() {
   return (
@@ -51,7 +51,7 @@ export function ChangePasswordForm({
 }: {
   email: string;
   currentPassword: string;
-  onSuccess?: (usuario: MockUsuario) => void;
+  onSuccess?: (session: MockSession) => void;
 }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

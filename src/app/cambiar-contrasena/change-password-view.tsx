@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChangePasswordForm } from "@/modules/auth/components/change-password-form";
-import { getMockSession, storeMockSession } from "@/modules/auth";
+import { findMockUsuario, getMockSession, storeMockSession } from "@/modules/auth";
 
 export function ChangePasswordView() {
   const router = useRouter();
@@ -17,7 +17,10 @@ export function ChangePasswordView() {
       return;
     }
     setEmail(session.email);
-    setCurrentPassword(session.password);
+    const usuario = findMockUsuario(session.email);
+    if (usuario) {
+      setCurrentPassword(usuario.password);
+    }
   }, [router]);
 
   return (
