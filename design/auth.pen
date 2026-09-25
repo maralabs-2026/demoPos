@@ -1,0 +1,1180 @@
+{
+  "name": "auth",
+  "description": "Autenticación - Fase 2: login, cambio de contraseña, navegación y perfil",
+  "frames": [
+    {
+      "name": "Login - Mobile",
+      "width": 360,
+      "height": 640,
+      "elements": [
+        {
+          "type": "frame",
+          "name": "login-frame",
+          "x": 0,
+          "y": 0,
+          "width": 360,
+          "height": 640,
+          "backgroundColor": "#ffffff",
+          "children": [
+            {
+              "type": "text",
+              "name": "titulo",
+              "x": 0,
+              "y": 80,
+              "width": 360,
+              "height": 40,
+              "text": "Iniciar sesión",
+              "fontSize": 32,
+              "fontWeight": "600",
+              "textAlign": "center",
+              "foregroundColor": "#0d253d"
+            },
+            {
+              "type": "input",
+              "name": "email-input",
+              "x": 20,
+              "y": 150,
+              "width": 320,
+              "height": 52,
+              "placeholder": "Correo electrónico",
+              "backgroundColor": "#a8c3de",
+              "borderColor": "#e3e8ee",
+              "foregroundColor": "#0d253d",
+              "fontSize": 16,
+              "radius": 0.75
+            },
+            {
+              "type": "input",
+              "name": "password-input",
+              "x": 20,
+              "y": 230,
+              "width": 320,
+              "height": 52,
+              "placeholder": "Contraseña",
+              "backgroundColor": "#a8c3de",
+              "borderColor": "#e3e8ee",
+              "foregroundColor": "#0d253d",
+              "fontSize": 16,
+              "type": "password",
+              "radius": 0.75
+            },
+            {
+              "type": "button",
+              "name": "ingresar-btn",
+              "x": 20,
+              "y": 300,
+              "width": 320,
+              "height": 52,
+              "text": "Ingresar",
+              "fontSize": 18,
+              "fontWeight": "500",
+              "backgroundColor": "#533afd",
+              "color": "#ffffff",
+              "borderRadius": 0.75,
+              "hoverBackgroundColor": "#4c35e0",
+              "disabledBackgroundColor": "#a0a8c0",
+              "disabledColor": "#e5e5e5"
+            },
+            {
+              "type": "text",
+              "name": "error-texto",
+              "x": 20,
+              "y": 370,
+              "width": 320,
+              "height": 20,
+              "text": "",
+              "fontSize": 14,
+              "color": "#ea2261",
+              "textAlign": "center"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Login - Desktop",
+      "width": 1440,
+      "height": 900,
+      "elements": [
+        {
+          "type": "frame",
+          "name": "login-frame",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "backgroundColor": "#ffffff",
+          "children": [
+            {
+              "type": "text",
+              "name": "titulo",
+              "x": 720,
+              "y": 120,
+              "width": 200,
+              "height": 40,
+              "text": "Iniciar sesión",
+              "fontSize": 32,
+              "fontWeight": "600",
+              "textAlign": "center",
+              "foregroundColor": "#0d253d"
+            },
+            {
+              "type": "input",
+              "name": "email-input",
+              "x": 720 - 160,
+              "y": 280,
+              "width": 320,
+              "height": 52,
+              "placeholder": "Correo electrónico",
+              "backgroundColor": "#a8c3de",
+              "borderColor": "#e3e8ee",
+              "foregroundColor": "#0d253d",
+              "fontSize": 16,
+              "radius": 0.75
+            },
+            {
+              "type": "input",
+              "name": "password-input",
+              "x": 720 - 160,
+              "y": 360,
+              "width": 320,
+              "height": 52,
+              "placeholder": "Contraseña",
+              "backgroundColor": "#a8c3de",
+              "borderColor": "#e3e8ee",
+              "foregroundColor": "#0d253d",
+              "fontSize": 16,
+              "type": "password",
+              "radius": 0.75
+            },
+            {
+              "type": "button",
+              "name": "ingresar-btn",
+              "x": 720 - 160,
+              "y": 440,
+              "width": 320,
+              "height": 52,
+              "text": "Ingresar",
+              "fontSize": 18,
+              "fontWeight": "500",
+              "backgroundColor": "#533afd",
+              "color": "#ffffff",
+              "borderRadius": 0.75,
+              "hoverBackgroundColor": "#4c35e0",
+              "disabledBackgroundColor": "#a0a8c0",
+              "disabledColor": "#e5e5e5"
+            },
+            {
+              "type": "text",
+              "name": "error-texto",
+              "x": 720 - 160,
+              "y": 520,
+              "width": 320,
+              "height": 20,
+              "text": "",
+              "fontSize": 14,
+              "color": "#ea2261",
+              "textAlign": "center"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cambiar contraseña - Mobile",
+      "width": 360,
+      "height": 640,
+      "elements": [
+        {
+          "type": "frame",
+          "name": "change-password-frame",
+          "x": 0,
+          "y": 0,
+          "width": 360,
+          "height": 640,
+          "backgroundColor": "#ffffff",
+          "children": [
+            {
+              "type": "text",
+              "name": "titulo",
+              "x": 0,
+              "y": 80,
+              "width": 360,
+              "height": 40,
+              "text": "Cambiar contraseña",
+              "fontSize": 32,
+              "fontWeight": "600",
+              "textAlign": "center",
+              "foregroundColor": "#0d253d"
+            },
+            {
+              "type": "text",
+              "name": "subtitulo",
+              "x": 0,
+              "y": 140,
+              "width": 360,
+              "height": 30,
+              "text": "Esta acción es obligatoria para continuar",
+              "fontSize": 16,
+              "fontWeight": "500",
+              "textAlign": "center",
+              "foregroundColor": "#64748d"
+            },
+            {
+              "type": "input",
+              "name": "nueva-password-input",
+              "x": 20,
+              "y": 200,
+              "width": 320,
+              "height": 52,
+              "placeholder": "Nueva contraseña",
+              "backgroundColor": "#a8c3de",
+              "borderColor": "#e3e8ee",
+              "foregroundColor": "#0d253d",
+              "fontSize": 16,
+              "type": "password",
+              "radius": 0.75
+            },
+            {
+              "type": "input",
+              "name": "confirmar-password-input",
+              "x": 20,
+              "y": 280,
+              "width": 320,
+              "height": 52,
+              "placeholder": "Confirmar nueva contraseña",
+              "backgroundColor": "#a8c3de",
+              "borderColor": "#e3e8ee",
+              "foregroundColor": "#0d253d",
+              "fontSize": 16,
+              "type": "password",
+              "radius": 0.75
+            },
+            {
+              "type": "button",
+              "name": "cambiar-btn",
+              "x": 20,
+              "y": 370,
+              "width": 320,
+              "height": 52,
+              "text": "Cambiar contraseña",
+              "fontSize": 18,
+              "fontWeight": "500",
+              "backgroundColor": "#533afd",
+              "color": "#ffffff",
+              "borderRadius": 0.75,
+              "hoverBackgroundColor": "#4c35e0",
+              "disabledBackgroundColor": "#a0a8c0",
+              "disabledColor": "#e5e5e5"
+            },
+            {
+              "type": "text",
+              "name": "error-texto",
+              "x": 20,
+              "y": 440,
+              "width": 320,
+              "height": 20,
+              "text": "",
+              "fontSize": 14,
+              "color": "#ea2261",
+              "textAlign": "center"
+            },
+            {
+              "type": "button",
+              "name": "cancelar-btn",
+              "x": 20,
+              "y": 500,
+              "width": 320,
+              "height": 40,
+              "text": "Cancelar",
+              "fontSize": 16,
+              "foregroundColor": "#0d253d",
+              "backgroundColor": "transparent",
+              "borderColor": "#e3e8ee",
+              "borderRadius": 0.75
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cambiar contraseña - Desktop",
+      "width": 1440,
+      "height": 900,
+      "elements": [
+        {
+          "type": "frame",
+          "name": "change-password-frame",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "backgroundColor": "#ffffff",
+          "children": [
+            {
+              "type": "text",
+              "name": "titulo",
+              "x": 720,
+              "y": 120,
+              "width": 200,
+              "height": 40,
+              "text": "Cambiar contraseña",
+              "fontSize": 32,
+              "fontWeight": "600",
+              "textAlign": "center",
+              "foregroundColor": "#0d253d"
+            },
+            {
+              "type": "text",
+              "name": "subtitulo",
+              "x": 720,
+              "y": 200,
+              "width": 200,
+              "height": 30,
+              "text": "Esta acción es obligatoria para continuar",
+              "fontSize": 16,
+              "fontWeight": "500",
+              "textAlign": "center",
+              "foregroundColor": "#64748d"
+            },
+            {
+              "type": "input",
+              "name": "nueva-password-input",
+              "x": 720 - 160,
+              "y": 280,
+              "width": 320,
+              "height": 52,
+              "placeholder": "Nueva contraseña",
+              "backgroundColor": "#a8c3de",
+              "borderColor": "#e3e8ee",
+              "foregroundColor": "#0d253d",
+              "fontSize": 16,
+              "type": "password",
+              "radius": 0.75
+            },
+            {
+              "type": "input",
+              "name": "confirmar-password-input",
+              "x": 720 - 160,
+              "y": 360,
+              "width": 320,
+              "height": 52,
+              "placeholder": "Confirmar nueva contraseña",
+              "backgroundColor": "#a8c3de",
+              "borderColor": "#e3e8ee",
+              "foregroundColor": "#0d253d",
+              "fontSize": 16,
+              "type": "password",
+              "radius": 0.75
+            },
+            {
+              "type": "button",
+              "name": "cambiar-btn",
+              "x": 720 - 160,
+              "y": 440,
+              "width": 320,
+              "height": 52,
+              "text": "Cambiar contraseña",
+              "fontSize": 18,
+              "fontWeight": "500",
+              "backgroundColor": "#533afd",
+              "color": "#ffffff",
+              "borderRadius": 0.75,
+              "hoverBackgroundColor": "#4c35e0",
+              "disabledBackgroundColor": "#a0a8c0",
+              "disabledColor": "#e5e5e5"
+            },
+            {
+              "type": "text",
+              "name": "error-texto",
+              "x": 720 - 160,
+              "y": 520,
+              "width": 320,
+              "height": 20,
+              "text": "",
+              "fontSize": 14,
+              "color": "#ea2261",
+              "textAlign": "center"
+            },
+            {
+              "type": "button",
+              "name": "cancelar-btn",
+              "x": 720 - 160,
+              "y": 580,
+              "width": 320,
+              "height": 40,
+              "text": "Cancelar",
+              "fontSize": 16,
+              "foregroundColor": "#0d253d",
+              "backgroundColor": "transparent",
+              "borderColor": "#e3e8ee",
+              "borderRadius": 0.75
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Navbar - Dueño - Mobile",
+      "width": 360,
+      "height": 80,
+      "elements": [
+        {
+          "type": "frame",
+          "name": "navbar-frame",
+          "x": 0,
+          "y": 0,
+          "width": 360,
+          "height": 80,
+          "backgroundColor": "#ffffff",
+          "borderBottomColor": "#e3e8ee",
+          "borderBottomWidth": 1,
+          "children": [
+            {
+              "type": "text",
+              "name": "logo",
+              "x": 20,
+              "y": 20,
+              "width": 100,
+              "height": 40,
+              "text": "Kiosco Mara",
+              "fontSize": 18,
+              "fontWeight": "600",
+              "foregroundColor": "#0d253d",
+              "voseo": false
+            },
+            {
+              "type": "group",
+              "name": "menu-group",
+              "x": 20,
+              "y": 50,
+              "width": 320,
+              "height": 30,
+              "children": [
+                {
+                  "type": "button",
+                  "name": "vender-btn",
+                  "x": 0,
+                  "y": 0,
+                  "width": 64,
+                  "height": 30,
+                  "text": "Vender",
+                  "fontSize": 14,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "productos-btn",
+                  "x": 64,
+                  "y": 0,
+                  "width": 80,
+                  "height": 30,
+                  "text": "Productos",
+                  "fontSize": 14,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "reportes-btn",
+                  "x": 144,
+                  "y": 0,
+                  "width": 80,
+                  "height": 30,
+                  "text": "Reportes",
+                  "fontSize": 14,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "config-btn",
+                  "x": 224,
+                  "y": 0,
+                  "width": 80,
+                  "height": 30,
+                  "text": "Config",
+                  "fontSize": 14,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "perfil-btn",
+                  "x": 304,
+                  "y": 0,
+                  "width": 56,
+                  "height": 30,
+                  "text": "Mi perfil",
+                  "fontSize": 14,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Navbar - Dueño - Desktop",
+      "width": 1440,
+      "height": 80,
+      "elements": [
+        {
+          "type": "frame",
+          "name": "navbar-frame",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 80,
+          "backgroundColor": "#ffffff",
+          "borderBottomColor": "#e3e8ee",
+          "borderBottomWidth": 1,
+          "children": [
+            {
+              "type": "text",
+              "name": "logo",
+              "x": 40,
+              "y": 20,
+              "width": 150,
+              "height": 40,
+              "text": "Kiosco Mara",
+              "fontSize": 24,
+              "fontWeight": "600",
+              "foregroundColor": "#0d253d",
+              "voseo": false
+            },
+            {
+              "type": "group",
+              "name": "menu-group",
+              "x": 40,
+              "y": 40,
+              "width": 1360,
+              "height": 40,
+              "children": [
+                {
+                  "type": "button",
+                  "name": "vender-btn",
+                  "x": 0,
+                  "y": 0,
+                  "width": 100,
+                  "height": 40,
+                  "text": "Vender",
+                  "fontSize": 18,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "productos-btn",
+                  "x": 100,
+                  "y": 0,
+                  "width": 120,
+                  "height": 40,
+                  "text": "Productos",
+                  "fontSize": 18,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "reportes-btn",
+                  "x": 220,
+                  "y": 0,
+                  "width": 120,
+                  "height": 40,
+                  "text": "Reportes",
+                  "fontSize": 18,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "config-btn",
+                  "x": 340,
+                  "y": 0,
+                  "width": 100,
+                  "height": 40,
+                  "text": "Config",
+                  "fontSize": 18,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "perfil-btn",
+                  "x": 440,
+                  "y": 0,
+                  "width": 120,
+                  "height": 40,
+                  "text": "Mi perfil",
+                  "fontSize": 18,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Navbar - Encargado - Mobile",
+      "width": 360,
+      "height": 80,
+      "elements": [
+        {
+          "type": "frame",
+          "name": "navbar-frame",
+          "x": 0,
+          "y": 0,
+          "width": 360,
+          "height": 80,
+          "backgroundColor": "#ffffff",
+          "borderBottomColor": "#e3e8ee",
+          "borderBottomWidth": 1,
+          "children": [
+            {
+              "type": "text",
+              "name": "logo",
+              "x": 20,
+              "y": 20,
+              "width": 100,
+              "height": 40,
+              "text": "Kiosco Mara",
+              "fontSize": 18,
+              "fontWeight": "600",
+              "foregroundColor": "#0d253d",
+              "voseo": false
+            },
+            {
+              "type": "group",
+              "name": "menu-group",
+              "x": 20,
+              "y": 50,
+              "width": 320,
+              "height": 30,
+              "children": [
+                {
+                  "type": "button",
+                  "name": "vender-btn",
+                  "x": 0,
+                  "y": 0,
+                  "width": 64,
+                  "height": 30,
+                  "text": "Vender",
+                  "fontSize": 14,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "productos-btn",
+                  "x": 64,
+                  "y": 0,
+                  "width": 80,
+                  "height": 30,
+                  "text": "Productos",
+                  "fontSize": 14,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "perfil-btn",
+                  "x": 144,
+                  "y": 0,
+                  "width": 72,
+                  "height": 30,
+                  "text": "Mi perfil",
+                  "fontSize": 14,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Navbar - Encargado - Desktop",
+      "width": 1440,
+      "height": 80,
+      "elements": [
+        {
+          "type": "frame",
+          "name": "navbar-frame",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 80,
+          "backgroundColor": "#ffffff",
+          "borderBottomColor": "#e3e8ee",
+          "borderBottomWidth": 1,
+          "children": [
+            {
+              "type": "text",
+              "name": "logo",
+              "x": 40,
+              "y": 20,
+              "width": 150,
+              "height": 40,
+              "text": "Kiosco Mara",
+              "fontSize": 24,
+              "fontWeight": "600",
+              "foregroundColor": "#0d253d",
+              "voseo": false
+            },
+            {
+              "type": "group",
+              "name": "menu-group",
+              "x": 40,
+              "y": 40,
+              "width": 1360,
+              "height": 40,
+              "children": [
+                {
+                  "type": "button",
+                  "name": "vender-btn",
+                  "x": 0,
+                  "y": 0,
+                  "width": 100,
+                  "height": 40,
+                  "text": "Vender",
+                  "fontSize": 18,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "productos-btn",
+                  "x": 100,
+                  "y": 0,
+                  "width": 120,
+                  "height": 40,
+                  "text": "Productos",
+                  "fontSize": 18,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "perfil-btn",
+                  "x": 220,
+                  "y": 0,
+                  "width": 120,
+                  "height": 40,
+                  "text": "Mi perfil",
+                  "fontSize": 18,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Navbar - Cajero - Mobile",
+      "width": 360,
+      "height": 80,
+      "elements": [
+        {
+          "type": "frame",
+          "name": "navbar-frame",
+          "x": 0,
+          "y": 0,
+          "width": 360,
+          "height": 80,
+          "backgroundColor": "#ffffff",
+          "borderBottomColor": "#e3e8ee",
+          "borderBottomWidth": 1,
+          "children": [
+            {
+              "type": "text",
+              "name": "logo",
+              "x": 20,
+              "y": 20,
+              "width": 100,
+              "height": 40,
+              "text": "Kiosco Mara",
+              "fontSize": 18,
+              "fontWeight": "600",
+              "foregroundColor": "#0d253d",
+              "voseo": false
+            },
+            {
+              "type": "group",
+              "name": "menu-group",
+              "x": 20,
+              "y": 50,
+              "width": 320,
+              "height": 30,
+              "children": [
+                {
+                  "type": "button",
+                  "name": "vender-btn",
+                  "x": 0,
+                  "y": 0,
+                  "width": 64,
+                  "height": 30,
+                  "text": "Vender",
+                  "fontSize": 14,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "productos-btn",
+                  "x": 64,
+                  "y": 0,
+                  "width": 80,
+                  "height": 30,
+                  "text": "Productos",
+                  "fontSize": 14,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "perfil-btn",
+                  "x": 144,
+                  "y": 0,
+                  "width": 72,
+                  "height": 30,
+                  "text": "Mi perfil",
+                  "fontSize": 14,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Navbar - Cajero - Desktop",
+      "width": 1440,
+      "height": 80,
+      "elements": [
+        {
+          "type": "frame",
+          "name": "navbar-frame",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 80,
+          "backgroundColor": "#ffffff",
+          "borderBottomColor": "#e3e8ee",
+          "borderBottomWidth": 1,
+          "children": [
+            {
+              "type": "text",
+              "name": "logo",
+              "x": 40,
+              "y": 20,
+              "width": 150,
+              "height": 40,
+              "text": "Kiosco Mara",
+              "fontSize": 24,
+              "fontWeight": "600",
+              "foregroundColor": "#0d253d",
+              "voseo": false
+            },
+            {
+              "type": "group",
+              "name": "menu-group",
+              "x": 40,
+              "y": 40,
+              "width": 1360,
+              "height": 40,
+              "children": [
+                {
+                  "type": "button",
+                  "name": "vender-btn",
+                  "x": 0,
+                  "y": 0,
+                  "width": 100,
+                  "height": 40,
+                  "text": "Vender",
+                  "fontSize": 18,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "productos-btn",
+                  "x": 100,
+                  "y": 0,
+                  "width": 120,
+                  "height": 40,
+                  "text": "Productos",
+                  "fontSize": 18,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                },
+                {
+                  "type": "button",
+                  "name": "perfil-btn",
+                  "x": 220,
+                  "y": 0,
+                  "width": 120,
+                  "height": 40,
+                  "text": "Mi perfil",
+                  "fontSize": 18,
+                  "foregroundColor": "#0d253d",
+                  "backgroundColor": "transparent",
+                  "borderWidth": 0,
+                  "fontFeatureSettings": "\"ss01\""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Perfil - Mobile",
+      "width": 360,
+      "height": 640,
+      "elements": [
+        {
+          "type": "frame",
+          "name": "profile-frame",
+          "x": 0,
+          "y": 0,
+          "width": 360,
+          "height": 640,
+          "backgroundColor": "#ffffff",
+          "children": [
+            {
+              "type": "text",
+              "name": "titulo",
+              "x": 0,
+              "y": 80,
+              "width": 360,
+              "height": 40,
+              "text": "Mi perfil",
+              "fontSize": 32,
+              "fontWeight": "600",
+              "textAlign": "center",
+              "foregroundColor": "#0d253d"
+            },
+            {
+              "type": "text",
+              "name": "nombre",
+              "x": 20,
+              "y": 150,
+              "width": 320,
+              "height": 30,
+              "text": "Juan Pérez",
+              "fontSize": 18,
+              "foregroundColor": "#0d253d"
+            },
+            {
+              "type": "text",
+              "name": "correo",
+              "x": 20,
+              "y": 200,
+              "width": 320,
+              "height": 30,
+              "text": "juan.perez@kiosco.com",
+              "fontSize": 14,
+              "foregroundColor": "#64748d"
+            },
+            {
+              "type": "text",
+              "name": "rol",
+              "x": 20,
+              "y": 250,
+              "width": 320,
+              "height": 30,
+              "text": "Rol: Cajero",
+              "fontSize": 14,
+              "foregroundColor": "#64748d"
+            },
+            {
+              "type": "text",
+              "name": "comercio",
+              "x": 20,
+              "y": 300,
+              "width": 320,
+              "height": 30,
+              "text": "Kiosco del Barrio",
+              "fontSize": 14,
+              "foregroundColor": "#64748d"
+            },
+            {
+              "type": "divider",
+              "name": "divider1",
+              "x": 20,
+              "y": 340,
+              "width": 320,
+              "height": 1,
+              "backgroundColor": "#e3e8ee"
+            },
+            {
+              "type": "button",
+              "name": "cerrar-sesion-btn",
+              "x": 20,
+              "y": 370,
+              "width": 320,
+              "height": 52,
+              "text": "Cerrar sesión",
+              "fontSize": 18,
+              "fontWeight": "500",
+              "backgroundColor": "#ea2261",
+              "color": "#ffffff",
+              "borderRadius": 0.75
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Perfil - Desktop",
+      "width": 1440,
+      "height": 900,
+      "elements": [
+        {
+          "type": "frame",
+          "name": "profile-frame",
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "backgroundColor": "#ffffff",
+          "children": [
+            {
+              "type": "text",
+              "name": "titulo",
+              "x": 720,
+              "y": 120,
+              "width": 200,
+              "height": 40,
+              "text": "Mi perfil",
+              "fontSize": 32,
+              "fontWeight": "600",
+              "textAlign": "center",
+              "foregroundColor": "#0d253d"
+            },
+            {
+              "type": "text",
+              "name": "nombre",
+              "x": 720 - 160,
+              "y": 280,
+              "width": 320,
+              "height": 30,
+              "text": "Juan Pérez",
+              "fontSize": 18,
+              "foregroundColor": "#0d253d"
+            },
+            {
+              "type": "text",
+              "name": "correo",
+              "x": 720 - 160,
+              "y": 340,
+              "width": 320,
+              "height": 30,
+              "text": "juan.perez@kiosco.com",
+              "fontSize": 14,
+              "foregroundColor": "#64748d"
+            },
+            {
+              "type": "text",
+              "name": "rol",
+              "x": 720 - 160,
+              "y": 400,
+              "width": 320,
+              "height": 30,
+              "text": "Rol: Cajero",
+              "fontSize": 14,
+              "foregroundColor": "#64748d"
+            },
+            {
+              "type": "text",
+              "name": "comercio",
+              "x": 720 - 160,
+              "y": 460,
+              "width": 320,
+              "height": 30,
+              "text": "Kiosco del Barrio",
+              "fontSize": 14,
+              "foregroundColor": "#64748d"
+            },
+            {
+              "type": "divider",
+              "name": "divider1",
+              "x": 720 - 160,
+              "y": 510,
+              "width": 320,
+              "height": 1,
+              "backgroundColor": "#e3e8ee"
+            },
+            {
+              "type": "button",
+              "name": "cerrar-sesion-btn",
+              "x": 720 - 160,
+              "y": 560,
+              "width": 320,
+              "height": 52,
+              "text": "Cerrar sesión",
+              "fontSize": 18,
+              "fontWeight": "500",
+              "backgroundColor": "#ea2261",
+              "color": "#ffffff",
+              "borderRadius": 0.75
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
