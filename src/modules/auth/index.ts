@@ -2,6 +2,7 @@
 export { changePasswordSchema, loginSchema } from "./schemas";
 export type { ChangePasswordInput, LoginInput } from "./schemas";
 export {
+  authenticateWithMock,
   clearMockSession,
   findMockUsuario,
   getMockSession,
@@ -9,7 +10,7 @@ export {
   storeMockSession,
   updateMockPassword,
 } from "./mock";
-export type { MockSession, MockUsuario, Rol } from "./mock";
+export type { LoginErrorCode, MockSession, MockUsuario, Rol } from "./mock";
 export { DEFAULT_NEXT, getNextRoute } from "./next-route";
 export { mustChangePassword } from "./session-guard";
 export { splitBrandName } from "./brand";

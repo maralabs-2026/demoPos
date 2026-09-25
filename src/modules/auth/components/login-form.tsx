@@ -4,9 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { loginSchema } from "../schemas";
-import { findMockUsuario, type MockUsuario } from "../mock";
-
-type LoginErrorCode = "invalid_credentials" | "too_many_attempts" | "user_disabled" | "network";
+import { authenticateWithMock, type LoginErrorCode, type MockUsuario } from "../mock";
 
 const loginErrorMessages: Record<LoginErrorCode, string> = {
   invalid_credentials: "Correo o contraseña incorrectos",
@@ -14,16 +12,6 @@ const loginErrorMessages: Record<LoginErrorCode, string> = {
   user_disabled: "Tu usuario está desactivado. Contactá al administrador.",
   network: "No se pudo conectar. Verificá tu conexión y probá de nuevo.",
 };
-
-type AuthResult = { ok: true; usuario: MockUsuario } | { ok: false; code: LoginErrorCode };
-
-function authenticateWithMock(email: string, password: string): AuthResult {
-  const usuario = findMockUsuario(email);
-  if (!usuario || usuario.password !== password) {
-    return { ok: false, code: "invalid_credentials" };
-  }
-  return { ok: true, usuario };
-}
 
 export function LoginForm({
   onSuccess,
@@ -69,9 +57,9 @@ export function LoginForm({
     try {
       const result = authenticateWithMock(parsed.data.email, parsed.data.password);
       if (result.ok) {
-        onSuccess?.(result.usuario);
+        onSuccess?.(result.data);
       } else {
-        setAuthError(result.code);
+        setAuthError(result.error);
         setPassword("");
         passwordRef.current?.focus();
       }

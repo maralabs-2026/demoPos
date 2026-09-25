@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  authenticateWithMock,
   clearMockSession,
   findMockUsuario,
   getMockSession,
@@ -125,6 +126,34 @@ describe("mock session store", () => {
 
     const updated = findMockUsuario(juan!.email);
     expect(updated!.password).toBe("nuevaclave1");
+  });
+});
+
+describe("authenticateWithMock", () => {
+  it("devuelve ok true con data en credenciales válidas", () => {
+    const result = authenticateWithMock("admin@kioskodemo.com", "demo1234");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.email).toBe("admin@kioskodemo.com");
+    expect(result.data.rol).toBe("dueno");
+  });
+
+  it("ignora mayúsculas y espacios en el correo pero no en la contraseña", () => {
+    const okUser = authenticateWithMock("  ADMIN@KioskoDemo.com ", "demo1234");
+    expect(okUser.ok).toBe(true);
+
+    const badPass = authenticateWithMock("admin@kioskodemo.com", "DEMO1234");
+    expect(badPass.ok).toBe(false);
+  });
+
+  it("devuelve ok false con error genérico en credenciales inválidas", () => {
+    const result = authenticateWithMock("admin@kioskodemo.com", "incorrecta");
+    expect(result).toEqual({ ok: false, error: "invalid_credentials" });
+  });
+
+  it("devuelve ok false con error genérico para un correo inexistente", () => {
+    const result = authenticateWithMock("nadie@kioskodemo.com", "demo1234");
+    expect(result).toEqual({ ok: false, error: "invalid_credentials" });
   });
 });
 

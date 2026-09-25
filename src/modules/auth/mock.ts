@@ -15,6 +15,12 @@ export interface MockUsuario extends MockSession {
   password: string;
 }
 
+export type LoginErrorCode =
+  | "invalid_credentials"
+  | "too_many_attempts"
+  | "user_disabled"
+  | "network";
+
 export const mockUsuarios: MockUsuario[] = [
   {
     email: "admin@kioskodemo.com",
@@ -44,6 +50,17 @@ export const mockUsuarios: MockUsuario[] = [
 
 export function findMockUsuario(email: string): MockUsuario | undefined {
   return mockUsuarios.find((usuario) => usuario.email === email.trim().toLowerCase());
+}
+
+export function authenticateWithMock(
+  email: string,
+  password: string,
+): { ok: true; data: MockUsuario } | { ok: false; error: LoginErrorCode } {
+  const usuario = findMockUsuario(email);
+  if (!usuario || usuario.password !== password) {
+    return { ok: false, error: "invalid_credentials" };
+  }
+  return { ok: true, data: usuario };
 }
 
 export function toMockSession(session: MockSession): MockSession {
