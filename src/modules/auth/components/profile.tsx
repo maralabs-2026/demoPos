@@ -27,8 +27,8 @@ function initials(nombre: string): string {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex w-full flex-col gap-0.5 rounded-xl bg-[#ECF4FF] px-4 py-2 md:flex-row md:items-center md:justify-between md:gap-4 md:rounded-lg md:bg-[#F7F9FF]">
-      <span className="text-[11px] font-normal text-[#474556] md:font-semibold md:text-[13px]">
+    <div className="flex w-full flex-col gap-0.5 rounded-xl bg-secondary px-4 py-2 md:flex-row md:items-center md:justify-between md:gap-4 md:rounded-lg">
+      <span className="text-[11px] font-normal text-muted-foreground md:font-semibold md:text-[13px]">
         {label}
       </span>
       {children}
@@ -59,28 +59,28 @@ export function Profile() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[672px] flex-col px-4 py-3 md:px-6 md:py-10">
       <div className="flex flex-col gap-0.5 md:items-center md:gap-1">
-        <h1 className="text-[26px] font-bold tracking-tight text-[#101D27] md:text-[32px]">
+        <h1 className="text-[26px] font-bold tracking-tight text-foreground md:text-[32px]">
           Mi perfil
         </h1>
-        <p className="text-[14px] text-[#474556]">
+        <p className="text-[14px] text-muted-foreground">
           Información de la cuenta
           <span className="hidden md:inline"> y sesión actual</span>
         </p>
       </div>
 
       <div className="mt-4 flex w-full flex-col gap-3 rounded-xl bg-background p-4 md:mt-6 md:gap-4 md:p-6">
-        <div className="flex w-full items-center gap-4 rounded-lg bg-[#ECF4FF] p-4 md:rounded-md">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#C8DFFE] text-[#4D627D] md:h-14 md:w-14 md:bg-primary md:text-white">
+        <div className="flex w-full items-center gap-4 rounded-lg bg-secondary p-4 md:rounded-md">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-secondary-foreground md:h-14 md:w-14 md:bg-primary md:text-white">
             <UserRound size={26} className="md:hidden" />
             <span className="hidden text-lg font-semibold md:block">
               {initials(usuario.nombre)}
             </span>
           </div>
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="truncate text-[15px] font-semibold text-[#101D27] md:text-lg">
+            <span className="truncate text-[15px] font-semibold text-foreground md:text-lg">
               {usuario.nombre}
             </span>
-            <span className="flex items-center gap-1 text-[11px] text-[#474556] md:text-xs">
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground md:text-xs">
               <span className="hidden h-2 w-2 rounded-full bg-primary md:block" />
               Sesión activa
             </span>
@@ -89,26 +89,26 @@ export function Profile() {
 
         <div className="flex w-full flex-col gap-1.5 md:gap-4">
           <Field label="Nombre">
-            <span className="text-base font-semibold text-[#101D27] md:font-medium">
+            <span className="text-base font-semibold text-foreground md:font-medium">
               {usuario.nombre}
             </span>
           </Field>
           <Field label="Correo electrónico">
-            <span className="truncate text-base font-semibold text-[#101D27] md:font-medium">
+            <span className="truncate text-base font-semibold text-foreground md:font-medium">
               {usuario.email}
             </span>
           </Field>
           <Field label="Rol asignado">
-            <span className="text-base font-semibold text-[#101D27] md:hidden">
+            <span className="text-base font-semibold text-foreground md:hidden">
               {rolValue[usuario.rol]}
             </span>
-            <span className="hidden rounded-lg bg-[#C8DFFE] px-2.5 py-1 text-[11px] font-semibold text-[#4D627D] md:inline-flex">
+            <span className="hidden rounded-lg bg-secondary px-2.5 py-1 text-[11px] font-semibold text-secondary-foreground md:inline-flex">
               {rolChip[usuario.rol]}
             </span>
           </Field>
           <Field label="Comercio">
-            <span className="flex items-center gap-1 text-base font-semibold text-[#101D27] md:font-medium">
-              <Building2 size={18} className="hidden text-[#4A607B] md:block" />
+            <span className="flex items-center gap-1 text-base font-semibold text-foreground md:font-medium">
+              <Building2 size={18} className="hidden text-muted-foreground md:block" />
               {usuario.comercio}
             </span>
           </Field>
@@ -125,10 +125,10 @@ export function Profile() {
       </div>
 
       <footer className="mt-auto hidden items-center justify-between border-t px-2 pt-4 md:flex">
-        <span className="text-xs text-[#474556]">
+        <span className="text-xs text-muted-foreground">
           © {new Date().getFullYear()} {usuario.comercio}. Todos los derechos reservados.
         </span>
-        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-[#4A607B]">
+        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
           <span className="h-2 w-2 rounded-full bg-primary" />
           Terminal Activa
         </span>

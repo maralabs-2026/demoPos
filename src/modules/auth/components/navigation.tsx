@@ -9,8 +9,8 @@ import { getNavLinks } from "@/modules/auth/navigation";
 
 const badgeStyles: Record<Rol, string> = {
   dueno: "bg-primary/10 text-primary",
-  encargado: "bg-[#C8DFFE] text-[#4D627D]",
-  cajero: "bg-[#E2EFFE] text-[#4D627D]",
+  encargado: "bg-secondary text-secondary-foreground",
+  cajero: "bg-secondary text-secondary-foreground",
 };
 
 const badgeLabels: Record<Rol, string> = {
@@ -64,7 +64,7 @@ function RoleBadge({ rol }: { rol: Rol }) {
 function Avatar({ rol }: { rol: Rol }) {
   if (!showsAvatar[rol]) return null;
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#3904E7] text-white">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-white">
       <svg
         width="18"
         height="18"
@@ -131,7 +131,7 @@ export function Navigation({ comercioNombre }: { comercioNombre: string }) {
                       : "text-foreground hover:bg-muted",
                   )}
                 >
-                  <Icon size={16} className={active ? "text-white" : "text-[#5B6B7A]"} />
+                  <Icon size={16} className={active ? "text-white" : "text-muted-foreground"} />
                   {link.label}
                 </Link>
               );
@@ -148,7 +148,7 @@ export function Navigation({ comercioNombre }: { comercioNombre: string }) {
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "inline-flex items-center rounded-xl px-4 py-2 text-[13px] font-semibold transition-colors",
-                    active ? "bg-primary text-white" : "text-[#474556] hover:bg-muted",
+                    active ? "bg-primary text-white" : "text-foreground hover:bg-muted",
                   )}
                 >
                   {link.label}
@@ -185,12 +185,12 @@ export function Navigation({ comercioNombre }: { comercioNombre: string }) {
               <Icon
                 size={20}
                 strokeWidth={active ? 2.2 : 1.8}
-                className={active ? "text-primary" : "text-[#5B6B7A]"}
+                className={active ? "text-primary" : "text-muted-foreground"}
               />
               <span
                 className={cn(
                   "text-[10px] leading-none",
-                  active ? "font-bold text-primary" : "font-medium text-[#5B6B7A]",
+                  active ? "font-bold text-primary" : "font-medium text-muted-foreground",
                 )}
               >
                 {link.label}

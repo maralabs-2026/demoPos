@@ -64,7 +64,7 @@ export function ChangePasswordForm({
   }
 
   const inputClasses =
-    "h-[48px] w-full rounded-xl border-border bg-background pl-4 pr-12 py-0 text-base md:text-base shadow-[0_1px_2px_rgba(13,37,61,0.05)] placeholder:text-[#9CA3AF] focus:border-ring aria-invalid:ring-0";
+    "h-[48px] w-full rounded-xl border-border bg-background pl-4 pr-12 py-0 text-base md:text-base shadow-[0_1px_2px_rgba(13,37,61,0.05)] placeholder:text-muted-foreground focus:border-ring aria-invalid:ring-0";
 
   return (
     <div className="w-full rounded-xl bg-background p-5 shadow-[0_4px_24px_rgba(13,37,61,0.04)] md:max-w-[440px] md:p-10">
@@ -72,7 +72,7 @@ export function ChangePasswordForm({
         <h1 className="text-2xl font-normal tracking-tight text-foreground md:text-[28px]">
           Cambiar contraseña
         </h1>
-        <p className="text-sm text-[#5B6B7A]">
+        <p className="text-sm text-muted-foreground">
           Debés cambiar tu contraseña temporal antes de continuar.
         </p>
       </div>
@@ -103,7 +103,7 @@ export function ChangePasswordForm({
               size="icon"
               onClick={() => setShowNew((v) => !v)}
               aria-label={showNew ? "Ocultar contraseña" : "Mostrar contraseña"}
-              className="absolute top-1/2 right-4 h-5 w-5 -translate-y-1/2 p-0 text-[#707D8A] hover:bg-transparent hover:text-[#707D8A] active:translate-y-0"
+              className="absolute top-1/2 right-4 h-5 w-5 -translate-y-1/2 p-0 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:translate-y-0"
             >
               {showNew ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
             </Button>
@@ -137,7 +137,7 @@ export function ChangePasswordForm({
               size="icon"
               onClick={() => setShowConfirm((v) => !v)}
               aria-label={showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
-              className="absolute top-1/2 right-4 h-5 w-5 -translate-y-1/2 p-0 text-[#707D8A] hover:bg-transparent hover:text-[#707D8A] active:translate-y-0"
+              className="absolute top-1/2 right-4 h-5 w-5 -translate-y-1/2 p-0 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:translate-y-0"
             >
               {showConfirm ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
             </Button>
