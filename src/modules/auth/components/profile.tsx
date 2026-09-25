@@ -70,7 +70,7 @@ export function Profile() {
 
       <div className="mt-4 flex w-full flex-col gap-3 rounded-xl bg-background p-4 md:mt-6 md:gap-4 md:p-6">
         <div className="flex w-full items-center gap-4 rounded-lg bg-[#ECF4FF] p-4 md:rounded-md">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#C8DFFE] text-[#4D627D] md:h-14 md:w-14 md:bg-[#533AFD] md:text-white">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#C8DFFE] text-[#4D627D] md:h-14 md:w-14 md:bg-primary md:text-white">
             <UserRound size={26} className="md:hidden" />
             <span className="hidden text-lg font-semibold md:block">
               {initials(usuario.nombre)}
@@ -81,7 +81,7 @@ export function Profile() {
               {usuario.nombre}
             </span>
             <span className="flex items-center gap-1 text-[11px] text-[#474556] md:text-xs">
-              <span className="hidden h-2 w-2 rounded-full bg-[#533AFD] md:block" />
+              <span className="hidden h-2 w-2 rounded-full bg-primary md:block" />
               Sesión activa
             </span>
           </div>
@@ -117,7 +117,7 @@ export function Profile() {
         <button
           type="button"
           onClick={handleLogout}
-          className="mt-1 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#533AFD] text-[15px] font-semibold text-white transition-colors hover:bg-[#533AFD]/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:mt-2"
+          className="mt-1 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-[15px] font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:mt-2"
         >
           <LogOut size={20} />
           Cerrar sesión
@@ -129,7 +129,7 @@ export function Profile() {
           © {new Date().getFullYear()} {usuario.comercio}. Todos los derechos reservados.
         </span>
         <span className="flex items-center gap-1.5 text-[11px] font-semibold text-[#4A607B]">
-          <span className="h-2 w-2 rounded-full bg-[#533AFD]" />
+          <span className="h-2 w-2 rounded-full bg-primary" />
           Terminal Activa
         </span>
       </footer>

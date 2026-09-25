@@ -8,7 +8,7 @@ import { getMockSession, splitBrandName, type Rol } from "@/modules/auth";
 import { getNavLinks } from "@/modules/auth/navigation";
 
 const badgeStyles: Record<Rol, string> = {
-  dueno: "bg-[#533AFD1A] text-[#533AFD]",
+  dueno: "bg-primary/10 text-primary",
   encargado: "bg-[#C8DFFE] text-[#4D627D]",
   cajero: "bg-[#E2EFFE] text-[#4D627D]",
 };
@@ -29,17 +29,17 @@ function AppBrand({ comercioNombre }: { comercioNombre: string }) {
   const { monogram, first, rest } = splitBrandName(comercioNombre);
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#533AFD] md:h-10 md:w-10 md:rounded-[10px]">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary md:h-10 md:w-10 md:rounded-[10px]">
         <span className="text-base font-extrabold text-white md:text-xl">
           {monogram || "P"}
         </span>
       </div>
       <div className="flex items-baseline gap-1">
-        <span className="text-lg font-extrabold tracking-tight text-[#0D253D] md:text-2xl">
+        <span className="text-lg font-extrabold tracking-tight text-foreground md:text-2xl">
           {first}
         </span>
         {rest ? (
-          <span className="text-lg font-bold tracking-tight text-[#533AFD] md:text-2xl">
+          <span className="text-lg font-bold tracking-tight text-primary md:text-2xl">
             {rest}
           </span>
         ) : null}
@@ -127,8 +127,8 @@ export function Navigation({ comercioNombre }: { comercioNombre: string }) {
                   className={cn(
                     "inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors",
                     active
-                      ? "bg-[#533AFD] text-white"
-                      : "text-[#0D253D] hover:bg-muted",
+                      ? "bg-primary text-white"
+                      : "text-foreground hover:bg-muted",
                   )}
                 >
                   <Icon size={16} className={active ? "text-white" : "text-[#5B6B7A]"} />
@@ -148,7 +148,7 @@ export function Navigation({ comercioNombre }: { comercioNombre: string }) {
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "inline-flex items-center rounded-xl px-4 py-2 text-[13px] font-semibold transition-colors",
-                    active ? "bg-[#533AFD] text-white" : "text-[#474556] hover:bg-muted",
+                    active ? "bg-primary text-white" : "text-[#474556] hover:bg-muted",
                   )}
                 >
                   {link.label}
@@ -185,12 +185,12 @@ export function Navigation({ comercioNombre }: { comercioNombre: string }) {
               <Icon
                 size={20}
                 strokeWidth={active ? 2.2 : 1.8}
-                className={active ? "text-[#533AFD]" : "text-[#5B6B7A]"}
+                className={active ? "text-primary" : "text-[#5B6B7A]"}
               />
               <span
                 className={cn(
                   "text-[10px] leading-none",
-                  active ? "font-bold text-[#533AFD]" : "font-medium text-[#5B6B7A]",
+                  active ? "font-bold text-primary" : "font-medium text-[#5B6B7A]",
                 )}
               >
                 {link.label}
