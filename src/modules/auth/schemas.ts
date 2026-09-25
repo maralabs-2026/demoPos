@@ -18,9 +18,13 @@ export const loginSchema = z.object({
 
 export const changePasswordSchema = z
   .object({
+    currentPassword: z
+      .string()
+      .min(1, "La contraseña actual es obligatoria")
+      .max(128, "La contraseña actual no puede superar los 128 caracteres"),
     newPassword: z
       .string()
-      .min(1, "La contraseña es obligatoria")
+      .min(8, "La contraseña debe tener al menos 8 caracteres")
       .max(128, "La contraseña no puede superar los 128 caracteres"),
     confirmPassword: z
       .string()
@@ -30,6 +34,10 @@ export const changePasswordSchema = z
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Las contraseñas no coinciden",
     path: ["confirmPassword"],
+  })
+  .refine((data) => data.newPassword !== data.currentPassword, {
+    message: "La contraseña nueva debe ser distinta de la actual",
+    path: ["newPassword"],
   });
 
 export type LoginInput = z.infer<typeof loginSchema>;

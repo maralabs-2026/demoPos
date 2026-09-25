@@ -73,8 +73,11 @@ describe("loginSchema", () => {
 });
 
 describe("changePasswordSchema", () => {
+  const current = "temporal123";
+
   it("accepts matching passwords", () => {
     const result = changePasswordSchema.safeParse({
+      currentPassword: current,
       newPassword: "nueva123",
       confirmPassword: "nueva123",
     });
@@ -82,8 +85,35 @@ describe("changePasswordSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts a new password of exactly 8 characters", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: current,
+      newPassword: "abc12345",
+      confirmPassword: "abc12345",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a new password shorter than 8 characters", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: current,
+      newPassword: "abc1234",
+      confirmPassword: "abc1234",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map((issue) => issue.path[0])).toContain("newPassword");
+      expect(result.error.issues.map((issue) => issue.message)).toContain(
+        "La contraseña debe tener al menos 8 caracteres",
+      );
+    }
+  });
+
   it("rejects when passwords do not match and flags confirmPassword", () => {
     const result = changePasswordSchema.safeParse({
+      currentPassword: current,
       newPassword: "nueva123",
       confirmPassword: "otra123",
     });
@@ -96,17 +126,55 @@ describe("changePasswordSchema", () => {
 
   it("rejects passwords longer than 128 characters", () => {
     const password = "a".repeat(129);
-    const result = changePasswordSchema.safeParse({ newPassword: password, confirmPassword: password });
+    const result = changePasswordSchema.safeParse({
+      currentPassword: current,
+      newPassword: password,
+      confirmPassword: password,
+    });
     expect(result.success).toBe(false);
   });
 
+  it("rejects a new password equal to the current one", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: current,
+      newPassword: current,
+      confirmPassword: current,
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map((issue) => issue.path[0])).toContain("newPassword");
+      expect(result.error.issues.map((issue) => issue.message)).toContain(
+        "La contraseña nueva debe ser distinta de la actual",
+      );
+    }
+  });
+
+  it("accepts a new password distinct from the current one", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: current,
+      newPassword: "nueva123",
+      confirmPassword: "nueva123",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it("rejects when a field is missing", () => {
-    expect(changePasswordSchema.safeParse({ newPassword: "abc123" }).success).toBe(false);
-    expect(changePasswordSchema.safeParse({ confirmPassword: "abc123" }).success).toBe(false);
+    expect(changePasswordSchema.safeParse({ newPassword: "abc12345" }).success).toBe(false);
+    expect(changePasswordSchema.safeParse({ confirmPassword: "abc12345" }).success).toBe(false);
+    expect(
+      changePasswordSchema.safeParse({ currentPassword: current, confirmPassword: "abc12345" })
+        .success,
+    ).toBe(false);
   });
 
   it("rejects empty new and confirm passwords", () => {
-    const result = changePasswordSchema.safeParse({ newPassword: "", confirmPassword: "" });
+    const result = changePasswordSchema.safeParse({
+      currentPassword: current,
+      newPassword: "",
+      confirmPassword: "",
+    });
     expect(result.success).toBe(false);
   });
 });

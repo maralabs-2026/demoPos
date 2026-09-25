@@ -46,9 +46,11 @@ function EyeOffIcon() {
 
 export function ChangePasswordForm({
   email,
+  currentPassword,
   onSuccess,
 }: {
   email: string;
+  currentPassword: string;
   onSuccess?: (usuario: MockUsuario) => void;
 }) {
   const [newPassword, setNewPassword] = useState("");
@@ -65,7 +67,11 @@ export function ChangePasswordForm({
     event.preventDefault();
     if (isSubmitting) return;
 
-    const parsed = changePasswordSchema.safeParse({ newPassword, confirmPassword });
+    const parsed = changePasswordSchema.safeParse({
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    });
     if (!parsed.success) {
       const errors: Partial<Record<"newPassword" | "confirmPassword", string>> = {};
       for (const issue of parsed.error.issues) {
