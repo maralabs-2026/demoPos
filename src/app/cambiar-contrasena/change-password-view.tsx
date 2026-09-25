@@ -12,7 +12,7 @@ export function ChangePasswordView() {
 
   useEffect(() => {
     const session = getMockSession();
-    if (!session || !session.mustChangePassword) {
+    if (session === null || !session.mustChangePassword) {
       router.replace("/login");
       return;
     }
@@ -25,7 +25,7 @@ export function ChangePasswordView() {
 
   return (
     <main className="flex min-h-dvh w-full flex-col p-6 md:items-center md:justify-center md:px-0 md:py-0">
-      {email && currentPassword && (
+      {email !== null && currentPassword !== null && (
         <ChangePasswordForm
           email={email}
           currentPassword={currentPassword}

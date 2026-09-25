@@ -88,6 +88,22 @@ describe("mock session store", () => {
     expect(mustChangePassword(null)).toBe(false);
   });
 
+  it("una sesión con email vacío no se trata como ausencia de sesión", () => {
+    const emptyEmailSession: MockSession = {
+      email: "",
+      rol: "cajero",
+      nombre: "",
+      comercio: "",
+      mustChangePassword: true,
+    };
+
+    storeMockSession(emptyEmailSession);
+    const session = getMockSession();
+    expect(session).not.toBeNull();
+    expect(session!.email).toBe("");
+    expect(mustChangePassword(session)).toBe(true);
+  });
+
   it("una contraseña nueva igual a la temporal se rechaza (schema)", () => {
     const juan = findMockUsuario("juan.perez@kioskodemo.com");
     const current = juan!.password;
