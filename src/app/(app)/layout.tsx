@@ -1,34 +1,16 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { Navigation } from "@/modules/auth/components/navigation";
-import { getMockSession, mustChangePassword } from "@/modules/auth";
+import { getComercioName } from "@/modules/config";
+import { AppShell } from "@/modules/auth/components/app-shell";
 
-export default function AppLayout({
+export const dynamic = "force-dynamic";
+
+export default async function AppLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const router = useRouter();
-  const [authorized, setAuthorized] = useState(false);
+  const comercioResult = await getComercioName();
+  const comercioNombre = comercioResult.ok ? comercioResult.data : "Punto de Venta";
 
-  useEffect(() => {
-    const session = getMockSession();
-    if (mustChangePassword(session)) {
-      router.replace("/cambiar-contrasena");
-      return;
-    }
-    setAuthorized(true);
-  }, [router]);
-
-  if (!authorized) return null;
-
-  return (
-    <>
-      <Navigation />
-      <div className="pb-14 md:pb-0">{children}</div>
-    </>
-  );
+  return <AppShell comercioNombre={comercioNombre}>{children}</AppShell>;
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { getMockSession, type Rol } from "@/modules/auth";
+import { getMockSession, splitBrandName, type Rol } from "@/modules/auth";
 import { getNavLinks } from "@/modules/auth/navigation";
 
 const badgeStyles: Record<Rol, string> = {
@@ -25,19 +25,24 @@ const showsAvatar: Record<Rol, boolean> = {
   cajero: true,
 };
 
-function AppBrand() {
+function AppBrand({ comercioNombre }: { comercioNombre: string }) {
+  const { monogram, first, rest } = splitBrandName(comercioNombre);
   return (
     <div className="flex min-w-0 items-center gap-2">
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#533AFD] md:h-10 md:w-10 md:rounded-[10px]">
-        <span className="text-base font-extrabold text-white md:text-xl">K</span>
+        <span className="text-base font-extrabold text-white md:text-xl">
+          {monogram || "P"}
+        </span>
       </div>
       <div className="flex items-baseline gap-1">
         <span className="text-lg font-extrabold tracking-tight text-[#0D253D] md:text-2xl">
-          Kiosko
+          {first}
         </span>
-        <span className="text-lg font-bold tracking-tight text-[#533AFD] md:text-2xl">
-          Demo
-        </span>
+        {rest ? (
+          <span className="text-lg font-bold tracking-tight text-[#533AFD] md:text-2xl">
+            {rest}
+          </span>
+        ) : null}
       </div>
     </div>
   );
@@ -78,7 +83,7 @@ function Avatar({ rol }: { rol: Rol }) {
   );
 }
 
-export function Navigation() {
+export function Navigation({ comercioNombre }: { comercioNombre: string }) {
   const pathname = usePathname();
   const [rol, setRol] = useState<Rol | null>(null);
 
@@ -105,7 +110,7 @@ export function Navigation() {
         )}
       >
         <div className="flex items-center gap-3">
-          <AppBrand />
+          <AppBrand comercioNombre={comercioNombre} />
           <RoleBadge rol={rol} />
         </div>
 
@@ -158,7 +163,7 @@ export function Navigation() {
 
       {/* Mobile header */}
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-2 border-b bg-background px-4 md:hidden">
-        <AppBrand />
+        <AppBrand comercioNombre={comercioNombre} />
         <div className="flex items-center gap-2">
           <RoleBadge rol={rol} />
           <Avatar rol={rol} />

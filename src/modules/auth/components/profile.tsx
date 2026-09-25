@@ -126,7 +126,7 @@ export function Profile() {
 
       <footer className="mt-auto hidden items-center justify-between border-t px-2 pt-4 md:flex">
         <span className="text-xs text-[#474556]">
-          © {new Date().getFullYear()} Kiosko Demo. Todos los derechos reservados.
+          © {new Date().getFullYear()} {usuario.comercio}. Todos los derechos reservados.
         </span>
         <span className="flex items-center gap-1.5 text-[11px] font-semibold text-[#4A607B]">
           <span className="h-2 w-2 rounded-full bg-[#533AFD]" />
