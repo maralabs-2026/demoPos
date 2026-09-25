@@ -16,8 +16,6 @@ export const metadata: Metadata = {
   description: "Punto de venta web",
 };
 
-export const dynamic = "force-dynamic";
-
 export default function RootLayout({
   children,
 }: Readonly<{
