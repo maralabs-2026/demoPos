@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { getComercioName } from "@/modules/config";
+import { redirect } from "next/navigation";
 import { AppShell } from "@/modules/auth/components/app-shell";
+import { getAuthProfile } from "@/modules/auth/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -9,8 +10,8 @@ export default async function AppLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const comercioResult = await getComercioName();
-  const comercioNombre = comercioResult.ok ? comercioResult.data : "Punto de Venta";
+  const profile = await getAuthProfile();
+  if (!profile) redirect("/login");
 
-  return <AppShell comercioNombre={comercioNombre}>{children}</AppShell>;
+  return <AppShell profile={profile}>{children}</AppShell>;
 }

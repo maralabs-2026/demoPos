@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { getMockSession, splitBrandName, type Rol } from "@/modules/auth";
+import { splitBrandName } from "@/modules/auth";
+import type { Rol, SessionProfile } from "@/modules/auth/session";
 import { getNavLinks } from "@/modules/auth/navigation";
 
 const badgeStyles: Record<Rol, string> = {
@@ -83,18 +83,9 @@ function Avatar({ rol }: { rol: Rol }) {
   );
 }
 
-export function Navigation({ comercioNombre }: { comercioNombre: string }) {
+export function Navigation({ profile }: { profile: SessionProfile }) {
   const pathname = usePathname();
-  const [rol, setRol] = useState<Rol | null>(null);
-
-  useEffect(() => {
-    const session = getMockSession();
-    if (session && !session.mustChangePassword) {
-      setRol(session.rol);
-    }
-  }, []);
-
-  if (!rol) return null;
+  const rol = profile.rol;
 
   const links = getNavLinks(rol);
   const activeHref = links.find((link) => pathname === link.href)?.href;
@@ -110,7 +101,7 @@ export function Navigation({ comercioNombre }: { comercioNombre: string }) {
         )}
       >
         <div className="flex items-center gap-3">
-          <AppBrand comercioNombre={comercioNombre} />
+          <AppBrand comercioNombre={profile.comercio} />
           <RoleBadge rol={rol} />
         </div>
 
@@ -163,7 +154,7 @@ export function Navigation({ comercioNombre }: { comercioNombre: string }) {
 
       {/* Mobile header */}
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-2 border-b bg-background px-4 md:hidden">
-        <AppBrand comercioNombre={comercioNombre} />
+        <AppBrand comercioNombre={profile.comercio} />
         <div className="flex items-center gap-2">
           <RoleBadge rol={rol} />
           <Avatar rol={rol} />
