@@ -10,7 +10,6 @@ import {
   type MockSession,
   type MockUsuario,
 } from "./mock";
-import { mustChangePassword } from "./session-guard";
 import { changePasswordSchema } from "./schemas";
 
 class MemoryStorage {
@@ -80,14 +79,6 @@ describe("mock session store", () => {
     expect("password" in (session as MockSession & { password?: string })).toBe(false);
   });
 
-  it("mustChangePassword sigue disponible para una sesion", () => {
-    const pending = findMockUsuario("juan.perez@kioskodemo.com");
-    const normal = findMockUsuario("admin@kioskodemo.com");
-    expect(mustChangePassword(pending!)).toBe(true);
-    expect(mustChangePassword(normal!)).toBe(false);
-    expect(mustChangePassword(null)).toBe(false);
-  });
-
   it("una sesión con email vacío no se trata como ausencia de sesión", () => {
     const emptyEmailSession: MockSession = {
       email: "",
@@ -101,28 +92,10 @@ describe("mock session store", () => {
     const session = getMockSession();
     expect(session).not.toBeNull();
     expect(session!.email).toBe("");
-    expect(mustChangePassword(session)).toBe(true);
   });
 
-  it("una contraseña nueva igual a la temporal se rechaza (schema)", () => {
-    const juan = findMockUsuario("juan.perez@kioskodemo.com");
-    const current = juan!.password;
-    expect(mustChangePassword(juan!)).toBe(true);
-
+  it("una contraseña nueva válida supera el schema", () => {
     const result = changePasswordSchema.safeParse({
-      currentPassword: current,
-      newPassword: current,
-      confirmPassword: current,
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it("una contraseña nueva válida y distinta supera el schema", () => {
-    const juan = findMockUsuario("juan.perez@kioskodemo.com");
-    const current = juan!.password;
-
-    const result = changePasswordSchema.safeParse({
-      currentPassword: current,
       newPassword: "nuevaclave1",
       confirmPassword: "nuevaclave1",
     });

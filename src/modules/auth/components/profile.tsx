@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, LogOut, UserRound } from "lucide-react";
-import { clearMockSession, getMockSession, type MockSession } from "@/modules/auth";
-import type { Rol } from "@/modules/auth";
+import { createClient } from "@/lib/supabase/client";
+import type { Rol, SessionProfile } from "@/modules/auth/session";
 
 const rolValue: Record<Rol, string> = {
   dueno: "Dueño",
@@ -36,25 +35,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function Profile() {
+export function Profile({ profile }: { profile: SessionProfile }) {
   const router = useRouter();
-  const [usuario, setUsuario] = useState<MockSession | null>(null);
 
-  useEffect(() => {
-    const session = getMockSession();
-    if (!session) {
-      router.replace("/login");
-      return;
-    }
-    setUsuario(session);
-  }, [router]);
-
-  function handleLogout() {
-    clearMockSession();
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
     router.replace("/login");
+    router.refresh();
   }
-
-  if (!usuario) return null;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[672px] flex-col px-4 py-3 md:px-6 md:py-10">
@@ -73,12 +62,12 @@ export function Profile() {
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-secondary-foreground md:h-14 md:w-14 md:bg-primary md:text-white">
             <UserRound size={26} className="md:hidden" />
             <span className="hidden text-lg font-semibold md:block">
-              {initials(usuario.nombre)}
+              {initials(profile.nombre)}
             </span>
           </div>
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="truncate text-[15px] font-semibold text-foreground md:text-lg">
-              {usuario.nombre}
+              {profile.nombre}
             </span>
             <span className="flex items-center gap-1 text-[11px] text-muted-foreground md:text-xs">
               <span className="hidden h-2 w-2 rounded-full bg-primary md:block" />
@@ -90,26 +79,26 @@ export function Profile() {
         <div className="flex w-full flex-col gap-1.5 md:gap-4">
           <Field label="Nombre">
             <span className="text-base font-semibold text-foreground md:font-medium">
-              {usuario.nombre}
+              {profile.nombre}
             </span>
           </Field>
           <Field label="Correo electrónico">
             <span className="truncate text-base font-semibold text-foreground md:font-medium">
-              {usuario.email}
+              {profile.email}
             </span>
           </Field>
           <Field label="Rol asignado">
             <span className="text-base font-semibold text-foreground md:hidden">
-              {rolValue[usuario.rol]}
+              {rolValue[profile.rol]}
             </span>
             <span className="hidden rounded-lg bg-secondary px-2.5 py-1 text-[11px] font-semibold text-secondary-foreground md:inline-flex">
-              {rolChip[usuario.rol]}
+              {rolChip[profile.rol]}
             </span>
           </Field>
           <Field label="Comercio">
             <span className="flex items-center gap-1 text-base font-semibold text-foreground md:font-medium">
               <Building2 size={18} className="hidden text-muted-foreground md:block" />
-              {usuario.comercio}
+              {profile.comercio}
             </span>
           </Field>
         </div>
@@ -126,7 +115,7 @@ export function Profile() {
 
       <footer className="mt-auto hidden items-center justify-between border-t px-2 pt-4 md:flex">
         <span className="text-xs text-muted-foreground">
-          © {new Date().getFullYear()} {usuario.comercio}. Todos los derechos reservados.
+          © {new Date().getFullYear()} {profile.comercio}. Todos los derechos reservados.
         </span>
         <span className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
           <span className="h-2 w-2 rounded-full bg-primary" />
