@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 
 type ProductoFormProps = {
   categorias: Categoria[];
+  comercioId: string;
   producto?: Producto;
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -16,6 +17,7 @@ type ProductoFormProps = {
 
 export function ProductoForm({
   categorias,
+  comercioId,
   producto,
   onSuccess,
   onCancel,
@@ -25,8 +27,13 @@ export function ProductoForm({
     producto?.codigoBarras ?? "",
   );
   const [categoriaId, setCategoriaId] = useState(
-  producto?.categoriaId ?? "",
-);
+    producto?.categoriaId ?? "",
+  );
+  const [costo, setCosto] = useState(
+    producto?.costo !== null && producto?.costo !== undefined
+      ? String(producto.costo)
+      : "",
+  );
   const [precio, setPrecio] = useState(
     producto?.precio !== undefined ? String(producto.precio) : "",
   );
@@ -38,6 +45,12 @@ export function ProductoForm({
   );
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const costoNumero = Number(costo);
+  const precioNumero = Number(precio);
+  const margen =
+    costo !== "" && precio !== "" && precioNumero > 0 && Number.isFinite(costoNumero)
+      ? ((precioNumero - costoNumero) / precioNumero) * 100
+      : null;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -45,10 +58,12 @@ export function ProductoForm({
     setGuardando(true);
 
     const input = {
+      comercioId,
       nombre,
       codigoBarras,
       categoriaId,
-      precio: Number(precio),
+      costo: costoNumero,
+      precio: precioNumero,
       unidadVenta,
       stockMinimo: Number(stockMinimo),
     };
@@ -126,6 +141,21 @@ export function ProductoForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
+          <label htmlFor="producto-costo" className="text-sm font-medium">
+            Costo
+          </label>
+          <Input
+            id="producto-costo"
+            type="number"
+            min="0"
+            step="0.01"
+            value={costo}
+            onChange={(event) => setCosto(event.target.value)}
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
           <label htmlFor="producto-precio" className="text-sm font-medium">
             Precio
           </label>
@@ -152,6 +182,15 @@ export function ProductoForm({
             required
           />
         </div>
+      </div>
+
+      <div className="text-sm" aria-live="polite">
+        <span className="text-muted-foreground">Margen bruto sobre precio: </span>
+        <span className="font-medium">
+          {margen === null
+            ? "—"
+            : `${margen.toLocaleString("es-AR", { maximumFractionDigits: 1 })}%`}
+        </span>
       </div>
 
       <div className="space-y-2">

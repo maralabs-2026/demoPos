@@ -1,11 +1,14 @@
+import { getPerfilActual } from "@/modules/auth";
 import { getCategorias, getProductos } from "@/modules/productos";
 import { ProductosTable } from "@/modules/productos/components/productos-table";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProductosPage() {
+  const perfil = await getPerfilActual();
+  const puedeGestionar = perfil?.rol === "dueno" || perfil?.rol === "encargado";
   const [productosResult, categoriasResult] = await Promise.all([
-    getProductos(),
+    getProductos(undefined, puedeGestionar),
     getCategorias(),
   ]);
 
@@ -55,6 +58,7 @@ export default async function ProductosPage() {
       <ProductosTable
         productos={productosResult.data}
         categorias={categoriasResult.data}
+        perfil={perfil}
       />
     </main>
   );
