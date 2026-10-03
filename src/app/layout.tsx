@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-// Sohne (la tipografía de la referencia de diseño) es propietaria y no la
-// bundleamos. Inter en peso liviano es el sustituto que la propia guía
-// recomienda como equivalente abierto.
-const inter = Inter({
-  variable: "--font-sans",
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta-sans",
   subsets: ["latin"],
-  weight: ["300", "400"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -22,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es-AR">
-      <body className={`${inter.variable} antialiased`}>
+    <html lang="es-AR" className={plusJakartaSans.variable}>
+      <body className="antialiased">
         {children}
       </body>
     </html>

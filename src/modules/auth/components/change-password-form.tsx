@@ -64,10 +64,10 @@ export function ChangePasswordForm({
   }
 
   const inputClasses =
-    "h-[48px] w-full rounded-xl border-border bg-background pl-4 pr-12 py-0 text-base md:text-base shadow-[0_1px_2px_rgba(13,37,61,0.05)] placeholder:text-muted-foreground focus:border-ring aria-invalid:ring-0";
+    "h-[48px] w-full rounded-xl border-border bg-background pl-4 pr-12 py-0 text-base md:text-base shadow-[0_1px_2px_rgba(15,23,42,0.05)] placeholder:text-muted-foreground focus:border-ring aria-invalid:ring-0";
 
   return (
-    <div className="w-full rounded-xl bg-background p-5 shadow-[0_4px_24px_rgba(13,37,61,0.04)] md:max-w-[440px] md:p-10">
+    <div className="w-full rounded-xl bg-background p-5 shadow-[0_4px_24px_rgba(15,23,42,0.06)] md:max-w-[440px] md:p-10">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-normal tracking-tight text-foreground md:text-[28px]">
           Cambiar contraseña
