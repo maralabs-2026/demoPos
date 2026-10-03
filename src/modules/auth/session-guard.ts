@@ -1,5 +1,5 @@
-import type { MockSession } from "./mock";
+import type { SessionProfile } from "./session";
 
-export function mustChangePassword(session: MockSession | null): boolean {
-  return session !== null && session.mustChangePassword;
+export function mustChangePassword(profile: SessionProfile | null): boolean {
+  return profile !== null && profile.must_change_password;
 }

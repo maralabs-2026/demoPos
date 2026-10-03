@@ -1,5 +1,5 @@
 import { ChartColumn, Package, Settings, Store, User, type LucideIcon } from "lucide-react";
-import type { Rol } from "./mock";
+import type { Rol } from "./session";
 
 export interface NavLink {
   href: string;

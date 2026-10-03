@@ -3,20 +3,14 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { createClient } from "@/lib/supabase/client";
 import { loginSchema } from "../schemas";
-import { authenticateWithMock, type LoginErrorCode, type MockUsuario } from "../mock";
-
-const loginErrorMessages: Record<LoginErrorCode, string> = {
-  invalid_credentials: "Correo o contraseña incorrectos",
-  too_many_attempts: "Demasiados intentos. Probá de nuevo en unos minutos.",
-  user_disabled: "Tu usuario está desactivado. Contactá al administrador.",
-  network: "No se pudo conectar. Verificá tu conexión y probá de nuevo.",
-};
+import { loginErrorMessages, mapLoginError, type LoginErrorCode } from "../login-error";
 
 export function LoginForm({
   onSuccess,
 }: {
-  onSuccess?: (usuario: MockUsuario) => void;
+  onSuccess?: (result: { mustChangePassword: boolean }) => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -55,14 +49,26 @@ export function LoginForm({
     setAuthError(null);
     setIsSubmitting(true);
     try {
-      const result = authenticateWithMock(parsed.data.email, parsed.data.password);
-      if (result.ok) {
-        onSuccess?.(result.data);
-      } else {
-        setAuthError(result.error);
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: parsed.data.email,
+        password: parsed.data.password,
+      });
+
+      if (error) {
+        setAuthError(mapLoginError(error));
         setPassword("");
         passwordRef.current?.focus();
+        return;
       }
+
+      onSuccess?.({
+        mustChangePassword: data.user.user_metadata.must_change_password === true,
+      });
+    } catch (error) {
+      setAuthError(mapLoginError(error));
+      setPassword("");
+      passwordRef.current?.focus();
     } finally {
       setIsSubmitting(false);
     }
