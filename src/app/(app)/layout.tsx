@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
+import { getAuthProfile, mustChangePassword } from "@/modules/auth";
 import { AppShell } from "@/modules/auth/components/app-shell";
-import { getAuthProfile } from "@/modules/auth/queries";
-import { mustChangePassword } from "@/modules/auth/session-guard";
 
 export const dynamic = "force-dynamic";
 

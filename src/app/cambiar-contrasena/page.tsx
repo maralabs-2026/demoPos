@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAuthProfile } from "@/modules/auth/queries";
+import { getAuthProfile } from "@/modules/auth";
 import { ChangePasswordView } from "./change-password-view";
 
 export const dynamic = "force-dynamic";
