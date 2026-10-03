@@ -55,4 +55,4 @@ Sin tocar: productos, ventas, cajas, `design/auth.pen`, migraciones `0001`–`00
 
 - `npm run test`, `npm run lint`, `npm run build` y `npm run test:e2e` en verde.
 - CA1–CA5: login real con los **usuarios de prueba de Supabase** del seed, borrado de `sessionStorage`, refresh, navegación por rol y perfil.
-- CA6: aplicar `0008` en base de prueba; `set role anon; select * from productos;` → `permission denied`.
+- CA6: aplicar `0008` en base de prueba; `set role anon; select * from productos;` → `permission denied`. **Pendiente, no ejecutado**: `0008` nunca se aplicó. Ver T7 en `tasks.md`.

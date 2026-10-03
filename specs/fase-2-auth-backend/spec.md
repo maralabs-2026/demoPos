@@ -36,12 +36,14 @@ Conectar login, sesión y perfil a Supabase Auth respetando el patrón `@supabas
 
 ## Criterios de aceptación (verificables)
 
-- [ ] CA1. Login con `supabase.auth.signInWithPassword`. Correo inexistente y contraseña incorrecta muestran ambos el mismo error: "Correo o contraseña incorrectos". (Se verifica con el usuario `cajero@kiosko.demo` y una contraseña errónea, y con un correo no existente.)
+- [x] CA1. Login con `supabase.auth.signInWithPassword`. Correo inexistente y contraseña incorrecta muestran ambos el mismo error: "Correo o contraseña incorrectos". (Se verifica con el usuario `cajero@kiosko.demo` y una contraseña errónea, y con un correo no existente.)
+  - Verificado (2026-10-02) con `e2e/login-error-message.spec.ts`: 5/5 e2e en verde contra Supabase real. Con `dueno@kiosko.demo` y contraseña derivada + `no-existe@kiosko.demo` ambos muestran exactamente "Correo o contraseña incorrectos".
 - [ ] CA2. `src/middleware.ts` refleja el patrón `@supabase/ssr` (refresco de sesión por request) con `config.matcher` que excluye `/_next/*`, imagen y favicon. Sin middleware, la sesión expira al refrescar; con middleware, un refresh de `/perfil` mantiene la sesión.
 - [ ] CA3. `rol`, `comercio_id` y `nombre` salen de `public.perfiles`. Un usuario autenticado que borra su `sessionStorage` sigue viendo su rol y comercio correctos en `/perfil` (verifica que nada del perfil proviene de `sessionStorage`).
 - [ ] CA4. `must_change_password` sale de `user_metadata`. Con un usuario seed cuyo `raw_user_meta_data` tenga `{"must_change_password": true}`: tras el login es redirigido a `/cambiar-contrasena`, y una vez cambiada la contraseña la metadata queda en `false` (verificar en base).
 - [ ] CA5. `AppShell`, `session-guard.ts`, `navigation.tsx` y `profile.tsx` no contienen referencias a `getMockSession()` / `storeMockSession()` / `clearMockSession()`. La navegación muestra el menú del rol real y el perfil muestra nombre/rol/comercio reales.
 - [ ] CA6. `0008_*.sql` aplica limpio sobre la base actual y tras ella un `set role anon; select * from productos;` devuelve `permission denied` (antes devolvía filas). `0001`...`0007` no cambian.
+  - **Sin verificar.** El archivo `0008` está escrito pero nunca se aplicó: ni en la base compartida ni en una base de prueba. CA6 no se cumple hasta correr la verificación de T7 (`tasks.md`) en una base descartable.
 - [ ] CA7. `src/modules/auth/mock.ts` y `src/modules/auth/mock.test.ts` no existen. `npm run test`, `npm run lint` y `npm run build` pasan en verde.
 
 ## Cambios derivados de la sesión real (adaptación, no pantallas nuevas)
