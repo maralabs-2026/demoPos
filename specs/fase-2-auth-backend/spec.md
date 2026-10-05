@@ -42,8 +42,8 @@ Conectar login, sesión y perfil a Supabase Auth respetando el patrón `@supabas
 - [ ] CA3. `rol`, `comercio_id` y `nombre` salen de `public.perfiles`. Un usuario autenticado que borra su `sessionStorage` sigue viendo su rol y comercio correctos en `/perfil` (verifica que nada del perfil proviene de `sessionStorage`).
 - [ ] CA4. `must_change_password` sale de `user_metadata`. Con un usuario seed cuyo `raw_user_meta_data` tenga `{"must_change_password": true}`: tras el login es redirigido a `/cambiar-contrasena`, y una vez cambiada la contraseña la metadata queda en `false` (verificar en base).
 - [ ] CA5. `AppShell`, `session-guard.ts`, `navigation.tsx` y `profile.tsx` no contienen referencias a `getMockSession()` / `storeMockSession()` / `clearMockSession()`. La navegación muestra el menú del rol real y el perfil muestra nombre/rol/comercio reales.
-- [ ] CA6. `0008_*.sql` aplica limpio sobre la base actual y tras ella un `set role anon; select * from productos;` devuelve `permission denied` (antes devolvía filas). `0001`...`0007` no cambian.
-  - **Sin verificar.** El archivo `0008` está escrito pero nunca se aplicó: ni en la base compartida ni en una base de prueba. CA6 no se cumple hasta correr la verificación de T7 (`tasks.md`) en una base descartable.
+- [x] CA6. `0008_*.sql` aplica limpio sobre la base actual y tras ella un `set role anon; select * from productos;` devuelve `permission denied` (antes devolvía filas). `0001`...`0007` no cambian.
+  - Verificado (2026-10-02) en la base descartable `kiosko-demo-test`, nunca en la compartida: antes de `0008` `anon` leía 40 filas de `productos`; después de aplicar `0008`, `select * from productos` devuelve `ERROR: permission denied for table productos` (42501). `git diff -- supabase/migrations` vacío, `0001`–`0008` sin cambios. Detalle de los pasos en T7 (`tasks.md`).
 - [ ] CA7. `src/modules/auth/mock.ts` y `src/modules/auth/mock.test.ts` no existen. `npm run test`, `npm run lint` y `npm run build` pasan en verde.
 
 ## Cambios derivados de la sesión real (adaptación, no pantallas nuevas)
