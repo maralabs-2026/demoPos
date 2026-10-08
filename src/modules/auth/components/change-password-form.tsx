@@ -4,17 +4,38 @@ import { useState, type FormEvent } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { createClient } from "@/lib/supabase/client";
 import { changePasswordSchema } from "../schemas";
-import { updateMockPassword, type MockSession } from "../mock";
+import { loginErrorMessages } from "../login-error";
+
+interface PasswordErrorLike {
+  status?: number;
+  code?: string;
+  message?: string;
+}
+
+function resolvePasswordError(error: unknown): string {
+  const { status, code, message } = (
+    typeof error === "object" && error !== null ? error : {}
+  ) as PasswordErrorLike;
+  const detail = `${code ?? ""} ${message ?? ""}`.toLowerCase();
+
+  if (status === 429 || detail.includes("too many") || detail.includes("rate limit")) {
+    return loginErrorMessages.too_many_attempts;
+  }
+  if (detail.includes("should be different")) {
+    return "La contraseña nueva debe ser distinta de la actual";
+  }
+  if (detail.includes("fetch") || detail.includes("network")) {
+    return loginErrorMessages.network;
+  }
+  return "No se pudo cambiar la contraseña. Intentá de nuevo.";
+}
 
 export function ChangePasswordForm({
-  email,
-  currentPassword,
   onSuccess,
 }: {
-  email: string;
-  currentPassword: string;
-  onSuccess?: (session: MockSession) => void;
+  onSuccess?: () => void;
 }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -31,7 +52,6 @@ export function ChangePasswordForm({
     if (isSubmitting) return;
 
     const parsed = changePasswordSchema.safeParse({
-      currentPassword,
       newPassword,
       confirmPassword,
     });
@@ -52,12 +72,20 @@ export function ChangePasswordForm({
     setFormError(null);
     setIsSubmitting(true);
     try {
-      const result = updateMockPassword(email, parsed.data.newPassword);
-      if (result.ok) {
-        onSuccess?.(result.data);
-      } else {
-        setFormError(result.error);
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({
+        password: parsed.data.newPassword,
+        data: { must_change_password: false },
+      });
+
+      if (error) {
+        setFormError(resolvePasswordError(error));
+        return;
       }
+
+      onSuccess?.();
+    } catch (error) {
+      setFormError(resolvePasswordError(error));
     } finally {
       setIsSubmitting(false);
     }
