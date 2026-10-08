@@ -12,27 +12,59 @@ Reglas fijas: autenticación real con Supabase; usuarios de prueba exclusivament
 - [x] T5 Migración `supabase/migrations/0008_*.sql` (nueva): `drop policy` de `demo_anon_read_comercios`, `demo_anon_read_categorias`, `demo_anon_read_productos` y `demo_anon_read_medios_pago`, más `revoke select on public.comercios, public.categorias, public.productos, public.medios_pago from anon` (revierte el grant de `0006`). Solo se crea el archivo: **no aplicar la migración contra la base compartida en esta fase**; la aplicación se hace en la verificación de CA6 sobre una base de prueba. No se tocan `0001`–`0007`. Cubre CA6 y R6. Hecho cuando: el archivo existe y, en base de prueba, `set role anon; select * from productos;` devuelve `permission denied`.
   - Escritura y ejecución verificadas. `0008` se aplicó sobre la base descartable `kiosko-demo-test`, nunca sobre la compartida. Evidencia y pasos exactos en T7.
 - [x] T6 Sacar el mock y actualizar sus tests: eliminar `src/modules/auth/mock.ts` y `src/modules/auth/mock.test.ts`, limpiar los exports del mock en `src/modules/auth/index.ts` y reescribir `e2e/change-password-guard.spec.ts` para operar con login real por la UI (sin sembrar `sessionStorage` mock), usando exclusivamente los usuarios de `supabase/seed_dev_users.sql` con contraseña por env var no versionada; casos: usuario con flag → `/cambiar-contrasena`, usuario sin flag → `/vender`, cierre de sesión → `/login`. Cubre CA7 (y cierra CA5, R7 y R8). Hecho cuando: `mock.ts` y `mock.test.ts` no existen y `npm run test`, `npm run lint`, `npm run build` y `npm run test:e2e` pasan en verde.
-- [x] T7 Verificar CA6 en ejecución, en base descartable y **nunca contra la compartida**. Hecho (2026-10-02) sobre el proyecto Supabase descartable `kiosko-demo-test`, elegido en lugar de Supabase local con Docker. Evidencia:
+- [x] T7 Verificar CA6 en ejecución, en base descartable y **nunca contra la compartida**. Hecho (2026-10-07) sobre el proyecto Supabase descartable `kiosko-demo-test`, elegido en lugar de Supabase local con Docker. Evidencia:
   - Entorno recreado en `kiosko-demo-test` con estos archivos, en este orden, desde el SQL Editor (un Run por archivo): `0001` → `0002` → `0003` → `0004` → `supabase/seed.sql` → `0005` → `0006` → `0007`. `seed.sql` va entre 0004 y 0005 porque usa `configuracion` (0003) y `movimientos_stock` (0004); `0006` es el que concede `grant select ... to anon` (línea 20). `seed_dev_users.sql` no se corrió: no hace falta para CA6 y necesita variables de psql.
-  - ANTES de `0008`: `set role anon; select count(*) from public.productos;` → **40** (evidencia de que antes devolvía filas).
+  - ANTES de `0008`, en el SQL Editor (reproducción temporal dentro de una transacción):
+
+    ```
+    set role anon;
+    select count(*) as productos_visibles_anon from public.productos;
+    ```
+
+    Resultado:
+
+    ```
+    productos_visibles_anon
+    40
+    ```
+
+    La reproducción temporal terminó con ROLLBACK.
+
   - Se aplicó `0008_remove_demo_anon_access.sql` completo.
-  - DESPUÉS de `0008`: `set role anon; select * from public.productos;` → **ERROR: permission denied for table productos** (SQLSTATE 42501).
-  - `0001`–`0008` no cambiaron: `git diff -- supabase/migrations` vacío. La base compartida `kiosko-demo` no se usó para aplicar `0008`.
+  - DESPUÉS de `0008`, en el SQL Editor:
+
+    ```
+    set role anon;
+    select * from public.productos;
+    ```
+
+    Resultado:
+
+    ```
+    Failed to run sql query: ERROR:  42501: permission denied for table productos
+    HINT:  Grant the required privileges to the current role with: GRANT SELECT ON public.productos TO anon;
+    ```
+
+  - Comprobaciones posteriores al ROLLBACK:
+    - `current_user` = postgres
+    - `anon` no tiene `grant SELECT` sobre `public.productos`: 0 filas
+    - no existe la policy `demo_anon_read_productos`: 0 filas
+  - `0001`–`0008` no cambiaron: `git diff -- supabase/migrations` vacío. La base compartida `kiosko-demo` no se tocó.
   - Diferencia menor contra la base compartida, sin efecto en CA6: los movimientos de stock inicial quedan con `motivo = 'Stock inicial'` (del seed) en vez de `'Stock inicial (migración)'` (de 0004), porque el seed corrió con `productos` ya vacía.
 
-## Estado de verificación (2026-10-02)
+## Estado de verificación (2026-10-08)
 
 | CA | Estado | Evidencia / qué falta |
 | --- | --- | --- |
 | CA1 | **Verificado en ejecución** | `npm run test:e2e` → 5 passed contra Supabase real; `e2e/login-error-message.spec.ts` prueba los dos casos con el mismo mensaje |
-| CA6 | **Verificado en ejecución** | Base descartable `kiosko-demo-test`: antes `anon` veía 40 filas de `productos`, después `ERROR: permission denied for table productos`. `0001`–`0008` sin cambios y la base compartida nunca se tocó |
+| CA2 | **Verificado en ejecución** | Con usuario real de Supabase: login, `/perfil`, refresh de página, sesión activa y datos del perfil visibles (2026-10-08) |
+| CA3 | **Verificado en ejecución** | DevTools: sessionStorage de `http://localhost:3000` vacío; tras el refresh de `/perfil` la sesión siguió activa y el perfil mostró Dueño Demo / DUEÑO / Kiosko Demo (2026-10-08) |
+| CA4 | **Verificado en ejecución** | Cajero con `must_change_password: true` → redirigido a `/cambiar-contrasena`; tras el cambio → `/vender` y en Supabase Authentication la metadata quedó en `false` (2026-10-08) |
+| CA5 | **Verificado en ejecución** | Navegación y `/perfil` con sesión real: Dueño y Cajero ven menú y datos propios de su rol (2026-10-08) |
+| CA6 | **Verificado en ejecución** | Base descartable `kiosko-demo-test`: ANTES `anon` veía 40 filas de `productos` (reproducción terminada con `ROLLBACK`); DESPUÉS `ERROR: 42501 permission denied for table productos`; post-rollback: `current_user` = postgres, 0 grants a `anon` y 0 policy `demo_anon_read_productos`. `0001`–`0008` sin cambios y la base compartida nunca se tocó |
 | CA7 | Verificado | `mock.ts` y `mock.test.ts` no existen; 0 referencias a `getMockSession`/`storeMockSession`/`clearMockSession`; `npm run test`, `lint`, `build` y `test:e2e` en verde |
-| CA2 | Cubierto por e2e | El e2e hace login y navega a `/perfil` con la sesión viva (middleware corriendo). No hay una prueba dedicada de refresh |
-| CA3 | Parcial | El e2e lee rol y comercio de `/perfil` sin sembrar `sessionStorage`, y hay 0 usos de `sessionStorage` en `src`. El paso manual de borrarlo no se repitió |
-| CA4 | Parcial | El e2e verifica la redirección a `/cambiar-contrasena` con el flag seteado a mano. No se verificó en base que la metadata quede en `false` tras cambiar la contraseña |
-| CA5 | Parcial | 0 referencias al mock. La navegación por rol no se revisó a ojo |
 
-CA2–CA5 no están bloqueadas por esta revisión, pero su verificación manual sigue pendiente: no darlas por cumplidas.
+CA2–CA5 verificadas manualmente el 2026-10-08; detalle por CA en las filas de esta tabla y en `spec.md`.
 
 Migraciones aplicadas solo en la base descartable `kiosko-demo-test` (`0001`–`0007`, `supabase/seed.sql` y `0008`); la base compartida `kiosko-demo` no se usó para ninguna. `git diff -- supabase/migrations` está vacío: los 8 archivos intactos.
 
