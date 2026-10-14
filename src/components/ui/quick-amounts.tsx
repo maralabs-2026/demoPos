@@ -36,7 +36,8 @@ function QuickAmounts({
     >
       <Button
         type="button"
-        variant="secondary"
+        variant="outline"
+        className="border-primary/40 bg-accent text-primary hover:border-primary"
         size="sm"
         onClick={() => onSelect(total)}
         aria-label={`Exacto, ${formatCurrency(total)}`}

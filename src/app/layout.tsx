@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans } from "next/font/google";
+import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 // DM Sans: tipografía del UI kit POS.
@@ -21,7 +22,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es-AR" className={dmSans.variable}>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { QuickAmounts } from "@/components/ui/quick-amounts";
+import { toast } from "@/components/ui/toaster";
 import type { MedioPago } from "@/modules/config";
 import type { Producto } from "@/modules/productos";
 import { formatCurrency } from "@/lib/currency";
@@ -168,7 +169,8 @@ export function VentaScreen({
       });
 
       if (!result.ok) {
-        setError(result.error);
+        setError(null);
+        toast.error("No se pudo cobrar", result.error);
         return;
       }
 
@@ -181,6 +183,10 @@ export function VentaScreen({
         ),
       );
       setComprobante(result.data);
+      toast.success(
+        "Venta registrada",
+        `${formatCurrency(result.data.total)} · ${result.data.medioPagoNombre}`,
+      );
       setCart([]);
       setMontoRecibido(null);
       setError(null);
