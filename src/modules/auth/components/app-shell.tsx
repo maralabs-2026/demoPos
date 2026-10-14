@@ -30,7 +30,7 @@ export function AppShell({
   return (
     <>
       <Navigation comercioNombre={comercioNombre} />
-      <div className="pb-14 md:pb-0">{children}</div>
+      <div className="pb-16 lg:pb-0 lg:pl-60">{children}</div>
     </>
   );
 }
