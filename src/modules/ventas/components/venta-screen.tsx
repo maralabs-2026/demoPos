@@ -5,7 +5,9 @@ import { ScanBarcode, Search, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardEyebrow, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
+import { QuickAmounts } from "@/components/ui/quick-amounts";
 import type { MedioPago } from "@/modules/config";
 import type { Producto } from "@/modules/productos";
 import { formatCurrency } from "@/lib/currency";
@@ -34,7 +36,7 @@ export function VentaScreen({
   const [busqueda, setBusqueda] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [medioPagoId, setMedioPagoId] = useState(mediosPago[0]?.id ?? "");
-  const [montoRecibido, setMontoRecibido] = useState("");
+  const [montoRecibido, setMontoRecibido] = useState<number | null>(null);
   const [comprobante, setComprobante] = useState<Comprobante | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -47,12 +49,9 @@ export function VentaScreen({
   const medioSeleccionado = mediosPago.find((m) => m.id === medioPagoId);
   const total = cart.reduce((acc, i) => acc + i.precio * i.cantidad, 0);
   const cantidadItems = cart.reduce((acc, i) => acc + i.cantidad, 0);
-  const recibido = Number(montoRecibido.replace(",", "."));
   const vuelto =
-    medioSeleccionado?.tipo === "efectivo" &&
-    montoRecibido !== "" &&
-    !Number.isNaN(recibido)
-      ? recibido - total
+    medioSeleccionado?.tipo === "efectivo" && montoRecibido !== null
+      ? montoRecibido - total
       : null;
 
   function agregarAlCarrito(producto: Producto) {
@@ -134,7 +133,7 @@ export function VentaScreen({
 
   function cancelarVenta() {
     setCart([]);
-    setMontoRecibido("");
+    setMontoRecibido(null);
     setError(null);
   }
 
@@ -149,7 +148,7 @@ export function VentaScreen({
     }
     if (
       medioSeleccionado.tipo === "efectivo" &&
-      (montoRecibido === "" || recibido < total)
+      (montoRecibido === null || montoRecibido < total)
     ) {
       setError("El monto recibido es menor al total");
       return;
@@ -163,7 +162,9 @@ export function VentaScreen({
         })),
         medioPagoId,
         montoRecibido:
-          medioSeleccionado.tipo === "efectivo" ? recibido : undefined,
+          medioSeleccionado.tipo === "efectivo"
+            ? (montoRecibido ?? undefined)
+            : undefined,
       });
 
       if (!result.ok) {
@@ -181,7 +182,7 @@ export function VentaScreen({
       );
       setComprobante(result.data);
       setCart([]);
-      setMontoRecibido("");
+      setMontoRecibido(null);
       setError(null);
     });
   }
@@ -348,14 +349,13 @@ export function VentaScreen({
             <label className="text-sm font-semibold" htmlFor="monto-recibido">
               Monto recibido
             </label>
-            <Input
+            <MoneyInput
               id="monto-recibido"
-              type="number"
-              min={0}
-              inputMode="decimal"
+              placeholder="0,00"
               value={montoRecibido}
-              onChange={(e) => setMontoRecibido(e.target.value)}
+              onValueChange={setMontoRecibido}
             />
+            <QuickAmounts total={total} onSelect={setMontoRecibido} />
             {vuelto !== null && (
               <div
                 className={cn(
