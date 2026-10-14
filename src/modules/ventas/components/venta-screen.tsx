@@ -223,7 +223,7 @@ export function VentaScreen({
             ref={inputRef}
             autoFocus
             aria-label="Buscar producto"
-            placeholder="Escaneá un código de barras o buscá por nombre..."
+            placeholder="Escaneá o buscá un producto..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             onKeyDown={(e) => {
@@ -271,7 +271,7 @@ export function VentaScreen({
                 key={item.productoId}
                 className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border py-3 last:border-0"
               >
-                <div className="min-w-0 flex-1 basis-40">
+                <div className="min-w-0 basis-full sm:flex-1 sm:basis-0">
                   <p className="truncate text-sm font-semibold">
                     {item.nombre}
                   </p>
@@ -290,7 +290,7 @@ export function VentaScreen({
                     actualizarCantidad(item.productoId, item.cantidad + 1)
                   }
                 />
-                <p className="w-24 text-right text-sm font-bold tabular-nums">
+                <p className="ml-auto w-24 text-right text-sm font-bold tabular-nums">
                   {formatCurrency(item.precio * item.cantidad)}
                 </p>
                 <Button
