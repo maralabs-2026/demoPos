@@ -6,10 +6,11 @@ function shape(rol: "dueno" | "encargado" | "cajero"): string[] {
 }
 
 describe("getNavLinks", () => {
-  it("dueño ve los 5 accesos", () => {
+  it("dueño ve los 6 accesos", () => {
     expect(shape("dueno")).toEqual([
       "/vender|Vender",
       "/productos|Productos",
+      "/stock|Stock",
       "/reportes|Reportes",
       "/config|Config",
       "/perfil|Mi perfil",
@@ -20,11 +21,12 @@ describe("getNavLinks", () => {
     expect(shape("encargado")).toEqual([
       "/vender|Vender",
       "/productos|Productos",
+      "/stock|Stock",
       "/perfil|Mi perfil",
     ]);
   });
 
-  it("cajero no ve Reportes ni Config", () => {
+  it("cajero no ve Stock, Reportes ni Config", () => {
     expect(shape("cajero")).toEqual([
       "/vender|Vender",
       "/productos|Productos",
