@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import "./globals.css";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta-sans",
+// DM Sans: tipografía del UI kit POS.
+const dmSans = DM_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
 });
@@ -23,10 +24,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es-AR" className={plusJakartaSans.variable}>
-      <body className="antialiased">
-        {children}
-      </body>
+    <html lang="es-AR" className={dmSans.variable}>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

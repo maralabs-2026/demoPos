@@ -249,7 +249,7 @@ export function VentaScreen({
                 onChange={(e) =>
                   actualizarCantidad(item.productoId, Number(e.target.value))
                 }
-                className="w-16 text-center"
+                className="w-20 px-2 text-center"
               />
               <p className="w-24 text-right text-sm font-medium tabular-nums">
                 {formatCurrency(item.precio * item.cantidad)}
