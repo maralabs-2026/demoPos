@@ -6,6 +6,17 @@ import type { Categoria, Producto } from "../queries";
 import { calcularMargen } from "../schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { formatPercent, parseMonto } from "@/lib/currency";
+
+// Muestra un monto guardado como lo escribiría el usuario: "1234,5".
+function montoAEditar(value: number | null | undefined): string {
+  return value === null || value === undefined
+    ? ""
+    : value.toLocaleString("es-AR", {
+        useGrouping: false,
+        maximumFractionDigits: 2,
+      });
+}
 
 type ProductoFormProps = {
   categorias: Categoria[];
@@ -25,14 +36,8 @@ export function ProductoForm({
     producto?.codigoBarras ?? "",
   );
   const [categoriaId, setCategoriaId] = useState(producto?.categoriaId ?? "");
-  const [costo, setCosto] = useState(
-    producto?.costo !== null && producto?.costo !== undefined
-      ? String(producto.costo)
-      : "",
-  );
-  const [precio, setPrecio] = useState(
-    producto?.precio !== undefined ? String(producto.precio) : "",
-  );
+  const [costo, setCosto] = useState(montoAEditar(producto?.costo));
+  const [precio, setPrecio] = useState(montoAEditar(producto?.precio));
   const [unidadVenta, setUnidadVenta] = useState(
     producto?.unidadVenta ?? "unidad",
   );
@@ -41,39 +46,59 @@ export function ProductoForm({
   );
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
-  // Costo vacío = costo desconocido.
-  const costoNumero = costo.trim() === "" ? null : Number(costo);
-  const precioNumero = Number(precio);
+  // Costo vacío = costo desconocido. Un texto que no se entiende (NaN) nunca se guarda como vacío.
+  const costoNumero = parseMonto(costo);
+  const precioNumero = parseMonto(precio);
+  const costoInvalido = Number.isNaN(costoNumero);
+  const precioInvalido = precioNumero === null || Number.isNaN(precioNumero);
   const margen =
-    precio === "" ? null : calcularMargen(costoNumero, precioNumero);
+    precioInvalido || costoInvalido
+      ? null
+      : calcularMargen(costoNumero, precioNumero);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    setGuardando(true);
+    if (precioInvalido) {
+      setError("Revisá el precio: escribilo como 1234,50.");
+      return;
+    }
+    if (costoInvalido) {
+      setError(
+        "Revisá el costo: escribilo como 1234,50, o dejalo vacío si no lo sabés.",
+      );
+      return;
+    }
 
     const input = {
       nombre,
       codigoBarras,
-      categoriaId,
+      categoriaId: categoriaId === "" ? null : categoriaId,
       costo: costoNumero,
       precio: precioNumero,
       unidadVenta,
       stockMinimo: Number(stockMinimo),
     };
 
-    const result = producto
-      ? await editarProducto(producto.id, input)
-      : await crearProducto(input);
+    setGuardando(true);
+    try {
+      const result = producto
+        ? await editarProducto(producto.id, input, {
+            precio: producto.precio,
+            costo: producto.costo,
+          })
+        : await crearProducto(input);
 
-    setGuardando(false);
-
-    if (!result.ok) {
-      setError(result.error);
-      return;
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      onSuccess?.();
+    } catch {
+      setError("No se pudo conectar. Revisá la conexión y probá de nuevo.");
+    } finally {
+      setGuardando(false);
     }
-
-    onSuccess?.();
   }
 
   return (
@@ -122,9 +147,8 @@ export function ProductoForm({
           value={categoriaId}
           onChange={(event) => setCategoriaId(event.target.value)}
           className="border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 h-8 w-full rounded-md border bg-transparent px-2.5 text-base outline-none focus-visible:ring-3 md:text-sm"
-          required
         >
-          <option value="">Seleccioná una categoría</option>
+          <option value="">Sin categoría</option>
           {categorias.map((categoria) => (
             <option key={categoria.id} value={categoria.id}>
               {categoria.nombre}
@@ -140,9 +164,9 @@ export function ProductoForm({
           </label>
           <Input
             id="producto-costo"
-            type="number"
-            min="0"
-            step="0.01"
+            inputMode="decimal"
+            placeholder="Ej. 850,50"
+            aria-invalid={costoInvalido || undefined}
             value={costo}
             onChange={(event) => setCosto(event.target.value)}
           />
@@ -154,9 +178,9 @@ export function ProductoForm({
           </label>
           <Input
             id="producto-precio"
-            type="number"
-            min="0"
-            step="0.01"
+            inputMode="decimal"
+            placeholder="Ej. 1200"
+            aria-invalid={(precio !== "" && precioInvalido) || undefined}
             value={precio}
             onChange={(event) => setPrecio(event.target.value)}
             required
@@ -181,11 +205,7 @@ export function ProductoForm({
         <span className="text-muted-foreground">
           Margen bruto sobre precio:{" "}
         </span>
-        <span className="font-medium">
-          {margen === null
-            ? "—"
-            : `${margen.toLocaleString("es-AR", { maximumFractionDigits: 1 })}%`}
-        </span>
+        <span className="font-medium">{formatPercent(margen)}</span>
       </div>
 
       <div className="space-y-2">

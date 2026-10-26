@@ -10,37 +10,56 @@ const CATEGORIA = "3f8a1c2e-5b7d-4e9f-8a6b-1c2d3e4f5a6b";
 
 describe("actualizarPreciosSchema", () => {
   it("acepta una categoría y un porcentaje positivo", () => {
-    const result = actualizarPreciosSchema.safeParse({ categoriaId: CATEGORIA, porcentaje: 10 });
+    const result = actualizarPreciosSchema.safeParse({
+      categoriaId: CATEGORIA,
+      porcentaje: 10,
+    });
     expect(result.success).toBe(true);
   });
 
   it("acepta todo el catálogo (categoría null) y una baja", () => {
-    const result = actualizarPreciosSchema.safeParse({ categoriaId: null, porcentaje: -15.5 });
+    const result = actualizarPreciosSchema.safeParse({
+      categoriaId: null,
+      porcentaje: -15.5,
+    });
     expect(result.success).toBe(true);
   });
 
   it("rechaza un porcentaje 0", () => {
-    const result = actualizarPreciosSchema.safeParse({ categoriaId: CATEGORIA, porcentaje: 0 });
+    const result = actualizarPreciosSchema.safeParse({
+      categoriaId: CATEGORIA,
+      porcentaje: 0,
+    });
     expect(result.success).toBe(false);
-    expect(result.error?.issues[0]?.message).toBe("El porcentaje no puede ser 0");
+    expect(result.error?.issues[0]?.message).toBe(
+      "El porcentaje no puede ser 0",
+    );
   });
 
   it("rechaza porcentajes fuera de rango", () => {
-    expect(actualizarPreciosSchema.safeParse({ categoriaId: null, porcentaje: -51 }).success).toBe(
-      false,
-    );
-    expect(actualizarPreciosSchema.safeParse({ categoriaId: null, porcentaje: 201 }).success).toBe(
-      false,
-    );
+    expect(
+      actualizarPreciosSchema.safeParse({ categoriaId: null, porcentaje: -51 })
+        .success,
+    ).toBe(false);
+    expect(
+      actualizarPreciosSchema.safeParse({ categoriaId: null, porcentaje: 201 })
+        .success,
+    ).toBe(false);
   });
 
   it("rechaza un porcentaje que no es número", () => {
-    const result = actualizarPreciosSchema.safeParse({ categoriaId: null, porcentaje: Number.NaN });
+    const result = actualizarPreciosSchema.safeParse({
+      categoriaId: null,
+      porcentaje: Number.NaN,
+    });
     expect(result.success).toBe(false);
   });
 
   it("rechaza una categoría que no es uuid", () => {
-    const result = actualizarPreciosSchema.safeParse({ categoriaId: "bebidas", porcentaje: 10 });
+    const result = actualizarPreciosSchema.safeParse({
+      categoriaId: "bebidas",
+      porcentaje: 10,
+    });
     expect(result.success).toBe(false);
   });
 });
@@ -78,7 +97,9 @@ describe("productoSchema", () => {
   });
 
   it("acepta un producto sin costo conocido", () => {
-    expect(productoSchema.safeParse({ ...productoValido, costo: null }).success).toBe(true);
+    expect(
+      productoSchema.safeParse({ ...productoValido, costo: null }).success,
+    ).toBe(true);
   });
 
   it("recorta espacios del nombre y del código", () => {
@@ -92,31 +113,58 @@ describe("productoSchema", () => {
   });
 
   it("rechaza un nombre vacío", () => {
-    const result = productoSchema.safeParse({ ...productoValido, nombre: "   " });
+    const result = productoSchema.safeParse({
+      ...productoValido,
+      nombre: "   ",
+    });
     expect(result.error?.issues[0]?.message).toBe("El nombre es obligatorio");
   });
 
   it("rechaza un costo o un precio negativo", () => {
-    expect(productoSchema.safeParse({ ...productoValido, costo: -1 }).success).toBe(false);
-    expect(productoSchema.safeParse({ ...productoValido, precio: -1 }).success).toBe(false);
+    expect(
+      productoSchema.safeParse({ ...productoValido, costo: -1 }).success,
+    ).toBe(false);
+    expect(
+      productoSchema.safeParse({ ...productoValido, precio: -1 }).success,
+    ).toBe(false);
   });
 
   it("rechaza un precio que no es número", () => {
-    expect(productoSchema.safeParse({ ...productoValido, precio: Number.NaN }).success).toBe(false);
+    expect(
+      productoSchema.safeParse({ ...productoValido, precio: Number.NaN })
+        .success,
+    ).toBe(false);
   });
 
   it("rechaza un stock mínimo negativo o con decimales", () => {
-    expect(productoSchema.safeParse({ ...productoValido, stockMinimo: -1 }).success).toBe(false);
-    expect(productoSchema.safeParse({ ...productoValido, stockMinimo: 1.5 }).success).toBe(false);
+    expect(
+      productoSchema.safeParse({ ...productoValido, stockMinimo: -1 }).success,
+    ).toBe(false);
+    expect(
+      productoSchema.safeParse({ ...productoValido, stockMinimo: 1.5 }).success,
+    ).toBe(false);
   });
 
-  it("rechaza una categoría vacía", () => {
-    const result = productoSchema.safeParse({ ...productoValido, categoriaId: "" });
+  it("acepta un producto sin categoría", () => {
+    expect(
+      productoSchema.safeParse({ ...productoValido, categoriaId: null })
+        .success,
+    ).toBe(true);
+  });
+
+  it("rechaza una categoría que no es uuid", () => {
+    const result = productoSchema.safeParse({
+      ...productoValido,
+      categoriaId: "",
+    });
     expect(result.error?.issues[0]?.message).toBe("Seleccioná una categoría");
   });
 
   it("ignora un comercioId enviado desde el cliente", () => {
-    const result = productoSchema.safeParse({ ...productoValido, comercioId: CATEGORIA });
+    const result = productoSchema.safeParse({
+      ...productoValido,
+      comercioId: CATEGORIA,
+    });
     expect(result.data).not.toHaveProperty("comercioId");
   });
 });

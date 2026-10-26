@@ -25,7 +25,8 @@ export const productoSchema = z.object({
     .trim()
     .min(1, { error: "El código de barras es obligatorio" })
     .max(100, { error: "El código de barras es demasiado largo" }),
-  categoriaId: z.uuid({ error: "Seleccioná una categoría" }),
+  // null = sin categoría (productos.categoria_id es nullable).
+  categoriaId: z.uuid({ error: "Seleccioná una categoría" }).nullable(),
   // null = costo desconocido. Se guarda en productos_costos, que el cajero no puede leer.
   costo: montoSchema("costo").nullable(),
   precio: montoSchema("precio"),
@@ -43,8 +44,19 @@ export const productoSchema = z.object({
 
 export type ProductoInput = z.input<typeof productoSchema>;
 
+// Precio y costo que se vieron al abrir el formulario de edición (control de cambios simultáneos).
+export const valoresAnterioresSchema = z.object({
+  precio: z.number().finite(),
+  costo: z.number().finite().nullable(),
+});
+
+export type ValoresAnteriores = z.infer<typeof valoresAnterioresSchema>;
+
 // Margen bruto sobre el precio de venta, en porcentaje. null si no se puede calcular.
-export function calcularMargen(costo: number | null, precio: number): number | null {
+export function calcularMargen(
+  costo: number | null,
+  precio: number,
+): number | null {
   if (costo === null || !Number.isFinite(costo) || !(precio > 0)) return null;
   return ((precio - costo) / precio) * 100;
 }
@@ -59,8 +71,12 @@ export const actualizarPreciosSchema = z.object({
   porcentaje: z
     .number({ error: "Escribí un porcentaje" })
     .finite({ error: "Escribí un porcentaje" })
-    .min(PORCENTAJE_MIN, { error: `El porcentaje mínimo es ${PORCENTAJE_MIN} %` })
-    .max(PORCENTAJE_MAX, { error: `El porcentaje máximo es ${PORCENTAJE_MAX} %` })
+    .min(PORCENTAJE_MIN, {
+      error: `El porcentaje mínimo es ${PORCENTAJE_MIN} %`,
+    })
+    .max(PORCENTAJE_MAX, {
+      error: `El porcentaje máximo es ${PORCENTAJE_MAX} %`,
+    })
     .refine((value) => value !== 0, { error: "El porcentaje no puede ser 0" }),
 });
 

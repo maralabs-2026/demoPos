@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, formatPercent } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { eliminarProducto } from "../actions";
 import type { Categoria, Producto } from "../queries";
@@ -57,14 +57,24 @@ export function ProductosTable({
 
     setError("");
     setEliminando(producto.id);
-    const result = await eliminarProducto(producto.id);
-    setEliminando(null);
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    try {
+      const result = await eliminarProducto(producto.id);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      // Si el producto borrado estaba abierto en el formulario, se cierra.
+      setFormulario((actual) =>
+        actual !== null && actual !== "nuevo" && actual.id === producto.id
+          ? null
+          : actual,
+      );
+      router.refresh();
+    } catch {
+      setError("No se pudo conectar. Revisá la conexión y probá de nuevo.");
+    } finally {
+      setEliminando(null);
     }
-
-    router.refresh();
   }
 
   return (
@@ -145,9 +155,7 @@ export function ProductosTable({
                   </TableCell>
                   {puedeGestionar && (
                     <TableCell className="text-right tabular-nums">
-                      {margen === null
-                        ? "—"
-                        : `${margen.toLocaleString("es-AR", { maximumFractionDigits: 1 })}%`}
+                      {formatPercent(margen)}
                     </TableCell>
                   )}
                   <TableCell
