@@ -53,9 +53,9 @@ export function ProductosTable({ productos }: { productos: Producto[] }) {
                   key={p.id}
                   className={cn(bajoMinimo && "bg-red-50 dark:bg-red-950/40")}
                 >
-                  <TableCell>
+                  <TableCell className="whitespace-normal sm:whitespace-nowrap">
                     <div className="font-medium">{p.nombre}</div>
-                    <div className="text-muted-foreground text-xs">
+                    <div className="text-muted-foreground text-xs break-all">
                       {p.codigoBarras}
                     </div>
                   </TableCell>
