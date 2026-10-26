@@ -4,18 +4,27 @@ import { revalidatePath } from "next/cache";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getAuthProfile, type Rol } from "@/modules/auth";
-import { actualizarPreciosSchema, type ActualizarPreciosInput } from "./schemas";
+import {
+  actualizarPreciosSchema,
+  productoSchema,
+  type ActualizarPreciosInput,
+  type ProductoInput,
+} from "./schemas";
 
 export type PreciosActualizados = { actualizados: number };
 
-// La RLS de productos y la función actualizar_precios son la barrera real; esto solo da un
-// mensaje claro antes.
+// La RLS de productos y las funciones SQL son la barrera real; esto solo da un mensaje claro antes.
 const ROLES_PRECIOS: readonly Rol[] = ["dueno", "encargado"];
+const ROLES_PRODUCTOS = ROLES_PRECIOS;
 
-// Códigos que puede devolver actualizar_precios (migración 0009).
+// Códigos que pueden devolver actualizar_precios (0009), guardar_producto (0010) y el delete.
 const PG_INSUFFICIENT_PRIVILEGE = "42501";
 const PG_NUMERIC_OVERFLOW = "22003"; // un precio quedaría fuera de numeric(12,2)
+const PG_UNIQUE_VIOLATION = "23505"; // (comercio_id, codigo_barras)
+const PG_FOREIGN_KEY_VIOLATION = "23503"; // el producto ya tiene ventas o movimientos
+const PV_PRODUCTO_INEXISTENTE = "PV005";
 const PV_PORCENTAJE_INVALIDO = "PV007";
+const PV_CATEGORIA_INVALIDA = "PV008";
 
 export async function actualizarPrecios(
   input: ActualizarPreciosInput,
@@ -62,4 +71,109 @@ export async function actualizarPrecios(
   revalidatePath("/productos");
   revalidatePath("/vender");
   return ok({ actualizados });
+}
+
+export type ProductoGuardado = { id: string };
+
+async function guardarProducto(
+  id: string | null,
+  input: ProductoInput,
+): Promise<ActionResult<ProductoGuardado>> {
+  const parsed = productoSchema.safeParse(input);
+  if (!parsed.success) {
+    return fail(parsed.error.issues[0]?.message ?? "Datos del producto inválidos");
+  }
+
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
+  }
+
+  const profile = await getAuthProfile();
+  if (!profile) return fail("Tu sesión venció. Volvé a ingresar.");
+  if (!ROLES_PRODUCTOS.includes(profile.rol)) {
+    return fail("Tu rol no puede gestionar productos.");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("guardar_producto", {
+    p_id: id,
+    p_categoria_id: parsed.data.categoriaId,
+    p_nombre: parsed.data.nombre,
+    p_codigo_barras: parsed.data.codigoBarras,
+    p_precio: parsed.data.precio,
+    p_unidad_venta: parsed.data.unidadVenta,
+    p_stock_minimo: parsed.data.stockMinimo,
+    p_costo: parsed.data.costo,
+  });
+
+  if (error) {
+    switch (error.code) {
+      case PG_UNIQUE_VIOLATION:
+        return fail("Ya hay un producto con ese código de barras.");
+      case PG_INSUFFICIENT_PRIVILEGE:
+        return fail("Tu rol no puede gestionar productos.");
+      case PV_CATEGORIA_INVALIDA:
+        return fail("La categoría no existe. Recargá la página.");
+      case PV_PRODUCTO_INEXISTENTE:
+        return fail("El producto ya no existe. Recargá la página.");
+      default:
+        return fail("No se pudo guardar el producto. Probá de nuevo.");
+    }
+  }
+
+  revalidatePath("/productos");
+  revalidatePath("/vender");
+  return ok({ id: String(data) });
+}
+
+export async function crearProducto(
+  input: ProductoInput,
+): Promise<ActionResult<ProductoGuardado>> {
+  return guardarProducto(null, input);
+}
+
+export async function editarProducto(
+  id: string,
+  input: ProductoInput,
+): Promise<ActionResult<ProductoGuardado>> {
+  if (!id) return fail("El producto no es válido");
+  return guardarProducto(id, input);
+}
+
+export async function eliminarProducto(id: string): Promise<ActionResult<ProductoGuardado>> {
+  if (!id) return fail("El producto no es válido");
+
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
+  }
+
+  const profile = await getAuthProfile();
+  if (!profile) return fail("Tu sesión venció. Volvé a ingresar.");
+  if (!ROLES_PRODUCTOS.includes(profile.rol)) {
+    return fail("Tu rol no puede gestionar productos.");
+  }
+
+  const supabase = await createClient();
+  // El costo se borra en cascada. La RLS filtra en silencio, por eso se pide la fila borrada.
+  const { data, error } = await supabase
+    .from("productos")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    if (error.code === PG_FOREIGN_KEY_VIOLATION) {
+      return fail(
+        "No se puede eliminar: el producto ya tiene ventas o movimientos de stock.",
+      );
+    }
+    return fail("No se pudo eliminar el producto. Probá de nuevo.");
+  }
+  if (!data || data.length === 0) {
+    return fail("El producto ya no existe. Recargá la página.");
+  }
+
+  revalidatePath("/productos");
+  revalidatePath("/vender");
+  return ok({ id });
 }
