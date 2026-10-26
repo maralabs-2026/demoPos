@@ -2,10 +2,10 @@ import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
 
-// TODO(demo): los billetes salen de la configuración del comercio en Fase 7.
+// Billetes por defecto del peso argentino. Quien usa el componente puede pasar
+// los suyos en `bills`; cuando la moneda se configure por comercio (Fase 7),
+// salen de la configuración.
 const DEFAULT_BILLS = [1000, 2000, 10000, 20000] as const;
-
-const compact = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 
 type QuickAmountsProps = {
   total: number;
@@ -53,7 +53,7 @@ function QuickAmounts({
           className="tabular-nums"
           onClick={() => onSelect(bill)}
         >
-          $ {compact.format(bill)}
+          {formatCurrency(bill, { decimals: 0 })}
         </Button>
       ))}
     </div>

@@ -10,13 +10,7 @@ import {
   getMockSession,
   type MockSession,
 } from "@/modules/auth";
-import type { Rol } from "@/modules/auth";
-
-const rolValue: Record<Rol, string> = {
-  dueno: "Dueño",
-  encargado: "Encargado",
-  cajero: "Cajero",
-};
+import { ROL_LABELS, rolBadgeVariant } from "@/modules/auth";
 
 function initials(nombre: string): string {
   const parts = nombre.trim().split(/\s+/);
@@ -103,10 +97,10 @@ export function Profile() {
           </Field>
           <Field label="Rol asignado">
             <Badge
-              variant={usuario.rol === "dueno" ? "info" : "neutral"}
+              variant={rolBadgeVariant(usuario.rol)}
               className="mt-1 md:mt-0"
             >
-              {rolValue[usuario.rol]}
+              {ROL_LABELS[usuario.rol]}
             </Badge>
           </Field>
           <Field label="Comercio">

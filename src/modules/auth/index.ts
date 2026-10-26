@@ -14,3 +14,4 @@ export type { LoginErrorCode, MockSession, MockUsuario, Rol } from "./mock";
 export { DEFAULT_NEXT, getNextRoute } from "./next-route";
 export { mustChangePassword } from "./session-guard";
 export { splitBrandName } from "./brand";
+export { ROL_LABELS, rolBadgeVariant } from "./roles";

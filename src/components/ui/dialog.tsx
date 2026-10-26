@@ -152,11 +152,7 @@ function ConfirmDialog({
               {cancelLabel}
             </AlertDialog.Close>
             <Button
-              variant={destructive ? "destructive" : "default"}
-              className={cn(
-                destructive &&
-                  "bg-destructive text-white hover:bg-destructive/90",
-              )}
+              variant={destructive ? "destructive-solid" : "default"}
               onClick={() => {
                 onConfirm();
                 onOpenChange(false);

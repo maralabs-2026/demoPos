@@ -48,7 +48,11 @@ export function VentaScreen({
   }, [comprobante, cart.length]);
 
   const medioSeleccionado = mediosPago.find((m) => m.id === medioPagoId);
-  const total = cart.reduce((acc, i) => acc + i.precio * i.cantidad, 0);
+  // Redondeado a centavos: sin esto, "Exacto" o un monto tipeado pueden quedar
+  // por debajo de un total como 1234.5600000000002.
+  const total =
+    Math.round(cart.reduce((acc, i) => acc + i.precio * i.cantidad, 0) * 100) /
+    100;
   const cantidadItems = cart.reduce((acc, i) => acc + i.cantidad, 0);
   const vuelto =
     medioSeleccionado?.tipo === "efectivo" && montoRecibido !== null
@@ -139,6 +143,8 @@ export function VentaScreen({
   }
 
   function cobrar() {
+    // F2 no pasa por el botón deshabilitado: sin esto, un doble F2 registra la venta dos veces.
+    if (isPending) return;
     if (cart.length === 0) {
       setError("El carrito está vacío");
       return;
@@ -169,7 +175,8 @@ export function VentaScreen({
       });
 
       if (!result.ok) {
-        setError(null);
+        // También en pantalla: el toast se va a los 7 s y el cajero puede no verlo.
+        setError(result.error);
         toast.error("No se pudo cobrar", result.error);
         return;
       }
@@ -207,7 +214,7 @@ export function VentaScreen({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart, medioPagoId, montoRecibido, comprobante]);
+  }, [cart, medioPagoId, montoRecibido, comprobante, isPending]);
 
   if (comprobante) {
     return (
@@ -258,9 +265,12 @@ export function VentaScreen({
             <div>
               <CardEyebrow>Venta actual</CardEyebrow>
               <CardTitle className="mt-1">
-                {cantidadItems === 1
-                  ? "1 producto"
-                  : `${cantidadItems} productos`}
+                {cart.length === 1 ? "1 producto" : `${cart.length} productos`}
+                {cantidadItems !== cart.length && (
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    {cantidadItems} unidades
+                  </span>
+                )}
               </CardTitle>
             </div>
           </CardHeader>
@@ -296,6 +306,8 @@ export function VentaScreen({
                   onIncrement={() =>
                     actualizarCantidad(item.productoId, item.cantidad + 1)
                   }
+                  onValueChange={(n) => actualizarCantidad(item.productoId, n)}
+                  onEnter={() => inputRef.current?.focus()}
                 />
                 <p className="ml-auto w-24 text-right text-sm font-bold tabular-nums">
                   {formatCurrency(item.precio * item.cantidad)}
@@ -338,7 +350,7 @@ export function VentaScreen({
                 aria-pressed={medio.id === medioPagoId}
                 onClick={() => setMedioPagoId(medio.id)}
                 className={cn(
-                  "h-9 rounded-full border px-3.5 text-sm transition-colors focus-visible:ring-3 focus-visible:ring-ring/25 focus-visible:outline-none",
+                  "h-9 rounded-full border px-3.5 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none",
                   medio.id === medioPagoId
                     ? "border-primary bg-accent font-semibold text-primary"
                     : "border-border bg-card hover:border-foreground",

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { cn } from "cn";
 import { Input } from "@/components/ui/input";
-import { formatAmount, parseCurrency } from "@/lib/currency";
+import { formatAmount, parseMonto } from "@/lib/currency";
 
 type MoneyInputProps = Omit<
   React.ComponentProps<"input">,
@@ -17,6 +17,7 @@ type MoneyInputProps = Omit<
  * Input de montos en formato argentino. Mientras se escribe acepta
  * "1234,5" o "1.234,50"; al salir del campo muestra el monto formateado.
  * Siempre entrega un `number` (o `null` si está vacío o es inválido).
+ * Un texto inválido no se borra al salir: queda a la vista, marcado en rojo.
  */
 function MoneyInput({
   value,
@@ -29,10 +30,16 @@ function MoneyInput({
 }: MoneyInputProps) {
   const [focused, setFocused] = React.useState(false);
   const [text, setText] = React.useState("");
+  // Valor que produjo `text`: si después cambia desde afuera (por ejemplo
+  // "Exacto"), el texto inválido ya no aplica y se muestra el monto nuevo.
+  const [textValue, setTextValue] = React.useState<number | null>(null);
 
   const formatted = value === null ? "" : formatAmount(value);
-  const shown = focused ? text : formatted;
-  const invalid = focused && text.trim() !== "" && parseCurrency(text) === null;
+  const parsed = parseMonto(text);
+  const invalid =
+    text.trim() !== "" && Number.isNaN(parsed) && textValue === value;
+  // Mientras se escribe, o si quedó inválido, se muestra lo escrito tal cual.
+  const shownText = focused || invalid;
 
   return (
     <div data-slot="money-input" className="relative">
@@ -46,10 +53,10 @@ function MoneyInput({
         type="text"
         inputMode="decimal"
         autoComplete="off"
-        value={shown}
+        value={shownText ? text : formatted}
         aria-invalid={ariaInvalid ?? (invalid || undefined)}
         onFocus={(e) => {
-          setText(formatted);
+          if (!invalid) setText(formatted);
           setFocused(true);
           onFocus?.(e);
         }}
@@ -58,8 +65,11 @@ function MoneyInput({
           onBlur?.(e);
         }}
         onChange={(e) => {
+          const v = parseMonto(e.target.value);
+          const next = v === null || Number.isNaN(v) ? null : v;
           setText(e.target.value);
-          onValueChange(parseCurrency(e.target.value));
+          setTextValue(next);
+          onValueChange(next);
         }}
         className={cn("pl-8 text-right font-semibold tabular-nums", className)}
         {...props}
