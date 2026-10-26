@@ -4,8 +4,22 @@ const formatter = new Intl.NumberFormat("es-AR", {
   maximumFractionDigits: 2,
 });
 
-export function formatCurrency(value: number): string {
-  return `$ ${formatter.format(value)}`;
+const formatterSinDecimales = new Intl.NumberFormat("es-AR", {
+  maximumFractionDigits: 0,
+});
+
+// `decimals: 0` para montos redondos, como los billetes de los atajos.
+export function formatCurrency(
+  value: number,
+  { decimals = 2 }: { decimals?: 0 | 2 } = {},
+): string {
+  const f = decimals === 0 ? formatterSinDecimales : formatter;
+  return `$ ${f.format(value)}`;
+}
+
+/** Igual que `formatCurrency` pero sin el signo, para inputs con prefijo "$". */
+export function formatAmount(value: number): string {
+  return formatter.format(value);
 }
 
 // Lee un monto escrito a mano: "1234,5", "1.234,50", "$ 1.234" o "1234.5".
@@ -25,6 +39,7 @@ export function parseMonto(texto: string): number | null {
     normalizado = limpio;
   }
 
-  if (!/^\d+(\.\d+)?$/.test(normalizado)) return Number.NaN;
+  // Hasta 2 decimales; "15," (coma recién escrita) vale 15.
+  if (!/^\d+(\.\d{0,2})?$/.test(normalizado)) return Number.NaN;
   return Number(normalizado);
 }

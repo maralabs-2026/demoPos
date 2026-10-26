@@ -5,10 +5,13 @@ import { ScanBarcode, Search, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardEyebrow, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
+import { QuickAmounts } from "@/components/ui/quick-amounts";
+import { toast } from "@/components/ui/toaster";
 import type { MedioPago } from "@/modules/config";
 import type { Producto } from "@/modules/productos";
-import { formatCurrency, parseMonto } from "@/lib/currency";
+import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { registrarVentaDemo, type Comprobante } from "../actions";
 import { ComprobanteView } from "./comprobante-view";
@@ -34,7 +37,7 @@ export function VentaScreen({
   const [busqueda, setBusqueda] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [medioPagoId, setMedioPagoId] = useState(mediosPago[0]?.id ?? "");
-  const [montoRecibido, setMontoRecibido] = useState("");
+  const [montoRecibido, setMontoRecibido] = useState<number | null>(null);
   const [comprobante, setComprobante] = useState<Comprobante | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -45,15 +48,15 @@ export function VentaScreen({
   }, [comprobante, cart.length]);
 
   const medioSeleccionado = mediosPago.find((m) => m.id === medioPagoId);
-  const total = cart.reduce((acc, i) => acc + i.precio * i.cantidad, 0);
+  // Redondeado a centavos: sin esto, "Exacto" o un monto tipeado pueden quedar
+  // por debajo de un total como 1234.5600000000002.
+  const total =
+    Math.round(cart.reduce((acc, i) => acc + i.precio * i.cantidad, 0) * 100) /
+    100;
   const cantidadItems = cart.reduce((acc, i) => acc + i.cantidad, 0);
-  // Texto y no type=number: en un celular es-AR el teclado ofrece coma, y un
-  // input numérico devuelve "" para "1500,50".
-  const recibido = parseMonto(montoRecibido);
-  const recibidoValido = recibido !== null && !Number.isNaN(recibido);
   const vuelto =
-    medioSeleccionado?.tipo === "efectivo" && recibidoValido
-      ? recibido - total
+    medioSeleccionado?.tipo === "efectivo" && montoRecibido !== null
+      ? montoRecibido - total
       : null;
 
   function agregarAlCarrito(producto: Producto) {
@@ -135,7 +138,7 @@ export function VentaScreen({
 
   function cancelarVenta() {
     setCart([]);
-    setMontoRecibido("");
+    setMontoRecibido(null);
     setError(null);
   }
 
@@ -150,15 +153,12 @@ export function VentaScreen({
       setError("Elegí un medio de pago");
       return;
     }
-    if (medioSeleccionado.tipo === "efectivo") {
-      if (recibido !== null && Number.isNaN(recibido)) {
-        setError("Revisá el monto recibido: escribilo como 1500 o 1500,50");
-        return;
-      }
-      if (!recibidoValido || recibido < total) {
-        setError("El monto recibido es menor al total");
-        return;
-      }
+    if (
+      medioSeleccionado.tipo === "efectivo" &&
+      (montoRecibido === null || montoRecibido < total)
+    ) {
+      setError("El monto recibido es menor al total");
+      return;
     }
 
     startTransition(async () => {
@@ -169,13 +169,15 @@ export function VentaScreen({
         })),
         medioPagoId,
         montoRecibido:
-          medioSeleccionado.tipo === "efectivo" && recibidoValido
-            ? recibido
+          medioSeleccionado.tipo === "efectivo"
+            ? (montoRecibido ?? undefined)
             : undefined,
       });
 
       if (!result.ok) {
+        // También en pantalla: el toast se va a los 7 s y el cajero puede no verlo.
         setError(result.error);
+        toast.error("No se pudo cobrar", result.error);
         return;
       }
 
@@ -188,8 +190,12 @@ export function VentaScreen({
         ),
       );
       setComprobante(result.data);
+      toast.success(
+        "Venta registrada",
+        `${formatCurrency(result.data.total)} · ${result.data.medioPagoNombre}`,
+      );
       setCart([]);
-      setMontoRecibido("");
+      setMontoRecibido(null);
       setError(null);
     });
   }
@@ -361,17 +367,13 @@ export function VentaScreen({
             <label className="text-sm font-semibold" htmlFor="monto-recibido">
               Monto recibido
             </label>
-            <Input
+            <MoneyInput
               id="monto-recibido"
-              type="text"
-              inputMode="decimal"
-              autoComplete="off"
-              aria-invalid={
-                (recibido !== null && Number.isNaN(recibido)) || undefined
-              }
+              placeholder="0,00"
               value={montoRecibido}
-              onChange={(e) => setMontoRecibido(e.target.value)}
+              onValueChange={setMontoRecibido}
             />
+            <QuickAmounts total={total} onSelect={setMontoRecibido} />
             {vuelto !== null && (
               <div
                 className={cn(

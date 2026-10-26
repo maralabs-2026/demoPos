@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ArrowRight, Plus, Search, ShoppingBag, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CategoryTabs } from "@/components/ui/category-tabs";
+import {
+  ConfirmDialog,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
-import { Toast } from "@/components/ui/toast";
+import { QuickAmounts } from "@/components/ui/quick-amounts";
+import { toast } from "@/components/ui/toaster";
 import { formatCurrency } from "@/lib/currency";
 
 // Solo el nombre del token: el valor se lee de globals.css en el navegador,
@@ -103,19 +116,13 @@ export function UiKitDemo() {
     "2": 1,
     "3": 1,
   });
-  const [toast, setToast] = useState<"success" | "error" | null>(null);
-  const toastTimer = useRef<number | undefined>(undefined);
+  const [monto, setMonto] = useState<number | null>(null);
+  const [confirmar, setConfirmar] = useState(false);
 
   const total = items.reduce((t, i) => t + i.precio * cantidades[i.id], 0);
 
   function cambiar(id: string, delta: number) {
     setCantidades((c) => ({ ...c, [id]: Math.max(1, c[id] + delta) }));
-  }
-
-  function mostrarToast(variant: "success" | "error") {
-    window.clearTimeout(toastTimer.current);
-    setToast(variant);
-    toastTimer.current = window.setTimeout(() => setToast(null), 2600);
   }
 
   return (
@@ -277,14 +284,96 @@ export function UiKitDemo() {
         />
       </Section>
 
+      <Section id="montos" title="Montos">
+        <div className="flex max-w-sm flex-col gap-2">
+          <label htmlFor="demo-monto" className="text-sm font-semibold">
+            Monto recibido · total {formatCurrency(total)}
+          </label>
+          <MoneyInput
+            id="demo-monto"
+            placeholder="0,00"
+            value={monto}
+            onValueChange={setMonto}
+          />
+          <QuickAmounts total={total} onSelect={setMonto} />
+          <span className="text-xs text-muted-foreground">
+            Valor entregado: <code>{JSON.stringify(monto)}</code>
+          </span>
+        </div>
+      </Section>
+
       <Section id="avisos" title="Avisos">
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" onClick={() => mostrarToast("success")}>
-            Mostrar venta registrada
+          <Button
+            variant="outline"
+            onClick={() =>
+              toast.success(
+                "Venta registrada",
+                `Total ${formatCurrency(total)}`,
+              )
+            }
+          >
+            Éxito
           </Button>
-          <Button variant="outline" onClick={() => mostrarToast("error")}>
-            Mostrar error de stock
+          <Button
+            variant="outline"
+            onClick={() =>
+              toast.error(
+                "Sin stock suficiente",
+                "Quedan 0 unidades de Coca-Cola 500 ml.",
+              )
+            }
+          >
+            Error
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => toast.info("Caja abierta", "Monto inicial $ 5.000")}
+          >
+            Info
+          </Button>
+        </div>
+      </Section>
+
+      <Section id="ventanas" title="Ventanas">
+        <div className="flex flex-wrap gap-3">
+          <Dialog>
+            <DialogTrigger render={<Button variant="outline" />}>
+              Aplicar descuento
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Descuento sobre el total</DialogTitle>
+                <DialogDescription>
+                  En celular se abre desde abajo; Esc o la X la cierran.
+                </DialogDescription>
+              </DialogHeader>
+              <MoneyInput
+                aria-label="Monto del descuento"
+                value={null}
+                onValueChange={() => {}}
+              />
+              <DialogFooter>
+                <DialogClose render={<Button variant="outline" />}>
+                  Cancelar
+                </DialogClose>
+                <DialogClose render={<Button />}>Aplicar</DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Button variant="outline" onClick={() => setConfirmar(true)}>
+            Cancelar venta
+          </Button>
+          <ConfirmDialog
+            open={confirmar}
+            onOpenChange={setConfirmar}
+            title="¿Cancelar la venta?"
+            description="Se quitan los 3 productos del carrito."
+            confirmLabel="Sí, cancelar venta"
+            cancelLabel="Volver"
+            destructive
+            onConfirm={() => toast.info("Venta cancelada")}
+          />
         </div>
       </Section>
 
@@ -354,17 +443,6 @@ export function UiKitDemo() {
           </Card>
         </div>
       </Section>
-
-      <Toast
-        open={toast !== null}
-        variant={toast === "error" ? "error" : "success"}
-        title={toast === "error" ? "Sin stock suficiente" : "Venta registrada"}
-        description={
-          toast === "error"
-            ? "Quedan 0 unidades de Coca-Cola 500 ml."
-            : `Total ${formatCurrency(total)}`
-        }
-      />
     </main>
   );
 }
