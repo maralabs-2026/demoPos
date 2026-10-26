@@ -34,7 +34,10 @@ export function StockScreen({
     const term = busqueda.trim().toLowerCase();
     if (!term) return [];
     return productos
-      .filter((p) => p.nombre.toLowerCase().includes(term) || p.codigoBarras.includes(term))
+      .filter(
+        (p) =>
+          p.nombre.toLowerCase().includes(term) || p.codigoBarras.toLowerCase().includes(term),
+      )
       .slice(0, MAX_RESULTADOS);
   }, [productos, busqueda]);
 
@@ -49,7 +52,8 @@ export function StockScreen({
     const term = busqueda.trim();
     if (!term) return;
     // Lector de barras: el código llega completo seguido de Enter.
-    const porCodigo = productos.find((p) => p.codigoBarras === term);
+    // Códigos internos como "PAN-ART01" pueden tener letras: se comparan sin mayúsculas.
+    const porCodigo = productos.find((p) => p.codigoBarras.toLowerCase() === term.toLowerCase());
     if (porCodigo) return seleccionar(porCodigo);
     if (resultados.length === 1) return seleccionar(resultados[0]);
     setAviso(

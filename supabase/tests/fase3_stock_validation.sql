@@ -142,11 +142,16 @@ begin
     execute 'set local role authenticated';
     perform set_config('request.jwt.claims',
       json_build_object('sub', dueno, 'role', 'authenticated')::text, true);
-    insert into public.movimientos_stock (comercio_id, producto_id, tipo, cantidad, usuario_id, venta_id)
-    values (comercio, coca, 'venta', -1, dueno, gen_random_uuid());
+    -- Sin la columna venta_id (que no tiene GRANT de insert): así lo que rechaza es la regla
+    -- `tipo in (ingreso, ajuste)` de la RLS y no el permiso de columna.
+    insert into public.movimientos_stock (comercio_id, producto_id, tipo, cantidad, usuario_id)
+    values (comercio, coca, 'venta', -1, dueno);
     raise exception 'FAIL: se aceptó un movimiento de venta cargado a mano';
   exception when insufficient_privilege then
-    ok := array_append(ok, 'rechaza un movimiento de tipo venta cargado a mano');
+    if sqlerrm not like '%row-level security%' then
+      raise exception 'FAIL: el movimiento de venta se rechazó por otro motivo: %', sqlerrm;
+    end if;
+    ok := array_append(ok, 'rechaza un movimiento de tipo venta cargado a mano (RLS)');
   end;
 
   begin

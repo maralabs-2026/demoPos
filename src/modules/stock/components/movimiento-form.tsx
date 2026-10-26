@@ -96,6 +96,9 @@ export function MovimientoForm({
           <span className="font-medium">Cantidad</span>
           <Input
             id="stock-cantidad"
+            // El form se monta de nuevo con cada producto elegido: el foco va directo a la
+            // cantidad, sin tabular por las pestañas.
+            autoFocus
             type="number"
             inputMode="numeric"
             min={1}
