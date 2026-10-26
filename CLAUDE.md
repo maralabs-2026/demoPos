@@ -68,6 +68,11 @@ src/
 - `encargado`: todo menos configuración y eliminar usuarios.
 - `cajero`: vender, ver productos, abrir/cerrar su caja. No ve costos, márgenes ni reportes.
 
+**Costos**
+- El costo no es una columna de `productos`: vive en la tabla `productos_costos` (`comercio_id not null`, montos `numeric(12,2)`), porque la RLS no filtra por columna.
+- RLS de `productos_costos`: solo `dueno` y `encargado` pueden leer, insertar y modificar. El cajero no accede a la tabla de ninguna forma.
+- El costo al momento de la venta (para la ganancia estimada) se guarda como snapshot fuera de `venta_items`, con la misma restricción por rol. Dónde exactamente se define antes de cerrar la Fase 3.
+
 ## 4. Convenciones
 
 - Código en inglés (variables, funciones, tablas); textos de interfaz en español rioplatense (voseo: "Cobrá", "Buscá").
@@ -125,7 +130,7 @@ Login con email y contraseña en `/login`, con mensajes de error genéricos (nun
 **Validación:** test Playwright: el cajero no puede acceder a `/reportes` ni a `/config`; el dueño sí; un usuario con contraseña temporal no accede a ninguna pantalla hasta cambiarla. Capturas de las tres vistas.
 
 ### Fase 3 — Productos y stock
-ABM de productos con categoría, código de barras, costo, precio, margen calculado, stock mínimo. Ingreso de mercadería. Ajuste manual con motivo. Actualización masiva de precios por categoría o porcentaje. Importación desde CSV con vista previa de errores.
+ABM de productos con categoría, código de barras, costo (en `productos_costos`, ver sección 3), precio, margen calculado, stock mínimo. Ingreso de mercadería. Ajuste manual con motivo. Actualización masiva de precios por categoría o porcentaje. Importación desde CSV con vista previa de errores.
 **Validación:** importar el CSV de seed, subir 10% una categoría y verificar en base que solo esa categoría cambió. Tests unitarios de los schemas Zod.
 
 ### Fase 4 — Pantalla de cobro completa
@@ -137,7 +142,7 @@ Apertura con monto inicial, cierre con conteo por medio de pago, diferencia calc
 **Validación:** abrir caja, hacer 3 ventas con distintos medios, cerrar y verificar que los totales por medio de pago coinciden con la base.
 
 ### Fase 6 — Reportes y comprobantes
-Ventas por día/semana/mes con filtros, ranking de productos, ganancia estimada (precio − costo), ventas por cajero. Exportación a Excel de ventas y stock. Ticket no fiscal imprimible en 58/80 mm (`@media print`) y versión para compartir por WhatsApp.
+Ventas por día/semana/mes con filtros, ranking de productos, ganancia estimada (precio − costo, ambos snapshot de la venta), ventas por cajero. Exportación a Excel de ventas y stock. Ticket no fiscal imprimible en 58/80 mm (`@media print`) y versión para compartir por WhatsApp.
 **Validación:** los totales del reporte diario coinciden con el cierre de caja del mismo día. Ticket correcto en vista previa de impresión.
 
 ### Fase 7 — Cierre
