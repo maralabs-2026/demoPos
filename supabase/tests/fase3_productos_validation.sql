@@ -32,7 +32,7 @@ begin
   -- Fixtures (como postgres)
   -- -------------------------------------------------------------------------------------------
   if not exists (select 1 from pg_proc where proname = 'guardar_producto') then
-    raise exception 'FAIL: falta la función guardar_producto (aplicar la migración 0009)';
+    raise exception 'FAIL: falta la función guardar_producto (aplicar la migración 0010)';
   end if;
 
   select id into comercio from public.comercios where nombre = 'Kiosko Demo';
@@ -87,7 +87,9 @@ begin
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims',
     json_build_object('sub', encargado, 'role', 'authenticated')::text, true);
-  perform public.guardar_producto(nuevo, categoria, 'Alfajor test', '9990000000101', 1300, 'unidad', 5, 850);
+  -- En una edición se pasan el precio y el costo que se vieron al abrir el formulario.
+  perform public.guardar_producto(nuevo, categoria, 'Alfajor test', '9990000000101', 1300, 'unidad', 5, 850,
+                                  1200, 800);
   execute 'reset role';
 
   select c.costo, p.precio into v_costo, v_precio
@@ -100,12 +102,34 @@ begin
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims',
     json_build_object('sub', dueno, 'role', 'authenticated')::text, true);
-  perform public.guardar_producto(nuevo, categoria, 'Alfajor test', '9990000000101', 1300, 'unidad', 5, null);
+  perform public.guardar_producto(nuevo, null, 'Alfajor test', '9990000000101', 1300, 'unidad', 5, null,
+                                  1300, 850);
   execute 'reset role';
   if exists (select 1 from public.productos_costos where producto_id = nuevo) then
     raise exception 'FAIL: guardar con costo null no borró el costo';
   end if;
   ok := array_append(ok, 'guardar sin costo borra el costo cargado');
+  if (select categoria_id from public.productos where id = nuevo) is not null then
+    raise exception 'FAIL: no se pudo dejar el producto sin categoría';
+  end if;
+  ok := array_append(ok, 'un producto puede quedar sin categoría');
+
+  -- Cambio simultáneo: el formulario se abrió con precio 1200, pero en la base ya es 1300
+  -- (por ejemplo, una actualización masiva). La edición se rechaza y no pisa nada.
+  begin
+    execute 'set local role authenticated';
+    perform set_config('request.jwt.claims',
+      json_build_object('sub', encargado, 'role', 'authenticated')::text, true);
+    perform public.guardar_producto(nuevo, categoria, 'Alfajor test', '9990000000101', 1200, 'unidad', 9, null,
+                                    1200, null);
+    raise exception 'FAIL: se aceptó una edición con un precio que otro usuario ya había cambiado';
+  exception when sqlstate 'PV009' then
+    ok := array_append(ok, 'rechaza una edición que pisaría un cambio de precio de otro usuario');
+  end;
+  if (select precio from public.productos where id = nuevo) <> 1300
+     or (select stock_minimo from public.productos where id = nuevo) <> 5 then
+    raise exception 'FAIL: la edición rechazada cambió el producto';
+  end if;
 
   -- -------------------------------------------------------------------------------------------
   -- (b) El cajero no ve ni toca costos
@@ -186,7 +210,8 @@ begin
     execute 'set local role authenticated';
     perform set_config('request.jwt.claims',
       json_build_object('sub', dueno, 'role', 'authenticated')::text, true);
-    perform public.guardar_producto(producto_b, null, 'Hackeado', '9990000000001', 1, 'unidad', 0, 1);
+    perform public.guardar_producto(producto_b, null, 'Hackeado', '9990000000001', 1, 'unidad', 0, 1,
+                                    100, null);
     raise exception 'FAIL: se editó un producto de otro comercio';
   exception when sqlstate 'PV005' then
     ok := array_append(ok, 'no se puede editar un producto de otro comercio');

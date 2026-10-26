@@ -48,6 +48,9 @@ create policy productos_costos_delete on public.productos_costos for delete to a
 -- Alta (p_id null) o edición de un producto junto con su costo, en una sola transacción.
 -- SECURITY INVOKER: la RLS de productos y de productos_costos sigue siendo la barrera.
 -- p_costo null borra el costo cargado (producto sin costo conocido).
+-- En una edición, p_precio_anterior y p_costo_anterior son los valores que el usuario vio al abrir
+-- el formulario: si otro usuario los cambió mientras tanto (por ejemplo, una actualización masiva
+-- de precios), se rechaza en vez de pisar el cambio. En un alta se ignoran.
 create function public.guardar_producto(
   p_id uuid,
   p_categoria_id uuid,
@@ -56,7 +59,9 @@ create function public.guardar_producto(
   p_precio numeric,
   p_unidad_venta text,
   p_stock_minimo integer,
-  p_costo numeric
+  p_costo numeric,
+  p_precio_anterior numeric default null,
+  p_costo_anterior numeric default null
 )
 returns uuid
 language plpgsql
@@ -66,6 +71,8 @@ as $$
 declare
   v_comercio_id uuid := public.current_comercio_id();
   v_id uuid;
+  v_precio_actual numeric;
+  v_costo_actual numeric;
 begin
   -- La RLS de UPDATE filtra en silencio; el chequeo explícito da un error claro.
   if public.current_rol() is null or public.current_rol() not in ('dueno', 'encargado') then
@@ -88,6 +95,21 @@ begin
        p_stock_minimo)
     returning id into v_id;
   else
+    -- FOR UPDATE: nadie más cambia el producto entre esta lectura y el UPDATE.
+    select p.precio, c.costo into v_precio_actual, v_costo_actual
+      from public.productos p
+      left join public.productos_costos c on c.producto_id = p.id
+     where p.id = p_id and p.comercio_id = v_comercio_id
+       for update of p;
+    if not found then
+      raise exception 'El producto no existe' using errcode = 'PV005';
+    end if;
+    if v_precio_actual is distinct from p_precio_anterior
+       or v_costo_actual is distinct from p_costo_anterior then
+      raise exception 'Otro usuario cambió el precio o el costo mientras editabas'
+        using errcode = 'PV009';
+    end if;
+
     update public.productos
        set categoria_id = p_categoria_id,
            nombre = p_nombre,
@@ -97,10 +119,6 @@ begin
            stock_minimo = p_stock_minimo
      where id = p_id and comercio_id = v_comercio_id
     returning id into v_id;
-
-    if v_id is null then
-      raise exception 'El producto no existe' using errcode = 'PV005';
-    end if;
   end if;
 
   if p_costo is null then
@@ -116,7 +134,7 @@ begin
 end;
 $$;
 
-revoke execute on function public.guardar_producto(uuid, uuid, text, text, numeric, text, integer, numeric)
+revoke execute on function public.guardar_producto(uuid, uuid, text, text, numeric, text, integer, numeric, numeric, numeric)
   from public, anon;
-grant execute on function public.guardar_producto(uuid, uuid, text, text, numeric, text, integer, numeric)
+grant execute on function public.guardar_producto(uuid, uuid, text, text, numeric, text, integer, numeric, numeric, numeric)
   to authenticated;
