@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import type { MedioPago } from "@/modules/config";
 import type { Producto } from "@/modules/productos";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, parseMonto } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { registrarVentaDemo, type Comprobante } from "../actions";
 import { ComprobanteView } from "./comprobante-view";
@@ -47,11 +47,12 @@ export function VentaScreen({
   const medioSeleccionado = mediosPago.find((m) => m.id === medioPagoId);
   const total = cart.reduce((acc, i) => acc + i.precio * i.cantidad, 0);
   const cantidadItems = cart.reduce((acc, i) => acc + i.cantidad, 0);
-  const recibido = Number(montoRecibido.replace(",", "."));
+  // Texto y no type=number: en un celular es-AR el teclado ofrece coma, y un
+  // input numérico devuelve "" para "1500,50".
+  const recibido = parseMonto(montoRecibido);
+  const recibidoValido = recibido !== null && !Number.isNaN(recibido);
   const vuelto =
-    medioSeleccionado?.tipo === "efectivo" &&
-    montoRecibido !== "" &&
-    !Number.isNaN(recibido)
+    medioSeleccionado?.tipo === "efectivo" && recibidoValido
       ? recibido - total
       : null;
 
@@ -139,6 +140,8 @@ export function VentaScreen({
   }
 
   function cobrar() {
+    // F2 no pasa por el botón deshabilitado: sin esto, un doble F2 registra la venta dos veces.
+    if (isPending) return;
     if (cart.length === 0) {
       setError("El carrito está vacío");
       return;
@@ -147,12 +150,15 @@ export function VentaScreen({
       setError("Elegí un medio de pago");
       return;
     }
-    if (
-      medioSeleccionado.tipo === "efectivo" &&
-      (montoRecibido === "" || recibido < total)
-    ) {
-      setError("El monto recibido es menor al total");
-      return;
+    if (medioSeleccionado.tipo === "efectivo") {
+      if (recibido !== null && Number.isNaN(recibido)) {
+        setError("Revisá el monto recibido: escribilo como 1500 o 1500,50");
+        return;
+      }
+      if (!recibidoValido || recibido < total) {
+        setError("El monto recibido es menor al total");
+        return;
+      }
     }
 
     startTransition(async () => {
@@ -163,7 +169,9 @@ export function VentaScreen({
         })),
         medioPagoId,
         montoRecibido:
-          medioSeleccionado.tipo === "efectivo" ? recibido : undefined,
+          medioSeleccionado.tipo === "efectivo" && recibidoValido
+            ? recibido
+            : undefined,
       });
 
       if (!result.ok) {
@@ -200,7 +208,7 @@ export function VentaScreen({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart, medioPagoId, montoRecibido, comprobante]);
+  }, [cart, medioPagoId, montoRecibido, comprobante, isPending]);
 
   if (comprobante) {
     return (
@@ -251,9 +259,12 @@ export function VentaScreen({
             <div>
               <CardEyebrow>Venta actual</CardEyebrow>
               <CardTitle className="mt-1">
-                {cantidadItems === 1
-                  ? "1 producto"
-                  : `${cantidadItems} productos`}
+                {cart.length === 1 ? "1 producto" : `${cart.length} productos`}
+                {cantidadItems !== cart.length && (
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    {cantidadItems} unidades
+                  </span>
+                )}
               </CardTitle>
             </div>
           </CardHeader>
@@ -289,6 +300,8 @@ export function VentaScreen({
                   onIncrement={() =>
                     actualizarCantidad(item.productoId, item.cantidad + 1)
                   }
+                  onValueChange={(n) => actualizarCantidad(item.productoId, n)}
+                  onEnter={() => inputRef.current?.focus()}
                 />
                 <p className="ml-auto w-24 text-right text-sm font-bold tabular-nums">
                   {formatCurrency(item.precio * item.cantidad)}
@@ -331,7 +344,7 @@ export function VentaScreen({
                 aria-pressed={medio.id === medioPagoId}
                 onClick={() => setMedioPagoId(medio.id)}
                 className={cn(
-                  "h-9 rounded-full border px-3.5 text-sm transition-colors focus-visible:ring-3 focus-visible:ring-ring/25 focus-visible:outline-none",
+                  "h-9 rounded-full border px-3.5 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none",
                   medio.id === medioPagoId
                     ? "border-primary bg-accent font-semibold text-primary"
                     : "border-border bg-card hover:border-foreground",
@@ -350,9 +363,12 @@ export function VentaScreen({
             </label>
             <Input
               id="monto-recibido"
-              type="number"
-              min={0}
+              type="text"
               inputMode="decimal"
+              autoComplete="off"
+              aria-invalid={
+                (recibido !== null && Number.isNaN(recibido)) || undefined
+              }
               value={montoRecibido}
               onChange={(e) => setMontoRecibido(e.target.value)}
             />

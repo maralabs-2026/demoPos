@@ -24,9 +24,10 @@ function StockCell({ producto }: { producto: Producto }) {
       </Badge>
     );
   }
+  // Bajo mínimo en rojo, como pide la Fase D (no naranja).
   if (producto.stockActual < producto.stockMinimo) {
     return (
-      <Badge variant="warning" dot>
+      <Badge variant="destructive" dot>
         {stock} · bajo mínimo
       </Badge>
     );
@@ -42,12 +43,14 @@ export function ProductosTable({ productos }: { productos: Producto[] }) {
     if (!term) return productos;
     return productos.filter(
       (p) =>
-        p.nombre.toLowerCase().includes(term) || p.codigoBarras.includes(term),
+        p.nombre.toLowerCase().includes(term) ||
+        p.codigoBarras.toLowerCase().includes(term),
     );
   }, [productos, busqueda]);
 
+  // Misma regla que StockCell: sin stock o bajo mínimo.
   const conAlerta = productos.filter(
-    (p) => p.stockActual < p.stockMinimo,
+    (p) => p.stockActual <= 0 || p.stockActual < p.stockMinimo,
   ).length;
 
   return (
@@ -67,7 +70,7 @@ export function ProductosTable({ productos }: { productos: Producto[] }) {
           />
         </div>
         {conAlerta > 0 && (
-          <Badge variant="warning" dot>
+          <Badge variant="destructive" dot>
             {conAlerta === 1
               ? "1 producto con stock bajo"
               : `${conAlerta} productos con stock bajo`}
@@ -75,7 +78,7 @@ export function ProductosTable({ productos }: { productos: Producto[] }) {
         )}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">

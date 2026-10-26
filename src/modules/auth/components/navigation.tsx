@@ -5,14 +5,14 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { getMockSession, splitBrandName, type Rol } from "@/modules/auth";
+import {
+  getMockSession,
+  ROL_LABELS,
+  rolBadgeVariant,
+  splitBrandName,
+  type Rol,
+} from "@/modules/auth";
 import { getNavLinks, type NavLink } from "@/modules/auth/navigation";
-
-const rolLabels: Record<Rol, string> = {
-  dueno: "Dueño",
-  encargado: "Encargado",
-  cajero: "Cajero",
-};
 
 function AppBrand({ comercioNombre }: { comercioNombre: string }) {
   const { first, rest } = splitBrandName(comercioNombre);
@@ -36,11 +36,7 @@ function AppBrand({ comercioNombre }: { comercioNombre: string }) {
 }
 
 function RoleBadge({ rol }: { rol: Rol }) {
-  return (
-    <Badge variant={rol === "dueno" ? "info" : "neutral"}>
-      {rolLabels[rol]}
-    </Badge>
-  );
+  return <Badge variant={rolBadgeVariant(rol)}>{ROL_LABELS[rol]}</Badge>;
 }
 
 function SidebarLink({ link, active }: { link: NavLink; active: boolean }) {
