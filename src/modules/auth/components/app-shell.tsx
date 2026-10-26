@@ -33,7 +33,7 @@ export function AppShell({
   return (
     <>
       <Navigation comercioNombre={comercioNombre} />
-      <div className={conNavegacion ? "pb-16 lg:pb-0 lg:pl-60" : undefined}>
+      <div className={conNavegacion ? "pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-60" : undefined}>
         {children}
       </div>
     </>

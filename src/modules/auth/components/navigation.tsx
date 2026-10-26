@@ -114,7 +114,7 @@ export function Navigation({ comercioNombre }: { comercioNombre: string }) {
       {/* Celular y tablet: navegación inferior */}
       <nav
         aria-label="Principal"
-        className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center border-t border-border bg-card px-2 lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(4rem+env(safe-area-inset-bottom))] items-center border-t border-border bg-card px-2 pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         {links.map((link) => {
           const active = activeHref === link.href;
