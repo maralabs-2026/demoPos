@@ -5,6 +5,7 @@ import { buscarProductosSchema, type BuscarProductosInput } from "./schemas";
 export type Producto = {
   id: string;
   nombre: string;
+  categoriaId: string | null;
   categoriaNombre: string | null;
   codigoBarras: string;
   precio: number;
@@ -23,6 +24,7 @@ type ProductoRow = {
   stock_actual: number;
   stock_minimo: number;
   unidad_venta: string;
+  categoria_id: string | null;
   categorias: { nombre: string } | null;
 };
 
@@ -42,7 +44,7 @@ export async function getProductos(
   let query = supabase
     .from("productos")
     .select(
-      "id, nombre, codigo_barras, precio, stock_actual, stock_minimo, unidad_venta, categorias(nombre)",
+      "id, nombre, codigo_barras, precio, stock_actual, stock_minimo, unidad_venta, categoria_id, categorias(nombre)",
     )
     .order("nombre", { ascending: true });
 
@@ -57,6 +59,7 @@ export async function getProductos(
   const productos: Producto[] = (data ?? []).map((row) => ({
     id: row.id,
     nombre: row.nombre,
+    categoriaId: row.categoria_id,
     categoriaNombre: row.categorias?.nombre ?? null,
     codigoBarras: row.codigo_barras,
     precio: Number(row.precio),
@@ -66,4 +69,23 @@ export async function getProductos(
   }));
 
   return ok(productos);
+}
+
+export type Categoria = { id: string; nombre: string };
+
+export async function getCategorias(): Promise<ActionResult<Categoria[]>> {
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("categorias")
+    .select("id, nombre")
+    .order("orden", { ascending: true })
+    .order("nombre", { ascending: true })
+    .overrideTypes<Categoria[]>();
+  if (error) return fail(error.message);
+
+  return ok(data ?? []);
 }
