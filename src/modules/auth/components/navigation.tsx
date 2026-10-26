@@ -171,7 +171,7 @@ export function Navigation({ comercioNombre }: { comercioNombre: string }) {
       </header>
 
       {/* Mobile bottom navigation */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex h-[60px] items-center border-t bg-background px-2 md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(60px+env(safe-area-inset-bottom))] items-center border-t bg-background px-2 pb-[env(safe-area-inset-bottom)] md:hidden">
         {links.map((link) => {
           const active = activeHref === link.href;
           const Icon = link.icon;

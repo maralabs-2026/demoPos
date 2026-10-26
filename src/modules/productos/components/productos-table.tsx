@@ -50,9 +50,9 @@ export function ProductosTable({ productos }: { productos: Producto[] }) {
               const bajoMinimo = p.stockActual < p.stockMinimo;
               return (
                 <TableRow key={p.id} className={cn(bajoMinimo && "bg-destructive-soft")}>
-                  <TableCell>
+                  <TableCell className="whitespace-normal sm:whitespace-nowrap">
                     <div className="font-medium">{p.nombre}</div>
-                    <div className="text-muted-foreground text-xs">
+                    <div className="text-muted-foreground text-xs break-all">
                       {p.codigoBarras}
                     </div>
                   </TableCell>

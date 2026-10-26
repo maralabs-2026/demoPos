@@ -213,7 +213,7 @@ export function VentaScreen({
         <Input
           ref={inputRef}
           autoFocus
-          placeholder="Escaneá un código de barras o buscá por nombre..."
+          placeholder="Escaneá un código o buscá por nombre"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           onKeyDown={(e) => {
