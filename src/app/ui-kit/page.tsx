@@ -7,8 +7,10 @@ export const metadata: Metadata = {
 };
 
 // Catálogo visual de componentes para revisar el UI kit. Se ve en local y en
-// los deploys de preview; en producción no existe.
+// los deploys de preview de Vercel. En cualquier build de producción (Vercel o
+// self-hosted con `next start`) no existe: queda fuera del login.
 export default function UiKitPage() {
-  if (process.env.VERCEL_ENV === "production") notFound();
+  const esPreview = process.env.VERCEL_ENV === "preview";
+  if (process.env.NODE_ENV === "production" && !esPreview) notFound();
   return <UiKitDemo />;
 }

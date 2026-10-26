@@ -39,7 +39,10 @@ function QuantityStepper({
   className,
 }: QuantityStepperProps) {
   const buttonClass =
-    "grid shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:ring-3 focus-visible:ring-ring/25 focus-visible:outline-none disabled:opacity-40";
+    "grid shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-40 aria-disabled:hover:bg-primary";
+  // aria-disabled y no disabled: un botón deshabilitado pierde el foco y el teclado queda en <body>.
+  const puedeRestar = value > min;
+  const puedeSumar = max === undefined || value < max;
   const suffix = label ? ` de ${label}` : "";
 
   return (
@@ -52,8 +55,8 @@ function QuantityStepper({
       <button
         type="button"
         className={buttonClass}
-        onClick={onDecrement}
-        disabled={value <= min}
+        onClick={() => puedeRestar && onDecrement()}
+        aria-disabled={!puedeRestar}
         aria-label={`Restar uno${suffix}`}
       >
         <Minus aria-hidden="true" />
@@ -64,8 +67,8 @@ function QuantityStepper({
       <button
         type="button"
         className={buttonClass}
-        onClick={onIncrement}
-        disabled={max !== undefined && value >= max}
+        onClick={() => puedeSumar && onIncrement()}
+        aria-disabled={!puedeSumar}
         aria-label={`Sumar uno${suffix}`}
       >
         <Plus aria-hidden="true" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowRight, Plus, Search, ShoppingBag, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,20 +18,38 @@ import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { Toast } from "@/components/ui/toast";
 import { formatCurrency } from "@/lib/currency";
 
+// Solo el nombre del token: el valor se lee de globals.css en el navegador,
+// así esta página no puede quedar desactualizada.
 const colors = [
-  { token: "primary", hex: "#315cf5", use: "Acciones principales" },
-  { token: "primary-hover", hex: "#2347ce", use: "Hover de acciones" },
-  { token: "accent", hex: "#edf1ff", use: "Fondo activo, foco" },
-  { token: "success", hex: "#b8f72c", use: "Confirmaciones" },
-  { token: "success-soft", hex: "#efffc8", use: "Estado ok" },
-  { token: "warning", hex: "#ff9d56", use: "Advertencias" },
-  { token: "warning-soft", hex: "#fff0e3", use: "Stock bajo" },
-  { token: "destructive", hex: "#d93b3b", use: "Errores, sin stock" },
-  { token: "foreground", hex: "#171918", use: "Texto" },
-  { token: "muted-foreground", hex: "#6f746f", use: "Texto secundario" },
-  { token: "border", hex: "#dfe2dc", use: "Bordes" },
-  { token: "background", hex: "#f3f4ef", use: "Fondo de la app" },
+  { token: "primary", use: "Acciones principales" },
+  { token: "primary-hover", use: "Hover de acciones" },
+  { token: "accent", use: "Fondo activo, foco" },
+  { token: "success", use: "Confirmaciones" },
+  { token: "success-soft", use: "Estado ok" },
+  { token: "warning", use: "Advertencias" },
+  { token: "warning-soft", use: "Avisos suaves" },
+  { token: "destructive", use: "Errores, sin stock, stock bajo" },
+  { token: "destructive-soft", use: "Fondo de stock bajo" },
+  { token: "foreground", use: "Texto" },
+  { token: "muted-foreground", use: "Texto secundario" },
+  { token: "border", use: "Bordes" },
+  { token: "background", use: "Fondo de la app" },
 ] as const;
+
+const colorTokens = colors.map((c) => c.token);
+
+function useTokenValues(tokens: readonly string[]): Record<string, string> {
+  const [values, setValues] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const style = getComputedStyle(document.documentElement);
+    setValues(
+      Object.fromEntries(
+        tokens.map((t) => [t, style.getPropertyValue(`--${t}`).trim()]),
+      ),
+    );
+  }, [tokens]);
+  return values;
+}
 
 const radii = [
   { label: "sm", className: "rounded-sm" },
@@ -42,9 +60,9 @@ const radii = [
 
 const categorias = [
   { value: "todas", label: "Todas" },
-  { value: "golosinas", label: "Golosinas" },
-  { value: "bebidas", label: "Bebidas" },
-  { value: "almacen", label: "Almacén" },
+  { value: "cat-1", label: "Categoría 1" },
+  { value: "cat-2", label: "Categoría 2" },
+  { value: "cat-3", label: "Categoría 3" },
 ] as const;
 
 type Categoria = (typeof categorias)[number]["value"];
@@ -78,6 +96,7 @@ function Section({
 }
 
 export function UiKitDemo() {
+  const tokenValues = useTokenValues(colorTokens);
   const [categoria, setCategoria] = useState<Categoria>("todas");
   const [cantidades, setCantidades] = useState<Record<string, number>>({
     "1": 2,
@@ -129,7 +148,7 @@ export function UiKitDemo() {
               <div className="flex flex-col gap-0.5 p-3 text-xs">
                 <strong>{c.token}</strong>
                 <span className="text-muted-foreground">
-                  {c.hex} · {c.use}
+                  {tokenValues[c.token] || "…"} · {c.use}
                 </span>
               </div>
             </div>
@@ -281,7 +300,7 @@ export function UiKitDemo() {
               </Badge>
               <CardTitle className="mt-2">Yerba Playadito 1 kg</CardTitle>
               <span className="text-xs text-muted-foreground">
-                Almacén · 7790387000014
+                Categoría 3 · 7790387000014
               </span>
               <div className="mt-3 flex items-center justify-between">
                 <strong className="text-lg">{formatCurrency(4950)}</strong>
@@ -343,7 +362,7 @@ export function UiKitDemo() {
         description={
           toast === "error"
             ? "Quedan 0 unidades de Coca-Cola 500 ml."
-            : `Total ${formatCurrency(total)} · Efectivo`
+            : `Total ${formatCurrency(total)}`
         }
       />
     </main>
