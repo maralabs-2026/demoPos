@@ -12,8 +12,9 @@ export type PreciosActualizados = { actualizados: number };
 // mensaje claro antes.
 const ROLES_PRECIOS: readonly Rol[] = ["dueno", "encargado"];
 
-// Códigos que puede devolver actualizar_precios (migración 0010).
+// Códigos que puede devolver actualizar_precios (migración 0009).
 const PG_INSUFFICIENT_PRIVILEGE = "42501";
+const PG_NUMERIC_OVERFLOW = "22003"; // un precio quedaría fuera de numeric(12,2)
 const PV_PORCENTAJE_INVALIDO = "PV007";
 
 export async function actualizarPrecios(
@@ -43,12 +44,19 @@ export async function actualizarPrecios(
   if (error) {
     if (error.code === PG_INSUFFICIENT_PRIVILEGE) return fail("Tu rol no puede cambiar precios.");
     if (error.code === PV_PORCENTAJE_INVALIDO) return fail("El porcentaje no es válido.");
+    if (error.code === PG_NUMERIC_OVERFLOW) {
+      return fail("Con ese porcentaje algún precio queda demasiado alto. Probá con uno menor.");
+    }
     return fail("No se pudieron actualizar los precios. Probá de nuevo.");
   }
 
   const actualizados = Number(data ?? 0);
   if (actualizados === 0) {
-    return fail("No hay productos en esa categoría.");
+    return fail(
+      parsed.data.categoriaId === null
+        ? "No hay productos en el catálogo."
+        : "No hay productos en esa categoría.",
+    );
   }
 
   revalidatePath("/productos");

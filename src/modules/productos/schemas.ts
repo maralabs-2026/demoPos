@@ -6,7 +6,7 @@ export const buscarProductosSchema = z.object({
 
 export type BuscarProductosInput = z.infer<typeof buscarProductosSchema>;
 
-// Mismos límites que la función actualizar_precios (migración 0010).
+// Mismos límites que la función actualizar_precios (migración 0009).
 export const PORCENTAJE_MIN = -50;
 export const PORCENTAJE_MAX = 200;
 

@@ -1,5 +1,5 @@
 -- Validación de la Fase 3: actualización masiva de precios.
--- Necesita las migraciones 0001-0008 y 0010, y el seed base (comercio "Kiosko Demo" y sus productos).
+-- Necesita las migraciones 0001-0009, y el seed base (comercio "Kiosko Demo" y sus productos).
 -- Es SQL puro, así que corre igual por psql o por la API del CLI:
 --
 --   supabase db query --linked -f supabase/tests/fase3_precios_validation.sql
@@ -30,7 +30,7 @@ begin
   -- Fixtures (como postgres)
   -- -------------------------------------------------------------------------------------------
   if not exists (select 1 from pg_proc where proname = 'actualizar_precios') then
-    raise exception 'FAIL: falta la función actualizar_precios (aplicar la migración 0010)';
+    raise exception 'FAIL: falta la función actualizar_precios (aplicar la migración 0009)';
   end if;
 
   select id into comercio from public.comercios where nombre = 'Kiosko Demo';
