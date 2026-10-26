@@ -15,6 +15,8 @@ export function AppShell({
 }>) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
+  // Navigation no se muestra sin rol: en ese caso tampoco se reserva su espacio.
+  const [conNavegacion, setConNavegacion] = useState(false);
 
   useEffect(() => {
     const session = getMockSession();
@@ -22,6 +24,7 @@ export function AppShell({
       router.replace("/cambiar-contrasena");
       return;
     }
+    setConNavegacion(Boolean(session?.rol));
     setAuthorized(true);
   }, [router]);
 
@@ -30,7 +33,9 @@ export function AppShell({
   return (
     <>
       <Navigation comercioNombre={comercioNombre} />
-      <div className="pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-0">{children}</div>
+      <div className={conNavegacion ? "pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-60" : undefined}>
+        {children}
+      </div>
     </>
   );
 }

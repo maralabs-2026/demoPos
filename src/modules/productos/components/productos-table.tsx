@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -11,8 +13,27 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/currency";
-import { cn } from "@/lib/utils";
 import type { Producto } from "../queries";
+
+function StockCell({ producto }: { producto: Producto }) {
+  const stock = `${producto.stockActual} ${producto.unidadVenta}`;
+  if (producto.stockActual <= 0) {
+    return (
+      <Badge variant="destructive" dot>
+        Sin stock
+      </Badge>
+    );
+  }
+  // Bajo mínimo en rojo, como pide la Fase D (no naranja).
+  if (producto.stockActual < producto.stockMinimo) {
+    return (
+      <Badge variant="destructive" dot>
+        {stock} · bajo mínimo
+      </Badge>
+    );
+  }
+  return <span className="tabular-nums">{stock}</span>;
+}
 
 export function ProductosTable({ productos }: { productos: Producto[] }) {
   const [busqueda, setBusqueda] = useState("");
@@ -22,23 +43,45 @@ export function ProductosTable({ productos }: { productos: Producto[] }) {
     if (!term) return productos;
     return productos.filter(
       (p) =>
-        p.nombre.toLowerCase().includes(term) || p.codigoBarras.includes(term),
+        p.nombre.toLowerCase().includes(term) ||
+        p.codigoBarras.toLowerCase().includes(term),
     );
   }, [productos, busqueda]);
 
-  return (
-    <div className="space-y-4">
-      <Input
-        placeholder="Buscá por nombre o código de barras..."
-        value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-        className="max-w-sm"
-      />
+  // Misma regla que StockCell: sin stock o bajo mínimo.
+  const conAlerta = productos.filter(
+    (p) => p.stockActual <= 0 || p.stockActual < p.stockMinimo,
+  ).length;
 
-      <div className="overflow-x-auto rounded-md border">
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative w-full max-w-sm">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            aria-label="Buscar producto"
+            placeholder="Buscá por nombre o código de barras..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="rounded-full pl-11"
+          />
+        </div>
+        {conAlerta > 0 && (
+          <Badge variant="destructive" dot>
+            {conAlerta === 1
+              ? "1 producto con stock bajo"
+              : `${conAlerta} productos con stock bajo`}
+          </Badge>
+        )}
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="hover:bg-transparent">
               <TableHead>Producto</TableHead>
               <TableHead className="hidden sm:table-cell">Categoría</TableHead>
               <TableHead className="text-right">Precio</TableHead>
@@ -46,38 +89,30 @@ export function ProductosTable({ productos }: { productos: Producto[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtrados.map((p) => {
-              const bajoMinimo = p.stockActual < p.stockMinimo;
-              return (
-                <TableRow key={p.id} className={cn(bajoMinimo && "bg-destructive-soft")}>
-                  <TableCell className="whitespace-normal sm:whitespace-nowrap">
-                    <div className="font-medium">{p.nombre}</div>
-                    <div className="text-muted-foreground text-xs break-all">
-                      {p.codigoBarras}
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {p.categoriaNombre ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatCurrency(p.precio)}
-                  </TableCell>
-                  <TableCell
-                    className={cn(
-                      "text-right tabular-nums",
-                      bajoMinimo && "font-semibold text-destructive",
-                    )}
-                  >
-                    {p.stockActual} {p.unidadVenta}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {filtrados.map((p) => (
+              <TableRow key={p.id}>
+                <TableCell className="whitespace-normal">
+                  <div className="font-semibold">{p.nombre}</div>
+                  <div className="text-xs text-muted-foreground tabular-nums">
+                    {p.codigoBarras}
+                  </div>
+                </TableCell>
+                <TableCell className="hidden text-muted-foreground sm:table-cell">
+                  {p.categoriaNombre ?? "—"}
+                </TableCell>
+                <TableCell className="text-right font-semibold tabular-nums">
+                  {formatCurrency(p.precio)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <StockCell producto={p} />
+                </TableCell>
+              </TableRow>
+            ))}
             {filtrados.length === 0 && (
               <TableRow>
                 <TableCell
                   colSpan={4}
-                  className="text-muted-foreground text-center"
+                  className="py-10 text-center text-muted-foreground"
                 >
                   No se encontraron productos.
                 </TableCell>

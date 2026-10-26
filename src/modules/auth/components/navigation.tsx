@@ -3,83 +3,64 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { getMockSession, splitBrandName, type Rol } from "@/modules/auth";
-import { getNavLinks } from "@/modules/auth/navigation";
-
-const badgeStyles: Record<Rol, string> = {
-  dueno: "bg-primary/10 text-primary",
-  encargado: "bg-secondary text-secondary-foreground",
-  cajero: "bg-secondary text-secondary-foreground",
-};
-
-const badgeLabels: Record<Rol, string> = {
-  dueno: "Dueño",
-  encargado: "ENCARGADO",
-  cajero: "CAJERO",
-};
-
-const showsAvatar: Record<Rol, boolean> = {
-  dueno: false,
-  encargado: true,
-  cajero: true,
-};
+import {
+  getMockSession,
+  ROL_LABELS,
+  rolBadgeVariant,
+  splitBrandName,
+  type Rol,
+} from "@/modules/auth";
+import { getNavLinks, type NavLink } from "@/modules/auth/navigation";
 
 function AppBrand({ comercioNombre }: { comercioNombre: string }) {
-  const { monogram, first, rest } = splitBrandName(comercioNombre);
+  const { first, rest } = splitBrandName(comercioNombre);
   return (
-    <div className="flex min-w-0 items-center gap-2">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary md:h-10 md:w-10 md:rounded-[10px]">
-        <span className="text-base font-extrabold text-white md:text-xl">
-          {monogram || "P"}
-        </span>
+    <div className="flex min-w-0 items-center gap-2.5">
+      {/* Isotipo del UI kit: tres barras, la del medio en lima. */}
+      <div
+        aria-hidden="true"
+        className="flex h-7 shrink-0 items-center gap-0.5"
+      >
+        <span className="h-5 w-1.5 rounded-full bg-primary" />
+        <span className="h-7 w-1.5 rounded-full bg-success" />
+        <span className="h-4 w-1.5 rounded-full bg-primary" />
       </div>
-      <div className="flex items-baseline gap-1">
-        <span className="text-lg font-extrabold tracking-tight text-foreground md:text-2xl">
-          {first}
-        </span>
-        {rest ? (
-          <span className="text-lg font-bold tracking-tight text-primary md:text-2xl">
-            {rest}
-          </span>
-        ) : null}
-      </div>
+      <span className="truncate text-lg font-bold tracking-tight">
+        {first}
+        {rest ? <span className="text-primary"> {rest}</span> : null}
+      </span>
     </div>
   );
 }
 
 function RoleBadge({ rol }: { rol: Rol }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold",
-        badgeStyles[rol],
-      )}
-    >
-      {badgeLabels[rol]}
-    </span>
-  );
+  return <Badge variant={rolBadgeVariant(rol)}>{ROL_LABELS[rol]}</Badge>;
 }
 
-function Avatar({ rol }: { rol: Rol }) {
-  if (!showsAvatar[rol]) return null;
+function SidebarLink({ link, active }: { link: NavLink; active: boolean }) {
+  const Icon = link.icon;
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-white">
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" />
-      </svg>
-    </div>
+    <Link
+      href={link.href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "relative flex h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors",
+        active
+          ? "bg-accent font-bold text-primary"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+      )}
+    >
+      <Icon size={18} aria-hidden="true" />
+      {link.label}
+      {active && (
+        <span
+          aria-hidden="true"
+          className="absolute right-0 h-4.5 w-[3px] rounded-l-sm bg-primary"
+        />
+      )}
+    </Link>
   );
 }
 
@@ -98,80 +79,43 @@ export function Navigation({ comercioNombre }: { comercioNombre: string }) {
 
   const links = getNavLinks(rol);
   const activeHref = links.find((link) => pathname === link.href)?.href;
-  const hasIcons = rol === "dueno";
 
   return (
     <>
-      {/* Desktop header */}
-      <header
-        className={cn(
-          "sticky top-0 z-40 hidden items-center justify-between gap-4 border-b bg-background px-6 md:flex",
-          rol === "dueno" ? "h-20" : "h-16",
-        )}
-      >
-        <div className="flex items-center gap-3">
+      {/* Escritorio: barra lateral fija */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar px-4 pt-7 pb-5 lg:flex">
+        <div className="px-2">
           <AppBrand comercioNombre={comercioNombre} />
+        </div>
+        <nav aria-label="Principal" className="mt-8 flex flex-col gap-1">
+          <span className="px-3 pb-2 text-[0.625rem] font-bold tracking-widest text-muted-foreground uppercase">
+            Menú
+          </span>
+          {links.map((link) => (
+            <SidebarLink
+              key={link.href}
+              link={link}
+              active={activeHref === link.href}
+            />
+          ))}
+        </nav>
+        <div className="mt-auto flex items-center gap-2.5 border-t border-border px-1 pt-4">
+          <span className="text-xs text-muted-foreground">Ingresaste como</span>
           <RoleBadge rol={rol} />
         </div>
+      </aside>
 
-        {hasIcons ? (
-          <nav className="flex items-center gap-2">
-            {links.map((link) => {
-              const active = activeHref === link.href;
-              const Icon = link.icon;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "inline-flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors",
-                    active
-                      ? "bg-primary text-white"
-                      : "text-foreground hover:bg-muted",
-                  )}
-                >
-                  <Icon size={16} className={active ? "text-white" : "text-muted-foreground"} />
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
-        ) : (
-          <nav className="flex items-center gap-1">
-            {links.map((link) => {
-              const active = activeHref === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "inline-flex items-center rounded-xl px-4 py-2 text-[13px] font-semibold transition-colors",
-                    active ? "bg-primary text-white" : "text-foreground hover:bg-muted",
-                  )}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
-        )}
-
-        <Avatar rol={rol} />
-      </header>
-
-      {/* Mobile header */}
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-2 border-b bg-background px-4 md:hidden">
+      {/* Celular y tablet: cabecera */}
+      <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-2 border-b border-border bg-card/90 px-4 backdrop-blur-md lg:hidden">
         <AppBrand comercioNombre={comercioNombre} />
-        <div className="flex items-center gap-2">
-          <RoleBadge rol={rol} />
-          <Avatar rol={rol} />
-        </div>
+        <RoleBadge rol={rol} />
       </header>
 
-      {/* Mobile bottom navigation */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(60px+env(safe-area-inset-bottom))] items-center border-t bg-background px-2 pb-[env(safe-area-inset-bottom)] md:hidden">
+      {/* Celular y tablet: navegación inferior */}
+      <nav
+        aria-label="Principal"
+        className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(4rem+env(safe-area-inset-bottom))] items-center border-t border-border bg-card px-2 pb-[env(safe-area-inset-bottom)] lg:hidden"
+      >
         {links.map((link) => {
           const active = activeHref === link.href;
           const Icon = link.icon;
@@ -180,17 +124,22 @@ export function Navigation({ comercioNombre }: { comercioNombre: string }) {
               key={link.href}
               href={link.href}
               aria-current={active ? "page" : undefined}
-              className="flex flex-1 flex-col items-center justify-center gap-1 rounded-lg py-1"
+              className="flex flex-1 flex-col items-center justify-center gap-1 py-1"
             >
-              <Icon
-                size={20}
-                strokeWidth={active ? 2.2 : 1.8}
-                className={active ? "text-primary" : "text-muted-foreground"}
-              />
+              <span
+                className={cn(
+                  "grid h-7 w-12 place-items-center rounded-full transition-colors",
+                  active ? "bg-accent text-primary" : "text-muted-foreground",
+                )}
+              >
+                <Icon size={19} aria-hidden="true" />
+              </span>
               <span
                 className={cn(
                   "text-[10px] leading-none",
-                  active ? "font-bold text-primary" : "font-medium text-muted-foreground",
+                  active
+                    ? "font-bold text-primary"
+                    : "font-medium text-muted-foreground",
                 )}
               >
                 {link.label}
