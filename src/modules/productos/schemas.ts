@@ -6,6 +6,49 @@ export const buscarProductosSchema = z.object({
 
 export type BuscarProductosInput = z.infer<typeof buscarProductosSchema>;
 
+const montoSchema = (campo: string) =>
+  z
+    .number({ error: `Escribí el ${campo}` })
+    .finite({ error: `Escribí el ${campo}` })
+    .min(0, { error: `El ${campo} no puede ser negativo` })
+    .max(9_999_999_999.99, { error: `El ${campo} es demasiado alto` });
+
+// El comercio no viaja desde el cliente: sale del perfil de la sesión (guardar_producto, 0010).
+export const productoSchema = z.object({
+  nombre: z
+    .string()
+    .trim()
+    .min(1, { error: "El nombre es obligatorio" })
+    .max(200, { error: "El nombre es demasiado largo" }),
+  codigoBarras: z
+    .string()
+    .trim()
+    .min(1, { error: "El código de barras es obligatorio" })
+    .max(100, { error: "El código de barras es demasiado largo" }),
+  categoriaId: z.uuid({ error: "Seleccioná una categoría" }),
+  // null = costo desconocido. Se guarda en productos_costos, que el cajero no puede leer.
+  costo: montoSchema("costo").nullable(),
+  precio: montoSchema("precio"),
+  unidadVenta: z
+    .string()
+    .trim()
+    .min(1, { error: "La unidad de venta es obligatoria" })
+    .max(50, { error: "La unidad de venta es demasiado larga" }),
+  stockMinimo: z
+    .number({ error: "Escribí el stock mínimo" })
+    .int({ error: "El stock mínimo debe ser un número entero" })
+    .min(0, { error: "El stock mínimo no puede ser negativo" })
+    .max(100_000, { error: "El stock mínimo es demasiado alto" }),
+});
+
+export type ProductoInput = z.input<typeof productoSchema>;
+
+// Margen bruto sobre el precio de venta, en porcentaje. null si no se puede calcular.
+export function calcularMargen(costo: number | null, precio: number): number | null {
+  if (costo === null || !Number.isFinite(costo) || !(precio > 0)) return null;
+  return ((precio - costo) / precio) * 100;
+}
+
 // Mismos límites que la función actualizar_precios (migración 0009).
 export const PORCENTAJE_MIN = -50;
 export const PORCENTAJE_MAX = 200;
