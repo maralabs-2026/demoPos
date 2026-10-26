@@ -70,7 +70,8 @@
   --secondary: #ffffff;
   --secondary-foreground: #171918;
   --muted: #f3f4ef;
-  --muted-foreground: #6f746f;
+  /* #646964 y no #6f746f: da 5:1 sobre el fondo (WCAG AA pide 4,5:1 para texto). */
+  --muted-foreground: #646964;
   --accent: #edf1ff;
   --accent-foreground: #315cf5;
   --destructive: #d93b3b;

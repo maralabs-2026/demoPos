@@ -49,7 +49,7 @@ export function ProductosTable({ productos }: { productos: Producto[] }) {
             {filtrados.map((p) => {
               const bajoMinimo = p.stockActual < p.stockMinimo;
               return (
-                <TableRow key={p.id} className={cn(bajoMinimo && "bg-red-50")}>
+                <TableRow key={p.id} className={cn(bajoMinimo && "bg-destructive-soft")}>
                   <TableCell>
                     <div className="font-medium">{p.nombre}</div>
                     <div className="text-muted-foreground text-xs">
@@ -65,7 +65,7 @@ export function ProductosTable({ productos }: { productos: Producto[] }) {
                   <TableCell
                     className={cn(
                       "text-right tabular-nums",
-                      bajoMinimo && "font-semibold text-red-600",
+                      bajoMinimo && "font-semibold text-destructive",
                     )}
                   >
                     {p.stockActual} {p.unidadVenta}
