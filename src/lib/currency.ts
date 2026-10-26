@@ -25,7 +25,8 @@ export function parseMonto(texto: string): number | null {
     normalizado = limpio;
   }
 
-  if (!/^\d+(\.\d+)?$/.test(normalizado)) return Number.NaN;
+  // Hasta 2 decimales; "15," (coma recién escrita) vale 15.
+  if (!/^\d+(\.\d{0,2})?$/.test(normalizado)) return Number.NaN;
   return Number(normalizado);
 }
 

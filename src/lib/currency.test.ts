@@ -36,6 +36,11 @@ describe("parseMonto", () => {
     expect(parseMonto("abc")).toBeNaN();
     expect(parseMonto("1,2,3")).toBeNaN();
     expect(parseMonto("-5")).toBeNaN();
+    expect(parseMonto("12,345")).toBeNaN();
+  });
+
+  it("acepta una coma recién escrita", () => {
+    expect(parseMonto("15,")).toBe(15);
   });
 });
 
