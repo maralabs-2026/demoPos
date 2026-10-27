@@ -33,7 +33,8 @@ export const getAuthProfile = cache(
 
     return buildSessionProfile(
       user.email,
-      user.user_metadata,
+      // app_metadata: el usuario no la puede escribir (user_metadata sí, desde el navegador).
+      user.app_metadata,
       data,
       data.comercios?.nombre,
     );

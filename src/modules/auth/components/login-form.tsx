@@ -68,7 +68,7 @@ export function LoginForm({
 
       onSuccess?.({
         mustChangePassword:
-          data.user.user_metadata.must_change_password === true,
+          data.user.app_metadata.must_change_password === true,
       });
     } catch (error) {
       setAuthError(mapLoginError(error));
