@@ -1,0 +1,41 @@
+nombre,categoria,codigo_barras,costo,precio,unidad_venta,stock_minimo
+"Cofler Bon o Bon","Golosinas y chocolates",7790010000017,,1500.00,unidad,10
+"Georgalos Sapito","Golosinas y chocolates",7790010000024,,1200.00,unidad,10
+"Arcor Butter Toffees","Golosinas y chocolates",7790010000031,,1400.00,unidad,10
+"Milka Chocolate 100g","Golosinas y chocolates",7790010000048,,3200.00,unidad,8
+"Águila Chocolate 100g","Golosinas y chocolates",7790010000055,,2800.00,unidad,8
+"Felfort Shot Six Pack","Golosinas y chocolates",7790010000062,,2200.00,unidad,6
+"Felfort Rhodesia","Golosinas y chocolates",7790010000079,,1300.00,unidad,10
+"Mantecol Clásico 100g","Golosinas y chocolates",7790010000086,,2600.00,unidad,10
+"Oreo Original 170g","Galletitas y snacks",7790010000093,,2900.00,unidad,8
+"Pepitos Chocolate 220g","Galletitas y snacks",7790010000109,,3100.00,unidad,8
+"Traviata Chocolate 200g","Galletitas y snacks",7790010000116,,2700.00,unidad,8
+"Papas Lays Clásicas 140g","Galletitas y snacks",7790010000123,,3400.00,unidad,6
+"Doritos Nachos 145g","Galletitas y snacks",7790010000130,,3600.00,unidad,6
+"Palitos Salvado Bagley 200g","Galletitas y snacks",7790010000147,,2400.00,unidad,6
+"Coca-Cola 500ml","Bebidas",7790010000154,,2500.00,unidad,15
+"Sprite 500ml","Bebidas",7790010000161,,2400.00,unidad,15
+"Pepsi 500ml","Bebidas",7790010000178,,2300.00,unidad,15
+"Agua Villavicencio 500ml","Bebidas",7790010000185,,1500.00,unidad,15
+"Cepita Jugo Naranja 500ml","Bebidas",7790010000192,,2600.00,unidad,12
+"Speed Energizante 473ml","Bebidas",7790010000208,,3200.00,unidad,8
+"Quilmes Cerveza Lata 473ml","Bebidas",7790010000215,,2900.00,unidad,12
+"Brahma Cerveza Lata 473ml","Bebidas",7790010000222,,2800.00,unidad,12
+"Marlboro Box 20","Cigarrillos y encendedores",7790010000239,,8500.00,unidad,10
+"Philip Morris Box 20","Cigarrillos y encendedores",7790010000246,,8300.00,unidad,10
+"Camel Box 20","Cigarrillos y encendedores",7790010000253,,8400.00,unidad,10
+"Lucky Strike Box 20","Cigarrillos y encendedores",7790010000260,,8200.00,unidad,10
+"Encendedor Bic","Cigarrillos y encendedores",7790010000277,,900.00,unidad,20
+"Leche La Serenísima Entera 1L","Lácteos y panificados",7790010000284,,2100.00,unidad,10
+"Yogur Sancor Bebible Frutilla 900ml","Lácteos y panificados",7790010000291,,2300.00,unidad,8
+"Pan Lactal Bimbo Grande","Lácteos y panificados",7790010000307,,2900.00,unidad,8
+"Facturas Surtidas x6","Lácteos y panificados",7790010000314,,3500.00,pack,5
+"Arroz Gallo Oro 1kg","Almacén",7790010000321,,3000.00,unidad,10
+"Fideos Matarazzo Mostachol 500g","Almacén",7790010000338,,2200.00,unidad,10
+"Yerba Mate Playadito 1kg","Almacén",7790010000345,,9000.00,unidad,8
+"Azúcar Ledesma 1kg","Almacén",7790010000352,,2400.00,unidad,10
+"Aceite Natura 900ml","Almacén",7790010000369,,4500.00,unidad,8
+"Papel Higiénico Elite x4","Higiene y limpieza",7790010000376,,4000.00,pack,8
+"Jabón Dove Barra 90g","Higiene y limpieza",7790010000383,,2200.00,unidad,8
+"Pañales Pampers Confort M x20","Higiene y limpieza",7790010000390,,6000.00,pack,6
+"Lavandina Ayudín 1L","Higiene y limpieza",7790010000406,,2000.00,unidad,10
