@@ -1,4 +1,11 @@
-import { ChartColumn, Package, Settings, Store, User, type LucideIcon } from "lucide-react";
+import {
+  ChartColumn,
+  Package,
+  Settings,
+  Store,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 import type { Rol } from "./session";
 
 export interface NavLink {
@@ -8,8 +15,16 @@ export interface NavLink {
 }
 
 const VENDER: NavLink = { href: "/vender", label: "Vender", icon: Store };
-const PRODUCTOS: NavLink = { href: "/productos", label: "Productos", icon: Package };
-const REPORTES: NavLink = { href: "/reportes", label: "Reportes", icon: ChartColumn };
+const PRODUCTOS: NavLink = {
+  href: "/productos",
+  label: "Productos",
+  icon: Package,
+};
+const REPORTES: NavLink = {
+  href: "/reportes",
+  label: "Reportes",
+  icon: ChartColumn,
+};
 const CONFIG: NavLink = { href: "/config", label: "Config", icon: Settings };
 const MI_PERFIL: NavLink = { href: "/perfil", label: "Mi perfil", icon: User };
 

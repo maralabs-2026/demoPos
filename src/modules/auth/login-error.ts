@@ -3,10 +3,7 @@
 // form never reveals whether an email exists.
 
 export type LoginErrorCode =
-  | "invalid_credentials"
-  | "too_many_attempts"
-  | "user_disabled"
-  | "network";
+  "invalid_credentials" | "too_many_attempts" | "user_disabled" | "network";
 
 export const loginErrorMessages: Record<LoginErrorCode, string> = {
   invalid_credentials: "Correo o contraseña incorrectos",

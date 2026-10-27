@@ -1,5 +1,9 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { buildSessionProfile, type SessionProfile, type PerfilData } from "./session";
+import {
+  buildSessionProfile,
+  type SessionProfile,
+  type PerfilData,
+} from "./session";
 
 type PerfilRow = PerfilData & {
   comercios: { nombre: string } | null;
