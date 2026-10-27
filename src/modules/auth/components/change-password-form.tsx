@@ -4,7 +4,6 @@ import { useState, type FormEvent } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createClient } from "@/lib/supabase/client";
 import { cambiarContrasena } from "../actions";
 import { loginErrorMessages } from "../login-error";
 import { changePasswordSchema } from "../schemas";
@@ -55,8 +54,6 @@ export function ChangePasswordForm({ onSuccess }: { onSuccess?: () => void }) {
         return;
       }
 
-      // El JWT todavía trae must_change_password: true; se renueva antes de navegar.
-      await createClient().auth.refreshSession();
       onSuccess?.();
     } catch {
       setFormError(loginErrorMessages.network);

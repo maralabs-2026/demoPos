@@ -33,5 +33,17 @@ export async function cambiarContrasena(
   });
   if (error) return fail(mapPasswordChangeError(error));
 
+  // Cambiar la contraseña con la API admin revoca las sesiones del usuario. Se vuelve a iniciar
+  // sesión acá, con la nueva, para que las cookies queden con un token sin el indicador.
+  if (user.email) {
+    const { error: loginError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: parsed.data.newPassword,
+    });
+    if (loginError) {
+      return fail("Tu contraseña se cambió. Ingresá de nuevo con la nueva.");
+    }
+  }
+
   return ok(null);
 }
