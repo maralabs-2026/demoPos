@@ -168,6 +168,12 @@ export const csvProductoRowSchema = z
 
 export type ProductoCsv = z.output<typeof csvProductoRowSchema>;
 
+// Igual que importar_productos (0011): sin distinguir mayúsculas ni espacios en los extremos,
+// pero sí tildes ("Almacen" no es "Almacén").
+export function claveCategoria(nombre: string): string {
+  return nombre.trim().toLowerCase();
+}
+
 export type FilaCsvValidada =
   | { numero: number; ok: true; producto: ProductoCsv }
   | {

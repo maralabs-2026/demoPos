@@ -7,6 +7,7 @@ import { getAuthProfile, type Rol, type SessionProfile } from "@/modules/auth";
 import {
   actualizarPreciosSchema,
   productoSchema,
+  validarCsvProductos,
   valoresAnterioresSchema,
   type ActualizarPreciosInput,
   type ProductoInput,
@@ -15,6 +16,7 @@ import {
 
 export type PreciosActualizados = { actualizados: number };
 export type ProductoGuardado = { id: string };
+export type ProductosImportados = { creados: number; actualizados: number };
 
 // La RLS de productos y las funciones SQL son la barrera real; esto solo da un mensaje claro antes.
 const ROLES_CATALOGO: readonly Rol[] = ["dueno", "encargado"];
@@ -28,6 +30,7 @@ const PV_PRODUCTO_INEXISTENTE = "PV005";
 const PV_PORCENTAJE_INVALIDO = "PV007";
 const PV_CATEGORIA_INVALIDA = "PV008";
 const PV_CAMBIO_CONCURRENTE = "PV009";
+const PV_IMPORTACION_INVALIDA = "PV010";
 
 async function requireRolCatalogo(
   mensaje: string,
@@ -191,4 +194,72 @@ export async function eliminarProducto(
 
   revalidarCatalogo();
   return ok({ id });
+}
+
+// Recibe las filas del CSV tal como se leyeron (texto) y las vuelve a validar acá: la vista
+// previa del cliente no es una barrera. Si alguna fila tiene errores no se importa nada.
+export async function importarProductos(
+  filas: Record<string, string>[],
+  encabezados: string[],
+): Promise<ActionResult<ProductosImportados>> {
+  if (!Array.isArray(filas) || !Array.isArray(encabezados)) {
+    return fail("El archivo no es válido. Volvé a elegirlo.");
+  }
+  const validado = validarCsvProductos(filas, encabezados);
+  if (!validado.ok) return fail(validado.error);
+
+  const productos = [];
+  for (const fila of validado.filas) {
+    if (!fila.ok) {
+      return fail(
+        `La fila ${fila.numero} tiene errores: ${fila.errores.join("; ")}`,
+      );
+    }
+    productos.push({
+      nombre: fila.producto.nombre,
+      codigo_barras: fila.producto.codigoBarras,
+      categoria: fila.producto.categoria,
+      precio: fila.producto.precio,
+      costo: fila.producto.costo,
+      unidad_venta: fila.producto.unidadVenta,
+      stock_minimo: fila.producto.stockMinimo,
+    });
+  }
+
+  const auth = await requireRolCatalogo("Tu rol no puede importar productos.");
+  if (!auth.ok) return auth;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("importar_productos", {
+    p_productos: productos,
+  });
+
+  if (error) {
+    // DETAIL trae el número de producto (desde 1); en la planilla la fila 1 son los encabezados.
+    const producto = /^\d+$/.test(error.details ?? "")
+      ? Number(error.details)
+      : 0;
+    const enFila = producto > 0 ? ` (fila ${producto + 1})` : "";
+    switch (error.code) {
+      case PG_INSUFFICIENT_PRIVILEGE:
+        return fail("Tu rol no puede importar productos.");
+      case PV_CATEGORIA_INVALIDA:
+        return fail(
+          `Una categoría del archivo no existe${enFila}. Recargá la página y revisá la vista previa.`,
+        );
+      case PV_IMPORTACION_INVALIDA:
+        return fail(`Hay datos inválidos en el archivo${enFila}.`);
+      case PG_NUMERIC_OVERFLOW:
+        return fail(`Hay un monto demasiado alto en el archivo${enFila}.`);
+      default:
+        return fail("No se pudieron importar los productos. Probá de nuevo.");
+    }
+  }
+
+  const resultado = data as Partial<ProductosImportados> | null;
+  revalidarCatalogo();
+  return ok({
+    creados: Number(resultado?.creados ?? 0),
+    actualizados: Number(resultado?.actualizados ?? 0),
+  });
 }
