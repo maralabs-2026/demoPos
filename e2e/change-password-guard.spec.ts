@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
 
 // E2E contra el login real de Supabase. Usuarios de supabase/seed_dev_users.sql:
 //   dueno@kiosko.demo   -> sin must_change_password   (password: E2E_DUENO_PASSWORD)
@@ -6,8 +7,8 @@ import { expect, test, type Page } from "@playwright/test";
 // Las contraseñas salen solo de variables de entorno: nunca del repo. Sin sesion sembrada
 // (no hay mock) y sin sesionStorage.
 //
-// Precondicion manual, igual que CA4: antes de correr este archivo, cajero@kiosko.demo tiene
-// que tener {"must_change_password": true} en user_metadata. El test no lo setea ni lo limpia.
+// Precondición: cajero@kiosko.demo tiene {"must_change_password": true} en app_metadata, como lo
+// deja supabase/seed_dev_users.sql. El test no cambia su contraseña, así que el indicador queda.
 
 const DUENO_EMAIL = "dueno@kiosko.demo";
 const CAJERO_EMAIL = "cajero@kiosko.demo";
@@ -37,7 +38,9 @@ test.describe("Guard de contraseña temporal con autenticación real", () => {
     await login(page, CAJERO_EMAIL, password);
 
     await expect(page).toHaveURL(/\/cambiar-contrasena/);
-    await expect(page.getByRole("heading", { name: /cambiar contraseña/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /cambiar contraseña/i }),
+    ).toBeVisible();
   });
 
   test("usuario con must_change_password=true no puede quedarse en /vender", async ({
@@ -66,5 +69,33 @@ test.describe("Guard de contraseña temporal con autenticación real", () => {
     await page.goto("/perfil");
     await page.getByRole("button", { name: /cerrar sesión/i }).click();
     await expect(page).toHaveURL(/\/login/);
+  });
+
+  test("escribir la propia metadata no saltea la contraseña temporal", async ({
+    page,
+  }) => {
+    const password = passwordDe("E2E_CAJERO_PASSWORD");
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    test.skip(!url || !anonKey, "Faltan las variables públicas de Supabase");
+
+    // Lo mismo que podría hacer el cajero desde la consola del navegador con su propia sesión.
+    const supabase = createClient(url!, anonKey!, {
+      auth: { persistSession: false },
+    });
+    const { error: loginError } = await supabase.auth.signInWithPassword({
+      email: CAJERO_EMAIL,
+      password,
+    });
+    expect(loginError).toBeNull();
+    const { error } = await supabase.auth.updateUser({
+      data: { must_change_password: false },
+    });
+    expect(error).toBeNull();
+
+    await login(page, CAJERO_EMAIL, password);
+    await expect(page).toHaveURL(/\/cambiar-contrasena/);
+    await page.goto("/vender");
+    await expect(page).toHaveURL(/\/cambiar-contrasena/);
   });
 });
