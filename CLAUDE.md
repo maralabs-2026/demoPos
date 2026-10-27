@@ -45,11 +45,11 @@ Lo que NO se construye en esta versión: facturación electrónica ARCA, Mercado
 src/
   modules/
     auth/        # login, perfil, roles
-    productos/   # catálogo, categorías, precios, códigos de barras
-    stock/       # movimientos, ajustes, alertas de mínimo
-    ventas/      # pantalla de cobro, pagos, comprobantes
-    caja/        # apertura, cierre, arqueo
-    reportes/    # consultas agregadas, exportación
+    productos/   # catálogo, categorías, precios, códigos de barras, promociones
+    stock/       # movimientos, ajustes, alertas de mínimo, reposición, auditoría
+    ventas/      # pantalla de cobro, pagos, comprobantes, historial y anulación
+    caja/        # apertura, cierre, arqueo, retiros e ingresos, gastos
+    reportes/    # consultas agregadas, exportación, inicio del dueño
     config/      # configuración por comercio
   components/ui/ # shadcn
   lib/           # supabase client, utils, formato de moneda
@@ -62,11 +62,14 @@ src/
 - El stock se calcula como suma de movimientos, no como un campo que se sobreescribe. El campo `stock_actual` en productos es una caché que se actualiza por trigger.
 - Los precios se guardan en la venta al momento de vender (snapshot). Cambiar el precio de un producto no altera ventas pasadas.
 - Montos en `numeric(12,2)`, nunca `float`.
+- Una venta nunca se borra. Anularla la marca como anulada y, en la misma transacción, genera los movimientos de stock inversos y el egreso en la caja abierta.
+- Las promociones aplicadas se guardan en la venta (snapshot), igual que los precios: cambiar o pausar una promo no altera ventas pasadas.
+- Retiros, ingresos y gastos pagados con la caja son movimientos de esa caja. Efectivo esperado al cierre = fondo inicial + ventas en efectivo + ingresos − retiros.
 
 **Roles**
 - `dueno`: todo.
 - `encargado`: todo menos configuración y eliminar usuarios.
-- `cajero`: vender, ver productos, abrir/cerrar su caja. No ve costos, márgenes ni reportes.
+- `cajero`: vender, ver productos, abrir/cerrar su caja y registrar retiros e ingresos de su caja con motivo. No ve costos, márgenes ni reportes, ni anula ventas, carga gastos o audita stock.
 
 **Costos**
 - El costo no es una columna de `productos`: vive en la tabla `productos_costos` (`comercio_id not null`, montos `numeric(12,2)`), porque la RLS no filtra por columna.
@@ -134,16 +137,23 @@ ABM de productos con categoría, código de barras, costo (en `productos_costos`
 **Validación:** importar el CSV de seed, subir 10% una categoría y verificar en base que solo esa categoría cambió. Tests unitarios de los schemas Zod.
 
 ### Fase 4 — Pantalla de cobro completa
-Sobre la pantalla de la demo: descuento por ítem y sobre el total según rol, pagos combinados con varios medios, atajos `+`/`-` cantidad, integración con `registrar_venta`, manejo de errores de stock y concurrencia.
-**Validación:** test Playwright que hace una venta completa solo con teclado en menos de 6 acciones. Dos ventas simultáneas del mismo producto con stock 1: una debe fallar limpiamente.
+Sobre la pantalla de la demo: descuento por ítem y sobre el total según rol, pagos combinados con varios medios, atajos `+`/`-` cantidad, integración con `registrar_venta`, manejo de errores de stock y concurrencia. Promociones y combos que se aplican solos en el ticket: precio por cantidad, NxM, combo fijo y porcentaje por producto o categoría, con vigencia por día y horario; ABM de promociones para dueño y encargado.
+**Validación:** test Playwright que hace una venta completa solo con teclado en menos de 6 acciones. Dos ventas simultáneas del mismo producto con stock 1: una debe fallar limpiamente. Una venta con una promo activa guarda el descuento en la venta y el total coincide con el de la pantalla.
 
 ### Fase 5 — Caja
-Apertura con monto inicial, cierre con conteo por medio de pago, diferencia calculada, historial de cajas. Un cajero no puede vender sin caja abierta.
-**Validación:** abrir caja, hacer 3 ventas con distintos medios, cerrar y verificar que los totales por medio de pago coinciden con la base.
+Apertura con monto inicial, cierre con conteo por medio de pago, diferencia calculada, historial de cajas. Un cajero no puede vender sin caja abierta. Retiros e ingresos de efectivo durante el turno, con motivo, que entran en el arqueo. Gastos del comercio (fijos y variables, pagados o por pagar) para dueño y encargado; un gasto pagado con la caja abierta se registra también como retiro.
+**Validación:** abrir caja, hacer 3 ventas con distintos medios, cerrar y verificar que los totales por medio de pago coinciden con la base. Con un retiro y un gasto pagado con la caja, el efectivo esperado del cierre los descuenta.
 
 ### Fase 6 — Reportes y comprobantes
 Ventas por día/semana/mes con filtros, ranking de productos, ganancia estimada (precio − costo, ambos snapshot de la venta), ventas por cajero. Exportación a Excel de ventas y stock. Ticket no fiscal imprimible en 58/80 mm (`@media print`) y versión para compartir por WhatsApp.
-**Validación:** los totales del reporte diario coinciden con el cierre de caja del mismo día. Ticket correcto en vista previa de impresión.
+Además:
+- Inicio para dueño y encargado: lo vendido hoy, efectivo en caja, pendientes (reposición, cajas con diferencia, gastos por vencer) y actividad reciente. Ganancia neta del período = ganancia estimada − gastos pagados.
+- Historial de ventas con reimpresión del ticket y anulación (dueño y encargado, con motivo).
+- Reposición sugerida: productos bajo el mínimo con la cantidad para llegar al doble del mínimo, para copiar o compartir por WhatsApp.
+- Auditoría de stock: conteo a ciegas por categoría (sin mostrar el stock del sistema) que, al aplicarse, genera ajustes con motivo.
+
+Si la fase supera lo revisable en una tanda, se divide en 6a (reportes, ticket, historial) y 6b (inicio, reposición, auditoría).
+**Validación:** los totales del reporte diario coinciden con el cierre de caja del mismo día. Ticket correcto en vista previa de impresión. Anular una venta devuelve el stock y descuenta la caja abierta. Una auditoría con diferencias genera un ajuste por producto con su motivo.
 
 ### Fase 7 — Cierre
 Configuración del comercio (datos del ticket, medios de pago, categorías, usuarios con alta, desactivación y blanqueo de contraseña). Estados de carga, errores amigables, accesibilidad básica. README con guía de despliegue y checklist de puesta en marcha. Cero `TODO(demo)` restantes.
