@@ -1,3 +1,5 @@
+import { getCajaAbierta } from "@/modules/caja";
+import { AbrirCaja } from "@/modules/caja/components/abrir-caja";
 import { getMediosPago } from "@/modules/config";
 import { getProductos } from "@/modules/productos";
 import { VentaScreen } from "@/modules/ventas/components/venta-screen";
@@ -5,22 +7,32 @@ import { VentaScreen } from "@/modules/ventas/components/venta-screen";
 export const dynamic = "force-dynamic";
 
 export default async function VenderPage() {
-  const [productosResult, mediosPagoResult] = await Promise.all([
+  const [cajaResult, productosResult, mediosPagoResult] = await Promise.all([
+    getCajaAbierta(),
     getProductos(),
     getMediosPago(),
   ]);
 
-  if (!productosResult.ok) {
+  const error = !cajaResult.ok
+    ? cajaResult.error
+    : !productosResult.ok
+      ? productosResult.error
+      : !mediosPagoResult.ok
+        ? mediosPagoResult.error
+        : null;
+  if (error || !cajaResult.ok || !productosResult.ok || !mediosPagoResult.ok) {
     return (
       <main className="p-6">
-        <p className="text-destructive text-sm">{productosResult.error}</p>
+        <p className="text-destructive text-sm">{error}</p>
       </main>
     );
   }
-  if (!mediosPagoResult.ok) {
+
+  // Sin caja abierta no se puede cobrar (registrar_venta la exige).
+  if (!cajaResult.data) {
     return (
-      <main className="p-6">
-        <p className="text-destructive text-sm">{mediosPagoResult.error}</p>
+      <main className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+        <AbrirCaja />
       </main>
     );
   }
@@ -28,6 +40,7 @@ export default async function VenderPage() {
   return (
     <main className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
       <VentaScreen
+        cajaId={cajaResult.data.id}
         productosIniciales={productosResult.data}
         mediosPago={mediosPagoResult.data}
       />

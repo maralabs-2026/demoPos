@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { registrarVentaSchema, type RegistrarVentaInput } from "./schemas";
@@ -12,6 +13,7 @@ export type ComprobanteItem = {
 };
 
 export type Comprobante = {
+  ventaId: string;
   items: ComprobanteItem[];
   total: number;
   medioPagoNombre: string;
@@ -19,10 +21,49 @@ export type Comprobante = {
   fecha: string;
 };
 
-// TODO(demo): server action simple que descuenta stock producto por producto,
-// sin persistir la venta. En Fase 1 la reemplaza la función rpc `registrar_venta`,
-// transaccional (cabecera + ítems + pagos + movimientos de stock, o nada).
-export async function registrarVentaDemo(
+// Códigos de registrar_venta (0007) y de Postgres.
+const PG_NOT_AUTHENTICATED = "28000";
+const PG_INSUFFICIENT_PRIVILEGE = "42501";
+const PV_STOCK_INSUFICIENTE = "PV001";
+const PV_CAJA_INVALIDA = "PV002";
+const PV_PAGO_INVALIDO = "PV003";
+const PV_DATOS_INVALIDOS = "PV004";
+const PV_PRODUCTO_INEXISTENTE = "PV005";
+
+type RpcResult = {
+  venta_id: string;
+  total: number;
+  vuelto: number;
+  created_at: string;
+};
+
+type ItemRow = {
+  nombre: string;
+  cantidad: number;
+  precio_unitario: number;
+  subtotal: number;
+};
+
+type PagoRow = { medios_pago: { nombre: string; tipo: string } | null };
+
+async function mensajeSinStock(productoId: string): Promise<string> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("productos")
+    .select("nombre, stock_actual")
+    .eq("id", productoId)
+    .maybeSingle()
+    .overrideTypes<{ nombre: string; stock_actual: number }>();
+  if (!data)
+    return "Un producto del ticket se quedó sin stock. Revisá el ticket.";
+  return data.stock_actual > 0
+    ? `Solo quedan ${data.stock_actual} de "${data.nombre}". Ajustá la cantidad.`
+    : `"${data.nombre}" se quedó sin stock. Quitalo del ticket.`;
+}
+
+// Cierra la venta con registrar_venta: cabecera, ítems, pagos y movimientos de stock en una
+// sola transacción (sección 3 de CLAUDE.md). Precios y total salen de la base, nunca del cliente.
+export async function registrarVenta(
   input: RegistrarVentaInput,
 ): Promise<ActionResult<Comprobante>> {
   if (!isSupabaseConfigured()) {
@@ -33,102 +74,88 @@ export async function registrarVentaDemo(
   if (!parsed.success) {
     return fail(parsed.error.issues[0]?.message ?? "Datos de venta inválidos");
   }
-  const { items, medioPagoId, montoRecibido } = parsed.data;
+  const { cajaId, items, pagos } = parsed.data;
 
   const supabase = await createClient();
-
-  const productoIds = items.map((i) => i.productoId);
-  const { data: productosDb, error: productosError } = await supabase
-    .from("productos")
-    .select("id, nombre, precio, stock_actual, unidad_venta")
-    .in("id", productoIds)
-    .overrideTypes<
-      {
-        id: string;
-        nombre: string;
-        precio: number;
-        stock_actual: number;
-        unidad_venta: string;
-      }[]
-    >();
-  if (productosError) return fail(productosError.message);
-
-  const productoPorId = new Map((productosDb ?? []).map((p) => [p.id, p]));
-  for (const item of items) {
-    const producto = productoPorId.get(item.productoId);
-    if (!producto) return fail("Un producto del carrito ya no existe");
-    if (producto.stock_actual < item.cantidad) {
-      return fail(`Sin stock suficiente de "${producto.nombre}"`);
-    }
-  }
-
-  const { data: medioPago, error: medioPagoError } = await supabase
-    .from("medios_pago")
-    .select("id, nombre, tipo")
-    .eq("id", medioPagoId)
-    .eq("activo", true)
-    .maybeSingle();
-  if (medioPagoError) return fail(medioPagoError.message);
-  if (!medioPago) return fail("Elegí un medio de pago válido");
-
-  // Precios snapshot al momento de vender (sección 3): se toman ahora, antes de descontar stock.
-  const comprobanteItems: ComprobanteItem[] = items.map((item) => {
-    const producto = productoPorId.get(item.productoId)!;
-    const precioUnitario = Number(producto.precio);
-    return {
-      nombre: producto.nombre,
-      cantidad: item.cantidad,
-      precioUnitario,
-      subtotal: precioUnitario * item.cantidad,
-    };
+  const { data, error } = await supabase.rpc("registrar_venta", {
+    p_caja_id: cajaId,
+    p_items: items.map((i) => ({
+      producto_id: i.productoId,
+      cantidad: i.cantidad,
+    })),
+    p_pagos: pagos.map((p) => ({
+      medio_pago_id: p.medioPagoId,
+      monto: p.monto,
+      ...(p.recibido !== undefined ? { recibido: p.recibido } : {}),
+    })),
   });
-  const total = comprobanteItems.reduce((acc, i) => acc + i.subtotal, 0);
 
-  if (medioPago.tipo === "efectivo") {
-    if (montoRecibido === undefined || montoRecibido < total) {
-      return fail("El monto recibido es menor al total");
+  if (error) {
+    switch (error.code) {
+      case PG_NOT_AUTHENTICATED:
+        return fail("Tu sesión venció. Volvé a ingresar.");
+      case PG_INSUFFICIENT_PRIVILEGE:
+        return fail("Tu usuario no puede registrar ventas.");
+      case PV_STOCK_INSUFICIENTE:
+        return fail(await mensajeSinStock(error.details ?? ""));
+      case PV_CAJA_INVALIDA:
+        return fail("Tu caja está cerrada. Abrila de nuevo para cobrar.");
+      case PV_PAGO_INVALIDO:
+        if (error.message.includes("recibido")) {
+          return fail("El monto recibido es menor al total.");
+        }
+        if (error.message.includes("no coinciden")) {
+          return fail(
+            "El total cambió porque se actualizó algún precio. Recargá la pantalla y cobrá de nuevo.",
+          );
+        }
+        return fail("Elegí un medio de pago válido.");
+      case PV_PRODUCTO_INEXISTENTE:
+        return fail(
+          "Un producto del ticket ya no existe. Recargá la pantalla.",
+        );
+      case PV_DATOS_INVALIDOS:
+        return fail("Revisá el ticket: hay cantidades o montos inválidos.");
+      default:
+        return fail("No se pudo registrar la venta. Probá de nuevo.");
     }
   }
 
-  // Descuento de stock condicional por ítem, con compensación si una carrera deja
-  // sin stock suficiente entre el chequeo de arriba y este update (no hay transacción real todavía).
-  const aplicados: { productoId: string; cantidad: number }[] = [];
-  for (const item of items) {
-    const { data: actualizado, error: updateError } = await supabase
-      .from("productos")
-      .update({
-        stock_actual:
-          productoPorId.get(item.productoId)!.stock_actual - item.cantidad,
-      })
-      .eq("id", item.productoId)
-      .gte("stock_actual", item.cantidad)
-      .select("id")
-      .maybeSingle();
+  const venta = data as RpcResult;
 
-    if (updateError || !actualizado) {
-      for (const previo of aplicados) {
-        const producto = productoPorId.get(previo.productoId)!;
-        await supabase
-          .from("productos")
-          .update({ stock_actual: producto.stock_actual })
-          .eq("id", previo.productoId);
-      }
-      const nombre = productoPorId.get(item.productoId)?.nombre ?? "producto";
-      return fail(
-        `Se quedó sin stock "${nombre}" justo ahora. Revisá el carrito.`,
-      );
-    }
-    aplicados.push({ productoId: item.productoId, cantidad: item.cantidad });
-  }
+  // El comprobante sale de lo que guardó la venta (snapshot), no de lo que tenía la pantalla.
+  const [itemsResult, pagosResult] = await Promise.all([
+    supabase
+      .from("venta_items")
+      .select("nombre, cantidad, precio_unitario, subtotal")
+      .eq("venta_id", venta.venta_id)
+      .overrideTypes<ItemRow[]>(),
+    supabase
+      .from("venta_pagos")
+      .select("medios_pago(nombre, tipo)")
+      .eq("venta_id", venta.venta_id)
+      .overrideTypes<PagoRow[]>(),
+  ]);
 
-  const vuelto =
-    medioPago.tipo === "efectivo" ? (montoRecibido ?? total) - total : null;
+  const pagosRows = pagosResult.data ?? [];
+  const hayEfectivo = pagosRows.some((p) => p.medios_pago?.tipo === "efectivo");
 
+  revalidatePath("/vender");
+  revalidatePath("/productos");
   return ok({
-    items: comprobanteItems,
-    total,
-    medioPagoNombre: medioPago.nombre,
-    vuelto,
-    fecha: new Date().toISOString(),
+    ventaId: venta.venta_id,
+    items: (itemsResult.data ?? []).map((i) => ({
+      nombre: i.nombre,
+      cantidad: i.cantidad,
+      precioUnitario: Number(i.precio_unitario),
+      subtotal: Number(i.subtotal),
+    })),
+    total: Number(venta.total),
+    medioPagoNombre: pagosRows
+      .map((p) => p.medios_pago?.nombre)
+      .filter(Boolean)
+      .join(" + "),
+    vuelto: hayEfectivo ? Number(venta.vuelto) : null,
+    fecha: venta.created_at,
   });
 }
