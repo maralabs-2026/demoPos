@@ -2,7 +2,15 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ScanBarcode, Search, Trash2, TriangleAlert } from "lucide-react";
+import {
+  Plus,
+  ScanBarcode,
+  Search,
+  Split,
+  Trash2,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardEyebrow, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +23,7 @@ import type { Producto } from "@/modules/productos";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { registrarVenta, type Comprobante } from "../actions";
+import { resolverPagos, restantePorAsignar, type PagoParcial } from "../pagos";
 import { ComprobanteView } from "./comprobante-view";
 
 type CartItem = {
@@ -42,6 +51,10 @@ export function VentaScreen({
   const [error, setError] = useState<string | null>(null);
   const [medioPagoId, setMedioPagoId] = useState(mediosPago[0]?.id ?? "");
   const [montoRecibido, setMontoRecibido] = useState<number | null>(null);
+  // null = un solo medio de pago; con dos o más líneas, pago combinado.
+  const [pagosCombinados, setPagosCombinados] = useState<PagoParcial[] | null>(
+    null,
+  );
   const [comprobante, setComprobante] = useState<Comprobante | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -143,7 +156,64 @@ export function VentaScreen({
   function cancelarVenta() {
     setCart([]);
     setMontoRecibido(null);
+    setPagosCombinados(null);
     setError(null);
+  }
+
+  // Atajos + y -: cambian la cantidad del último producto agregado.
+  function cambiarCantidadUltimo(delta: 1 | -1) {
+    const ultimo = cart[cart.length - 1];
+    if (!ultimo) return;
+    const nueva = ultimo.cantidad + delta;
+    if (nueva < 1) return;
+    if (nueva > ultimo.stockDisponible) {
+      setError(`Solo quedan ${ultimo.stockDisponible} de "${ultimo.nombre}"`);
+      return;
+    }
+    actualizarCantidad(ultimo.productoId, nueva);
+    setError(null);
+  }
+
+  function dividirPago() {
+    const otro = mediosPago.find((m) => m.id !== medioPagoId);
+    if (!otro) return;
+    setPagosCombinados([
+      { key: crypto.randomUUID(), medioPagoId, monto: null },
+      { key: crypto.randomUUID(), medioPagoId: otro.id, monto: null },
+    ]);
+    setError(null);
+  }
+
+  function agregarLineaPago() {
+    setPagosCombinados((prev) => {
+      if (!prev) return prev;
+      const usados = new Set(prev.map((l) => l.medioPagoId));
+      const libre = mediosPago.find((m) => !usados.has(m.id));
+      if (!libre) return prev;
+      return [
+        ...prev,
+        { key: crypto.randomUUID(), medioPagoId: libre.id, monto: null },
+      ];
+    });
+  }
+
+  function actualizarLineaPago(key: string, cambios: Partial<PagoParcial>) {
+    setPagosCombinados((prev) =>
+      prev ? prev.map((l) => (l.key === key ? { ...l, ...cambios } : l)) : prev,
+    );
+  }
+
+  function quitarLineaPago(key: string) {
+    setPagosCombinados((prev) => {
+      if (!prev) return prev;
+      const quedan = prev.filter((l) => l.key !== key);
+      // Con una sola línea vuelve al pago simple, con ese medio.
+      if (quedan.length < 2) {
+        if (quedan[0]) setMedioPagoId(quedan[0].medioPagoId);
+        return null;
+      }
+      return quedan;
+    });
   }
 
   function cobrar() {
@@ -153,15 +223,15 @@ export function VentaScreen({
       setError("El carrito está vacío");
       return;
     }
-    if (!medioSeleccionado) {
-      setError("Elegí un medio de pago");
-      return;
-    }
-    if (
-      medioSeleccionado.tipo === "efectivo" &&
-      (montoRecibido === null || montoRecibido < total)
-    ) {
-      setError("El monto recibido es menor al total");
+    const resueltos = resolverPagos(
+      total,
+      pagosCombinados
+        ? { tipo: "combinado", pagos: pagosCombinados }
+        : { tipo: "unico", medioPagoId, recibido: montoRecibido },
+      mediosPago,
+    );
+    if (!resueltos.ok) {
+      setError(resueltos.error);
       return;
     }
 
@@ -172,18 +242,9 @@ export function VentaScreen({
           productoId: i.productoId,
           cantidad: i.cantidad,
         })),
-        // Un solo medio por ahora (los pagos combinados son la Fase 4b). El monto es el total
-        // de la pantalla: si un precio cambió en la base, registrar_venta lo rechaza.
-        pagos: [
-          {
-            medioPagoId,
-            monto: total,
-            recibido:
-              medioSeleccionado.tipo === "efectivo"
-                ? (montoRecibido ?? undefined)
-                : undefined,
-          },
-        ],
+        // Los montos suman el total de la pantalla: si un precio cambió en la base,
+        // registrar_venta lo rechaza.
+        pagos: resueltos.pagos,
       });
 
       if (!result.ok) {
@@ -210,6 +271,7 @@ export function VentaScreen({
       );
       setCart([]);
       setMontoRecibido(null);
+      setPagosCombinados(null);
       setError(null);
     });
   }
@@ -223,12 +285,30 @@ export function VentaScreen({
       } else if (e.key === "F4") {
         e.preventDefault();
         cancelarVenta();
+      } else if (e.key === "+" || e.key === "-") {
+        // Solo con la búsqueda vacía (o fuera de un campo): "Coca-Cola" se tiene que poder escribir.
+        const target = e.target as HTMLElement | null;
+        const enCampo =
+          target instanceof HTMLInputElement ||
+          target instanceof HTMLTextAreaElement;
+        if (enCampo && !(target === inputRef.current && busqueda === ""))
+          return;
+        e.preventDefault();
+        cambiarCantidadUltimo(e.key === "+" ? 1 : -1);
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart, medioPagoId, montoRecibido, comprobante, isPending]);
+  }, [
+    cart,
+    medioPagoId,
+    montoRecibido,
+    pagosCombinados,
+    busqueda,
+    comprobante,
+    isPending,
+  ]);
 
   if (comprobante) {
     return (
@@ -348,60 +428,192 @@ export function VentaScreen({
           </p>
         </div>
 
-        <div
-          role="group"
-          aria-labelledby="medio-pago-label"
-          className="flex flex-col gap-2"
-        >
-          <p id="medio-pago-label" className="text-sm font-semibold">
-            Medio de pago
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {mediosPago.map((medio) => (
-              <button
-                key={medio.id}
-                type="button"
-                aria-pressed={medio.id === medioPagoId}
-                onClick={() => setMedioPagoId(medio.id)}
-                className={cn(
-                  "h-9 rounded-full border px-3.5 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none",
-                  medio.id === medioPagoId
-                    ? "border-primary bg-accent font-semibold text-primary"
-                    : "border-border bg-card hover:border-foreground",
-                )}
-              >
-                {medio.nombre}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {medioSeleccionado?.tipo === "efectivo" && (
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold" htmlFor="monto-recibido">
-              Monto recibido
-            </label>
-            <MoneyInput
-              id="monto-recibido"
-              placeholder="0,00"
-              value={montoRecibido}
-              onValueChange={setMontoRecibido}
-            />
-            <QuickAmounts total={total} onSelect={setMontoRecibido} />
-            {vuelto !== null && (
-              <div
-                className={cn(
-                  "flex items-center justify-between rounded-lg px-3.5 py-2.5 text-sm tabular-nums",
-                  vuelto < 0
-                    ? "bg-destructive-soft text-destructive"
-                    : "bg-success-soft text-success-foreground",
-                )}
-              >
-                <span>{vuelto < 0 ? "Falta" : "Vuelto"}</span>
-                <strong className="text-base">
-                  {formatCurrency(Math.abs(vuelto))}
-                </strong>
+        {pagosCombinados === null ? (
+          <>
+            <div
+              role="group"
+              aria-labelledby="medio-pago-label"
+              className="flex flex-col gap-2"
+            >
+              <p id="medio-pago-label" className="text-sm font-semibold">
+                Medio de pago
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {mediosPago.map((medio) => (
+                  <button
+                    key={medio.id}
+                    type="button"
+                    aria-pressed={medio.id === medioPagoId}
+                    onClick={() => setMedioPagoId(medio.id)}
+                    className={cn(
+                      "h-9 rounded-full border px-3.5 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none",
+                      medio.id === medioPagoId
+                        ? "border-primary bg-accent font-semibold text-primary"
+                        : "border-border bg-card hover:border-foreground",
+                    )}
+                  >
+                    {medio.nombre}
+                  </button>
+                ))}
               </div>
+            </div>
+
+            {medioSeleccionado?.tipo === "efectivo" && (
+              <div className="flex flex-col gap-2">
+                <label
+                  className="text-sm font-semibold"
+                  htmlFor="monto-recibido"
+                >
+                  Monto recibido
+                </label>
+                <MoneyInput
+                  id="monto-recibido"
+                  placeholder="0,00"
+                  value={montoRecibido}
+                  onValueChange={setMontoRecibido}
+                />
+                <QuickAmounts total={total} onSelect={setMontoRecibido} />
+                {vuelto !== null && (
+                  <div
+                    className={cn(
+                      "flex items-center justify-between rounded-lg px-3.5 py-2.5 text-sm tabular-nums",
+                      vuelto < 0
+                        ? "bg-destructive-soft text-destructive"
+                        : "bg-success-soft text-success-foreground",
+                    )}
+                  >
+                    <span>{vuelto < 0 ? "Falta" : "Vuelto"}</span>
+                    <strong className="text-base">
+                      {formatCurrency(Math.abs(vuelto))}
+                    </strong>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {mediosPago.length > 1 && total > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="self-start"
+                onClick={dividirPago}
+              >
+                <Split data-icon="inline-start" />
+                Dividí el pago entre varios medios
+              </Button>
+            )}
+          </>
+        ) : (
+          <div
+            role="group"
+            aria-labelledby="pago-combinado-label"
+            className="flex flex-col gap-3"
+          >
+            <div className="flex items-baseline justify-between">
+              <p id="pago-combinado-label" className="text-sm font-semibold">
+                Pago combinado
+              </p>
+              <span className="text-xs text-muted-foreground">
+                El efectivo se cobra justo
+              </span>
+            </div>
+            {pagosCombinados.map((linea, index) => {
+              const restante = restantePorAsignar(total, pagosCombinados);
+              return (
+                <div key={linea.key} className="flex items-center gap-2">
+                  <select
+                    aria-label={`Medio de pago ${index + 1}`}
+                    value={linea.medioPagoId}
+                    onChange={(e) =>
+                      actualizarLineaPago(linea.key, {
+                        medioPagoId: e.target.value,
+                      })
+                    }
+                    className="h-10 w-32 shrink-0 rounded-lg border border-input bg-card px-2 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                  >
+                    {mediosPago.map((medio) => (
+                      <option key={medio.id} value={medio.id}>
+                        {medio.nombre}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="min-w-0 flex-1">
+                    <MoneyInput
+                      aria-label={`Monto del medio ${index + 1}`}
+                      placeholder={
+                        restante > 0 && linea.monto === null
+                          ? formatCurrency(restante).replace("$ ", "")
+                          : "0,00"
+                      }
+                      value={linea.monto}
+                      onValueChange={(monto) =>
+                        actualizarLineaPago(linea.key, { monto })
+                      }
+                    />
+                  </div>
+                  {restante > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      aria-label={`Completá el medio ${index + 1} con lo que falta`}
+                      onClick={() =>
+                        actualizarLineaPago(linea.key, {
+                          monto:
+                            Math.round(((linea.monto ?? 0) + restante) * 100) /
+                            100,
+                        })
+                      }
+                    >
+                      Resto
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Quitar el medio ${index + 1}`}
+                    onClick={() => quitarLineaPago(linea.key)}
+                  >
+                    <X />
+                  </Button>
+                </div>
+              );
+            })}
+            {(() => {
+              const restante = restantePorAsignar(total, pagosCombinados);
+              return (
+                <div
+                  className={cn(
+                    "flex items-center justify-between rounded-lg px-3.5 py-2.5 text-sm tabular-nums",
+                    restante === 0
+                      ? "bg-success-soft text-success-foreground"
+                      : "bg-destructive-soft text-destructive",
+                  )}
+                >
+                  <span>
+                    {restante === 0
+                      ? "Cubre el total"
+                      : restante > 0
+                        ? "Falta"
+                        : "Sobra"}
+                  </span>
+                  {restante !== 0 && (
+                    <strong className="text-base">
+                      {formatCurrency(Math.abs(restante))}
+                    </strong>
+                  )}
+                </div>
+              );
+            })()}
+            {pagosCombinados.length < mediosPago.length && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="self-start"
+                onClick={agregarLineaPago}
+              >
+                <Plus data-icon="inline-start" />
+                Agregá otro medio
+              </Button>
             )}
           </div>
         )}
