@@ -7,7 +7,7 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        success: "bg-success-soft text-success-foreground",
+        success: "bg-success-soft text-success-text",
         info: "bg-accent text-accent-foreground",
         warning: "bg-warning-soft text-warning-foreground",
         destructive: "bg-destructive-soft text-destructive",

@@ -22,7 +22,7 @@ function CategoryTabs<T extends string>({
       role="group"
       aria-label={label}
       className={cn(
-        "flex w-fit max-w-full gap-1 overflow-x-auto rounded-full border border-border bg-card p-1",
+        "flex w-fit max-w-full gap-1 overflow-x-auto rounded-full border border-border bg-card p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         className,
       )}
     >

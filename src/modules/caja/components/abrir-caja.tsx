@@ -37,7 +37,7 @@ export function AbrirCaja() {
   return (
     <Card className="mx-auto w-full max-w-sm gap-5 p-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        <span className="grid size-12 place-items-center rounded-full bg-success-soft text-success-foreground">
+        <span className="grid size-12 place-items-center rounded-full bg-success-soft text-success-text">
           <LockOpen aria-hidden="true" className="size-6" />
         </span>
         <h2 className="text-xl">Abrí tu caja</h2>
