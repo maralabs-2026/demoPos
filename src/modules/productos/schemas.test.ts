@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  CSV_COLUMNAS,
+  CSV_MAX_FILAS,
   actualizarPreciosSchema,
   calcularMargen,
   precioActualizado,
   productoSchema,
+  validarCsvProductos,
 } from "./schemas";
 
 const CATEGORIA = "3f8a1c2e-5b7d-4e9f-8a6b-1c2d3e4f5a6b";
@@ -181,5 +184,115 @@ describe("calcularMargen", () => {
   it("devuelve null sin costo o con precio 0", () => {
     expect(calcularMargen(null, 1200)).toBeNull();
     expect(calcularMargen(800, 0)).toBeNull();
+  });
+});
+
+const FILA_CSV = {
+  nombre: "Yerba Playadito 1 kg",
+  categoria: "Almacén",
+  codigo_barras: "7790387000013",
+  costo: "3.100,00",
+  precio: "4.250,50",
+  unidad_venta: "unidad",
+  stock_minimo: "6",
+};
+
+const validar = (filas: Record<string, string>[]) =>
+  validarCsvProductos(filas, [...CSV_COLUMNAS]);
+
+describe("validarCsvProductos", () => {
+  it("convierte una fila válida con montos en formato argentino", () => {
+    expect(validar([FILA_CSV])).toEqual({
+      ok: true,
+      filas: [
+        {
+          numero: 2,
+          ok: true,
+          producto: {
+            nombre: "Yerba Playadito 1 kg",
+            categoria: "Almacén",
+            codigoBarras: "7790387000013",
+            costo: 3100,
+            precio: 4250.5,
+            unidadVenta: "unidad",
+            stockMinimo: 6,
+          },
+        },
+      ],
+    });
+  });
+
+  it("deja costo y categoría en null cuando vienen vacíos", () => {
+    const result = validar([{ ...FILA_CSV, costo: "", categoria: " " }]);
+    if (!result.ok || !result.filas[0].ok) throw new Error("debía validar");
+    expect(result.filas[0].producto).toMatchObject({
+      costo: null,
+      categoria: null,
+    });
+  });
+
+  it("marca la fila con sus errores y conserva los datos para la vista previa", () => {
+    const result = validar([
+      FILA_CSV,
+      {
+        ...FILA_CSV,
+        codigo_barras: "7790387000020",
+        precio: "abc",
+        stock_minimo: "1,5",
+      },
+    ]);
+    if (!result.ok) throw new Error("debía validar el archivo");
+    expect(result.filas[0].ok).toBe(true);
+    expect(result.filas[1]).toMatchObject({
+      numero: 3,
+      ok: false,
+      datos: { precio: "abc" },
+      errores: [
+        "El precio no es un monto válido",
+        "El stock mínimo debe ser un número entero",
+      ],
+    });
+  });
+
+  it("exige el precio y aplica las reglas del ABM después de convertir", () => {
+    const sinPrecio = validar([{ ...FILA_CSV, precio: "" }]);
+    if (!sinPrecio.ok || sinPrecio.filas[0].ok) throw new Error("debía fallar");
+    expect(sinPrecio.filas[0].errores).toEqual(["Falta el precio"]);
+
+    const reglasAbm = validar([
+      { ...FILA_CSV, nombre: "  ", stock_minimo: "-1" },
+    ]);
+    if (!reglasAbm.ok || reglasAbm.filas[0].ok) throw new Error("debía fallar");
+    expect(reglasAbm.filas[0].errores).toEqual([
+      "El nombre es obligatorio",
+      "El stock mínimo no puede ser negativo",
+    ]);
+  });
+
+  it("rechaza un código de barras repetido dentro del archivo", () => {
+    const result = validar([FILA_CSV, { ...FILA_CSV, nombre: "Otra yerba" }]);
+    if (!result.ok) throw new Error("debía validar el archivo");
+    expect(result.filas[1]).toMatchObject({
+      numero: 3,
+      ok: false,
+      errores: ["El código 7790387000013 ya aparece en la fila 2"],
+    });
+  });
+
+  it("rechaza el archivo si faltan columnas", () => {
+    expect(validarCsvProductos([FILA_CSV], ["nombre", "precio"])).toEqual({
+      ok: false,
+      error:
+        "Faltan columnas en el archivo: categoria, codigo_barras, costo, unidad_venta, stock_minimo",
+    });
+  });
+
+  it("rechaza un archivo vacío o con demasiadas filas", () => {
+    expect(validar([])).toEqual({
+      ok: false,
+      error: "El archivo no tiene productos",
+    });
+    const muchas = Array.from({ length: CSV_MAX_FILAS + 1 }, () => FILA_CSV);
+    expect(validar(muchas).ok).toBe(false);
   });
 });

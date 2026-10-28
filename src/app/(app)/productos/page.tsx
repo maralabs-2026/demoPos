@@ -29,12 +29,20 @@ export default async function ProductosPage() {
           </p>
         </div>
         {puedeGestionar && (
-          <Link
-            href="/productos/precios"
-            className={buttonVariants({ variant: "outline" })}
-          >
-            Actualizar precios
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/productos/importar"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              Importar CSV
+            </Link>
+            <Link
+              href="/productos/precios"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              Actualizar precios
+            </Link>
+          </div>
         )}
       </div>
 

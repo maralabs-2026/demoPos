@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseMonto } from "@/lib/currency";
 
 export const buscarProductosSchema = z.object({
   q: z.string().trim().max(100).optional(),
@@ -87,4 +88,158 @@ export function precioActualizado(precio: number, porcentaje: number): number {
   // Se opera en centavos enteros para que el redondeo coincida con el numeric de Postgres.
   const centavos = Math.round(precio * 100);
   return Math.round((centavos * (100 + porcentaje)) / 100) / 100;
+}
+
+// ---- Importación desde CSV ----
+
+export const CSV_COLUMNAS = [
+  "nombre",
+  "categoria",
+  "codigo_barras",
+  "costo",
+  "precio",
+  "unidad_venta",
+  "stock_minimo",
+] as const;
+
+// Mismo tope que acepta la función importar_productos (migración 0011).
+export const CSV_MAX_FILAS = 1000;
+
+// Monto escrito en una planilla: "1.234,50", "1234.5" o "$ 900". Vacío = null.
+const montoCsv = (campo: string, opcional: boolean) =>
+  z.string().transform((texto, ctx) => {
+    const valor = parseMonto(texto);
+    if (valor === null) {
+      if (opcional) return null;
+      ctx.addIssue({ code: "custom", message: `Falta el ${campo}` });
+      return z.NEVER;
+    }
+    if (Number.isNaN(valor)) {
+      ctx.addIssue({
+        code: "custom",
+        message: `El ${campo} no es un monto válido`,
+      });
+      return z.NEVER;
+    }
+    return valor;
+  });
+
+const enteroCsv = z.string().transform((texto, ctx) => {
+  const limpio = texto.trim();
+  if (!/^-?\d+$/.test(limpio)) {
+    ctx.addIssue({
+      code: "custom",
+      message: "El stock mínimo debe ser un número entero",
+    });
+    return z.NEVER;
+  }
+  return Number(limpio);
+});
+
+// Fila de un CSV de importación: todo llega como texto. La categoría va por nombre, que es lo
+// que un comerciante escribe en una planilla; el servidor la resuelve contra la base.
+export const csvProductoRowSchema = z
+  .object({
+    nombre: z.string(),
+    categoria: z.string(),
+    codigo_barras: z.string(),
+    costo: montoCsv("costo", true),
+    precio: montoCsv("precio", false),
+    unidad_venta: z.string(),
+    stock_minimo: enteroCsv,
+  })
+  .transform((fila) => ({
+    nombre: fila.nombre,
+    codigoBarras: fila.codigo_barras,
+    categoria: fila.categoria.trim() === "" ? null : fila.categoria.trim(),
+    costo: fila.costo,
+    precio: fila.precio,
+    unidadVenta: fila.unidad_venta,
+    stockMinimo: fila.stock_minimo,
+  }))
+  .pipe(
+    productoSchema.omit({ categoriaId: true }).extend({
+      categoria: z
+        .string()
+        .max(100, { error: "El nombre de la categoría es demasiado largo" })
+        .nullable(),
+    }),
+  );
+
+export type ProductoCsv = z.output<typeof csvProductoRowSchema>;
+
+// Igual que importar_productos (0011): sin distinguir mayúsculas ni espacios en los extremos,
+// pero sí tildes ("Almacen" no es "Almacén").
+export function claveCategoria(nombre: string): string {
+  return nombre.trim().toLowerCase();
+}
+
+export type FilaCsvValidada =
+  | { numero: number; ok: true; producto: ProductoCsv }
+  | {
+      numero: number;
+      ok: false;
+      datos: Record<string, string>;
+      errores: string[];
+    };
+
+export type CsvValidado =
+  { ok: false; error: string } | { ok: true; filas: FilaCsvValidada[] };
+
+// Valida el archivo completo: encabezados, cantidad de filas, cada fila y códigos repetidos.
+// Se usa en la vista previa (cliente) y otra vez en la server action antes de tocar la base.
+export function validarCsvProductos(
+  objetos: Record<string, string>[],
+  encabezados: string[],
+): CsvValidado {
+  const faltantes = CSV_COLUMNAS.filter((c) => !encabezados.includes(c));
+  if (faltantes.length > 0) {
+    return {
+      ok: false,
+      error: `Faltan columnas en el archivo: ${faltantes.join(", ")}`,
+    };
+  }
+  if (objetos.length === 0) {
+    return { ok: false, error: "El archivo no tiene productos" };
+  }
+  if (objetos.length > CSV_MAX_FILAS) {
+    return {
+      ok: false,
+      error: `El archivo tiene ${objetos.length} productos; el máximo por importación es ${CSV_MAX_FILAS}`,
+    };
+  }
+
+  const filas: FilaCsvValidada[] = objetos.map((datos, i) => {
+    // Fila 1 = encabezados, así que el primer producto está en la fila 2 de la planilla.
+    const numero = i + 2;
+    const resultado = csvProductoRowSchema.safeParse(datos);
+    return resultado.success
+      ? { numero, ok: true, producto: resultado.data }
+      : {
+          numero,
+          ok: false,
+          datos,
+          errores: resultado.error.issues.map((issue) => issue.message),
+        };
+  });
+
+  const primeraFila = new Map<string, number>();
+  for (const fila of filas) {
+    if (!fila.ok) continue;
+    const codigo = fila.producto.codigoBarras;
+    const anterior = primeraFila.get(codigo);
+    if (anterior === undefined) {
+      primeraFila.set(codigo, fila.numero);
+      continue;
+    }
+    const repetida: FilaCsvValidada = {
+      numero: fila.numero,
+      ok: false,
+      datos: objetos[fila.numero - 2],
+      errores: [`El código ${codigo} ya aparece en la fila ${anterior}`],
+    };
+    filas[fila.numero - 2] = repetida;
+  }
+
+  return { ok: true, filas };
 }

@@ -4,8 +4,13 @@ export {
   crearProducto,
   editarProducto,
   eliminarProducto,
+  importarProductos,
 } from "./actions";
-export type { PreciosActualizados, ProductoGuardado } from "./actions";
+export type {
+  PreciosActualizados,
+  ProductoGuardado,
+  ProductosImportados,
+} from "./actions";
 export { getCategorias, getProductos } from "./queries";
 export type { Categoria, Producto } from "./queries";
 export {
