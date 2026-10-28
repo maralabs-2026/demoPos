@@ -1,4 +1,5 @@
 import {
+  Boxes,
   ChartColumn,
   Package,
   Settings,
@@ -20,6 +21,7 @@ const PRODUCTOS: NavLink = {
   label: "Productos",
   icon: Package,
 };
+const STOCK: NavLink = { href: "/stock", label: "Stock", icon: Boxes };
 const REPORTES: NavLink = {
   href: "/reportes",
   label: "Reportes",
@@ -35,6 +37,7 @@ const TODOS: readonly Rol[] = ["dueno", "encargado", "cajero"];
 export const ROUTE_ROLES = {
   "/vender": TODOS,
   "/productos": TODOS,
+  "/stock": ["dueno", "encargado"],
   "/reportes": ["dueno", "encargado"],
   "/config": ["dueno"],
   "/perfil": TODOS,
@@ -49,6 +52,7 @@ export function canAccess(rol: Rol, route: AppRoute): boolean {
 const LINKS: readonly NavLink[] = [
   VENDER,
   PRODUCTOS,
+  STOCK,
   REPORTES,
   CONFIG,
   MI_PERFIL,
