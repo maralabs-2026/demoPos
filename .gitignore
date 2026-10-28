@@ -49,4 +49,4 @@ next-env.d.ts
 /stripe-DESIGN.md
 
 # supabase cli
-supabase/.temp/
+/supabase/.temp/

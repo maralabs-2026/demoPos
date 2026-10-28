@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { getAuthProfile } from "@/modules/auth";
+import { requireRol } from "@/modules/auth";
 import { getProductos } from "@/modules/productos";
 import { getMovimientos } from "@/modules/stock";
 import { HistorialMovimientos } from "@/modules/stock/components/historial-movimientos";
@@ -12,9 +11,7 @@ export default async function StockPage({
 }: {
   searchParams: Promise<{ producto?: string }>;
 }) {
-  const profile = await getAuthProfile();
-  if (!profile) redirect("/login");
-  if (profile.rol === "cajero") redirect("/vender");
+  await requireRol("/stock");
 
   const { producto } = await searchParams;
   const [productosResult, movimientosResult] = await Promise.all([
@@ -39,7 +36,9 @@ export default async function StockPage({
             movimientosResult === null ? null : movimientosResult.ok ? (
               <HistorialMovimientos movimientos={movimientosResult.data} />
             ) : (
-              <p className="text-destructive text-sm">{movimientosResult.error}</p>
+              <p className="text-destructive text-sm">
+                {movimientosResult.error}
+              </p>
             )
           }
         />
