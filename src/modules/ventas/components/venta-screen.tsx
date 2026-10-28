@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { ScanBarcode, Search, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardEyebrow, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +14,7 @@ import type { MedioPago } from "@/modules/config";
 import type { Producto } from "@/modules/productos";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
-import { registrarVentaDemo, type Comprobante } from "../actions";
+import { registrarVenta, type Comprobante } from "../actions";
 import { ComprobanteView } from "./comprobante-view";
 
 type CartItem = {
@@ -26,12 +27,15 @@ type CartItem = {
 };
 
 export function VentaScreen({
+  cajaId,
   productosIniciales,
   mediosPago,
 }: {
+  cajaId: string;
   productosIniciales: Producto[];
   mediosPago: MedioPago[];
 }) {
+  const router = useRouter();
   const [productos, setProductos] = useState(productosIniciales);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [busqueda, setBusqueda] = useState("");
@@ -162,22 +166,32 @@ export function VentaScreen({
     }
 
     startTransition(async () => {
-      const result = await registrarVentaDemo({
+      const result = await registrarVenta({
+        cajaId,
         items: cart.map((i) => ({
           productoId: i.productoId,
           cantidad: i.cantidad,
         })),
-        medioPagoId,
-        montoRecibido:
-          medioSeleccionado.tipo === "efectivo"
-            ? (montoRecibido ?? undefined)
-            : undefined,
+        // Un solo medio por ahora (los pagos combinados son la Fase 4b). El monto es el total
+        // de la pantalla: si un precio cambió en la base, registrar_venta lo rechaza.
+        pagos: [
+          {
+            medioPagoId,
+            monto: total,
+            recibido:
+              medioSeleccionado.tipo === "efectivo"
+                ? (montoRecibido ?? undefined)
+                : undefined,
+          },
+        ],
       });
 
       if (!result.ok) {
         // También en pantalla: el toast se va a los 7 s y el cajero puede no verlo.
         setError(result.error);
         toast.error("No se pudo cobrar", result.error);
+        // La caja se cerró en otro lado: la página vuelve a pedir que se abra.
+        if (result.error.startsWith("Tu caja está cerrada")) router.refresh();
         return;
       }
 
