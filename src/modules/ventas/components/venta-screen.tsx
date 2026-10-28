@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { ScanBarcode, Search, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardEyebrow, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
+import { QuantityStepper } from "@/components/ui/quantity-stepper";
+import { QuickAmounts } from "@/components/ui/quick-amounts";
+import { toast } from "@/components/ui/toaster";
 import type { MedioPago } from "@/modules/config";
 import type { Producto } from "@/modules/productos";
 import { formatCurrency } from "@/lib/currency";
@@ -31,7 +37,7 @@ export function VentaScreen({
   const [busqueda, setBusqueda] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [medioPagoId, setMedioPagoId] = useState(mediosPago[0]?.id ?? "");
-  const [montoRecibido, setMontoRecibido] = useState("");
+  const [montoRecibido, setMontoRecibido] = useState<number | null>(null);
   const [comprobante, setComprobante] = useState<Comprobante | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -42,13 +48,15 @@ export function VentaScreen({
   }, [comprobante, cart.length]);
 
   const medioSeleccionado = mediosPago.find((m) => m.id === medioPagoId);
-  const total = cart.reduce((acc, i) => acc + i.precio * i.cantidad, 0);
-  const recibido = Number(montoRecibido.replace(",", "."));
+  // Redondeado a centavos: sin esto, "Exacto" o un monto tipeado pueden quedar
+  // por debajo de un total como 1234.5600000000002.
+  const total =
+    Math.round(cart.reduce((acc, i) => acc + i.precio * i.cantidad, 0) * 100) /
+    100;
+  const cantidadItems = cart.reduce((acc, i) => acc + i.cantidad, 0);
   const vuelto =
-    medioSeleccionado?.tipo === "efectivo" &&
-    montoRecibido !== "" &&
-    !Number.isNaN(recibido)
-      ? recibido - total
+    medioSeleccionado?.tipo === "efectivo" && montoRecibido !== null
+      ? montoRecibido - total
       : null;
 
   function agregarAlCarrito(producto: Producto) {
@@ -130,11 +138,13 @@ export function VentaScreen({
 
   function cancelarVenta() {
     setCart([]);
-    setMontoRecibido("");
+    setMontoRecibido(null);
     setError(null);
   }
 
   function cobrar() {
+    // F2 no pasa por el botón deshabilitado: sin esto, un doble F2 registra la venta dos veces.
+    if (isPending) return;
     if (cart.length === 0) {
       setError("El carrito está vacío");
       return;
@@ -145,7 +155,7 @@ export function VentaScreen({
     }
     if (
       medioSeleccionado.tipo === "efectivo" &&
-      (montoRecibido === "" || recibido < total)
+      (montoRecibido === null || montoRecibido < total)
     ) {
       setError("El monto recibido es menor al total");
       return;
@@ -159,11 +169,15 @@ export function VentaScreen({
         })),
         medioPagoId,
         montoRecibido:
-          medioSeleccionado.tipo === "efectivo" ? recibido : undefined,
+          medioSeleccionado.tipo === "efectivo"
+            ? (montoRecibido ?? undefined)
+            : undefined,
       });
 
       if (!result.ok) {
+        // También en pantalla: el toast se va a los 7 s y el cajero puede no verlo.
         setError(result.error);
+        toast.error("No se pudo cobrar", result.error);
         return;
       }
 
@@ -176,8 +190,12 @@ export function VentaScreen({
         ),
       );
       setComprobante(result.data);
+      toast.success(
+        "Venta registrada",
+        `${formatCurrency(result.data.total)} · ${result.data.medioPagoNombre}`,
+      );
       setCart([]);
-      setMontoRecibido("");
+      setMontoRecibido(null);
       setError(null);
     });
   }
@@ -196,7 +214,7 @@ export function VentaScreen({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart, medioPagoId, montoRecibido, comprobante]);
+  }, [cart, medioPagoId, montoRecibido, comprobante, isPending]);
 
   if (comprobante) {
     return (
@@ -208,85 +226,134 @@ export function VentaScreen({
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-      <div className="space-y-4">
-        <Input
-          ref={inputRef}
-          autoFocus
-          placeholder="Escaneá un código de barras o buscá por nombre..."
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleBuscarSubmit();
-            }
-          }}
-          className="h-12 text-base"
-        />
-
-        {error && <p className="text-destructive text-sm">{error}</p>}
-
-        <div className="divide-y rounded-md border">
-          {cart.length === 0 && (
-            <p className="text-muted-foreground p-6 text-center text-sm">
-              Escaneá o buscá un producto para empezar la venta.
-            </p>
-          )}
-          {cart.map((item) => (
-            <div key={item.productoId} className="flex items-center gap-3 p-3">
-              <div className="flex-1">
-                <p className="text-sm font-medium">{item.nombre}</p>
-                <p className="text-muted-foreground text-xs tabular-nums">
-                  {formatCurrency(item.precio)} c/u
-                </p>
-              </div>
-              <Input
-                type="number"
-                min={1}
-                max={item.stockDisponible}
-                value={item.cantidad}
-                onChange={(e) =>
-                  actualizarCantidad(item.productoId, Number(e.target.value))
-                }
-                className="w-16 text-center"
-              />
-              <p className="w-24 text-right text-sm font-medium tabular-nums">
-                {formatCurrency(item.precio * item.cantidad)}
-              </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => quitarDelCarrito(item.productoId)}
-              >
-                Quitar
-              </Button>
-            </div>
-          ))}
+    <div className="grid items-start gap-5 lg:grid-cols-[1fr_340px]">
+      <div className="flex flex-col gap-4">
+        <div className="relative">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            ref={inputRef}
+            autoFocus
+            aria-label="Buscar producto"
+            placeholder="Escaneá o buscá un producto..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleBuscarSubmit();
+              }
+            }}
+            className="h-13 rounded-full pl-12 text-base md:text-base"
+          />
         </div>
+
+        {error && (
+          <p
+            role="alert"
+            className="flex items-center gap-2 rounded-lg bg-destructive-soft px-4 py-3 text-sm font-medium text-destructive"
+          >
+            <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
+            {error}
+          </p>
+        )}
+
+        <Card className="gap-0">
+          <CardHeader className="pb-2">
+            <div>
+              <CardEyebrow>Venta actual</CardEyebrow>
+              <CardTitle className="mt-1">
+                {cart.length === 1 ? "1 producto" : `${cart.length} productos`}
+                {cantidadItems !== cart.length && (
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    {cantidadItems} unidades
+                  </span>
+                )}
+              </CardTitle>
+            </div>
+          </CardHeader>
+          {cart.length === 0 && (
+            <div className="flex flex-col items-center gap-3 py-10 text-center text-sm text-muted-foreground">
+              <span className="grid size-12 place-items-center rounded-full bg-muted">
+                <ScanBarcode aria-hidden="true" className="size-6" />
+              </span>
+              Escaneá o buscá un producto para empezar la venta.
+            </div>
+          )}
+          <ul className="flex flex-col">
+            {cart.map((item) => (
+              <li
+                key={item.productoId}
+                className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border py-3 last:border-0"
+              >
+                <div className="min-w-0 basis-full sm:flex-1 sm:basis-0">
+                  <p className="truncate text-sm font-semibold">
+                    {item.nombre}
+                  </p>
+                  <p className="text-xs text-muted-foreground tabular-nums">
+                    {formatCurrency(item.precio)} c/u
+                  </p>
+                </div>
+                <QuantityStepper
+                  value={item.cantidad}
+                  max={item.stockDisponible}
+                  label={item.nombre}
+                  onDecrement={() =>
+                    actualizarCantidad(item.productoId, item.cantidad - 1)
+                  }
+                  onIncrement={() =>
+                    actualizarCantidad(item.productoId, item.cantidad + 1)
+                  }
+                  onValueChange={(n) => actualizarCantidad(item.productoId, n)}
+                  onEnter={() => inputRef.current?.focus()}
+                />
+                <p className="ml-auto w-24 text-right text-sm font-bold tabular-nums">
+                  {formatCurrency(item.precio * item.cantidad)}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Quitar ${item.nombre}`}
+                  onClick={() => quitarDelCarrito(item.productoId)}
+                >
+                  <Trash2 />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </Card>
       </div>
 
-      <div className="space-y-4 rounded-md border p-4">
+      <Card className="gap-5 lg:sticky lg:top-6">
         <div>
-          <p className="text-muted-foreground text-sm">Total</p>
-          <p className="text-4xl font-light tracking-tight tabular-nums">
+          <CardEyebrow>Total</CardEyebrow>
+          <p className="mt-1 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl">
             {formatCurrency(total)}
           </p>
         </div>
 
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Medio de pago</p>
+        <div
+          role="group"
+          aria-labelledby="medio-pago-label"
+          className="flex flex-col gap-2"
+        >
+          <p id="medio-pago-label" className="text-sm font-semibold">
+            Medio de pago
+          </p>
           <div className="flex flex-wrap gap-2">
             {mediosPago.map((medio) => (
               <button
                 key={medio.id}
                 type="button"
+                aria-pressed={medio.id === medioPagoId}
                 onClick={() => setMedioPagoId(medio.id)}
                 className={cn(
-                  "rounded-full border px-3 py-1.5 text-sm",
+                  "h-9 rounded-full border px-3.5 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none",
                   medio.id === medioPagoId
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "hover:bg-accent",
+                    ? "border-primary bg-accent font-semibold text-primary"
+                    : "border-border bg-card hover:border-foreground",
                 )}
               >
                 {medio.nombre}
@@ -296,38 +363,46 @@ export function VentaScreen({
         </div>
 
         {medioSeleccionado?.tipo === "efectivo" && (
-          <div className="space-y-1">
-            <label className="text-sm font-medium" htmlFor="monto-recibido">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold" htmlFor="monto-recibido">
               Monto recibido
             </label>
-            <Input
+            <MoneyInput
               id="monto-recibido"
-              type="number"
-              min={0}
+              placeholder="0,00"
               value={montoRecibido}
-              onChange={(e) => setMontoRecibido(e.target.value)}
+              onValueChange={setMontoRecibido}
             />
+            <QuickAmounts total={total} onSelect={setMontoRecibido} />
             {vuelto !== null && (
-              <p
+              <div
                 className={cn(
-                  "text-sm tabular-nums",
-                  vuelto < 0 ? "text-destructive" : "text-muted-foreground",
+                  "flex items-center justify-between rounded-lg px-3.5 py-2.5 text-sm tabular-nums",
+                  vuelto < 0
+                    ? "bg-destructive-soft text-destructive"
+                    : "bg-success-soft text-success-foreground",
                 )}
               >
-                Vuelto: {formatCurrency(Math.max(vuelto, 0))}
-              </p>
+                <span>{vuelto < 0 ? "Falta" : "Vuelto"}</span>
+                <strong className="text-base">
+                  {formatCurrency(Math.abs(vuelto))}
+                </strong>
+              </div>
             )}
           </div>
         )}
 
-        <div className="space-y-2 pt-2">
+        <div className="flex flex-col gap-2 pt-1">
           <Button
             className="w-full"
             size="lg"
             disabled={isPending}
             onClick={cobrar}
           >
-            Cobrar (F2)
+            {isPending ? "Cobrando..." : "Cobrar"}
+            <kbd className="rounded-md bg-white/20 px-1.5 py-0.5 text-xs font-semibold">
+              F2
+            </kbd>
           </Button>
           <Button
             className="w-full"
@@ -335,10 +410,13 @@ export function VentaScreen({
             disabled={isPending}
             onClick={cancelarVenta}
           >
-            Cancelar (F4)
+            Cancelar
+            <kbd className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-semibold">
+              F4
+            </kbd>
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
