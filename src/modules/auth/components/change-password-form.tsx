@@ -4,18 +4,11 @@ import { useState, type FormEvent } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cambiarContrasena } from "../actions";
+import { loginErrorMessages } from "../login-error";
 import { changePasswordSchema } from "../schemas";
-import { updateMockPassword, type MockSession } from "../mock";
 
-export function ChangePasswordForm({
-  email,
-  currentPassword,
-  onSuccess,
-}: {
-  email: string;
-  currentPassword: string;
-  onSuccess?: (session: MockSession) => void;
-}) {
+export function ChangePasswordForm({ onSuccess }: { onSuccess?: () => void }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNew, setShowNew] = useState(false);
@@ -31,7 +24,6 @@ export function ChangePasswordForm({
     if (isSubmitting) return;
 
     const parsed = changePasswordSchema.safeParse({
-      currentPassword,
       newPassword,
       confirmPassword,
     });
@@ -56,12 +48,15 @@ export function ChangePasswordForm({
     setFormError(null);
     setIsSubmitting(true);
     try {
-      const result = updateMockPassword(email, parsed.data.newPassword);
-      if (result.ok) {
-        onSuccess?.(result.data);
-      } else {
+      const result = await cambiarContrasena(parsed.data);
+      if (!result.ok) {
         setFormError(result.error);
+        return;
       }
+
+      onSuccess?.();
+    } catch {
+      setFormError(loginErrorMessages.network);
     } finally {
       setIsSubmitting(false);
     }

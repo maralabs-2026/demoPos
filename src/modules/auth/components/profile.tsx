@@ -1,16 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  clearMockSession,
-  getMockSession,
-  type MockSession,
-} from "@/modules/auth";
-import { ROL_LABELS, rolBadgeVariant } from "@/modules/auth";
+import { createClient } from "@/lib/supabase/client";
+import { ROL_LABELS, rolBadgeVariant } from "@/modules/auth/roles";
+import type { SessionProfile } from "@/modules/auth/session";
 
 function initials(nombre: string): string {
   const parts = nombre.trim().split(/\s+/);
@@ -36,25 +32,15 @@ function Field({
   );
 }
 
-export function Profile() {
+export function Profile({ profile: usuario }: { profile: SessionProfile }) {
   const router = useRouter();
-  const [usuario, setUsuario] = useState<MockSession | null>(null);
 
-  useEffect(() => {
-    const session = getMockSession();
-    if (!session) {
-      router.replace("/login");
-      return;
-    }
-    setUsuario(session);
-  }, [router]);
-
-  function handleLogout() {
-    clearMockSession();
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
     router.replace("/login");
+    router.refresh();
   }
-
-  if (!usuario) return null;
 
   return (
     <main className="mx-auto flex min-h-[calc(100dvh-8rem)] w-full max-w-[672px] flex-col p-4 sm:p-6 lg:min-h-dvh lg:p-8">

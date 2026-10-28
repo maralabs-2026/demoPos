@@ -1,4 +1,4 @@
-import type { Rol } from "./mock";
+import type { Rol } from "./session";
 
 // Etiqueta y estilo de cada rol, para que navegación y perfil no se desincronicen.
 export const ROL_LABELS: Record<Rol, string> = {

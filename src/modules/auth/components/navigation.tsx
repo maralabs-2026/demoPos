@@ -2,17 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import {
-  getMockSession,
-  ROL_LABELS,
-  rolBadgeVariant,
-  splitBrandName,
-  type Rol,
-} from "@/modules/auth";
+// Imports por archivo y no por el barrel: el index arrastra queries.ts (next/headers) al cliente.
+import { splitBrandName } from "@/modules/auth/brand";
 import { getNavLinks, type NavLink } from "@/modules/auth/navigation";
+import { ROL_LABELS, rolBadgeVariant } from "@/modules/auth/roles";
+import type { Rol, SessionProfile } from "@/modules/auth/session";
 
 function AppBrand({ comercioNombre }: { comercioNombre: string }) {
   const { first, rest } = splitBrandName(comercioNombre);
@@ -64,18 +60,10 @@ function SidebarLink({ link, active }: { link: NavLink; active: boolean }) {
   );
 }
 
-export function Navigation({ comercioNombre }: { comercioNombre: string }) {
+export function Navigation({ profile }: { profile: SessionProfile }) {
   const pathname = usePathname();
-  const [rol, setRol] = useState<Rol | null>(null);
-
-  useEffect(() => {
-    const session = getMockSession();
-    if (session && !session.mustChangePassword) {
-      setRol(session.rol);
-    }
-  }, []);
-
-  if (!rol) return null;
+  const rol = profile.rol;
+  const comercioNombre = profile.comercio;
 
   const links = getNavLinks(rol);
   const activeHref = links.find((link) => pathname === link.href)?.href;
