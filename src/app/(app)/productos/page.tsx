@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
-import { getAuthProfile } from "@/modules/auth";
+import { canAccess, getAuthProfile } from "@/modules/auth";
 import { getCategorias, getProductos } from "@/modules/productos";
 import { ProductosTable } from "@/modules/productos/components/productos-table";
 
@@ -15,13 +15,13 @@ export default async function ProductosPage() {
     getCategorias(),
   ]);
   const puedeGestionar =
-    profile?.rol === "dueno" || profile?.rol === "encargado";
+    profile !== null && canAccess(profile.rol, "/productos/precios");
 
   return (
-    <main className="mx-auto max-w-5xl space-y-6 p-4 sm:p-6">
+    <main className="mx-auto flex max-w-5xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-light tracking-tight">Productos</h1>
+          <h1 className="text-3xl">Productos</h1>
           <p className="text-muted-foreground text-sm">
             {puedeGestionar
               ? "Gestión de catálogo y stock."

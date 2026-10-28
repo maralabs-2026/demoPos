@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,11 +15,30 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency, formatPercent } from "@/lib/currency";
-import { cn } from "@/lib/utils";
 import { eliminarProducto } from "../actions";
 import type { Categoria, Producto } from "../queries";
 import { calcularMargen } from "../schemas";
 import { ProductoForm } from "./producto-form";
+
+function StockCell({ producto }: { producto: Producto }) {
+  const stock = `${producto.stockActual} ${producto.unidadVenta}`;
+  if (producto.stockActual <= 0) {
+    return (
+      <Badge variant="destructive" dot>
+        Sin stock
+      </Badge>
+    );
+  }
+  // Bajo mínimo en rojo, como pide la Fase D (no naranja).
+  if (producto.stockActual < producto.stockMinimo) {
+    return (
+      <Badge variant="destructive" dot>
+        {stock} · bajo mínimo
+      </Badge>
+    );
+  }
+  return <span className="tabular-nums">{stock}</span>;
+}
 
 type ProductosTableProps = {
   productos: Producto[];
@@ -46,6 +67,11 @@ export function ProductosTable({
         producto.codigoBarras.includes(term),
     );
   }, [productos, busqueda]);
+
+  // Misma regla que StockCell: sin stock o bajo mínimo.
+  const conAlerta = productos.filter(
+    (p) => p.stockActual <= 0 || p.stockActual < p.stockMinimo,
+  ).length;
 
   function cerrarFormulario() {
     setFormulario(null);
@@ -78,17 +104,35 @@ export function ProductosTable({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Input
-          placeholder="Buscá por nombre o código de barras..."
-          value={busqueda}
-          onChange={(event) => setBusqueda(event.target.value)}
-          className="max-w-sm"
-        />
-        {puedeGestionar && formulario === null && (
-          <Button onClick={() => setFormulario("nuevo")}>Nuevo producto</Button>
-        )}
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative w-full max-w-sm">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            aria-label="Buscar producto"
+            placeholder="Buscá por nombre o código de barras..."
+            value={busqueda}
+            onChange={(event) => setBusqueda(event.target.value)}
+            className="rounded-full pl-11"
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          {conAlerta > 0 && (
+            <Badge variant="destructive" dot>
+              {conAlerta === 1
+                ? "1 producto con stock bajo"
+                : `${conAlerta} productos con stock bajo`}
+            </Badge>
+          )}
+          {puedeGestionar && formulario === null && (
+            <Button onClick={() => setFormulario("nuevo")}>
+              Nuevo producto
+            </Button>
+          )}
+        </div>
       </div>
 
       {formulario && puedeGestionar && (
@@ -107,10 +151,10 @@ export function ProductosTable({
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="hover:bg-transparent">
               <TableHead>Producto</TableHead>
               <TableHead className="hidden sm:table-cell">Categoría</TableHead>
               {puedeGestionar && (
@@ -126,21 +170,17 @@ export function ProductosTable({
           </TableHeader>
           <TableBody>
             {filtrados.map((producto) => {
-              const bajoMinimo = producto.stockActual < producto.stockMinimo;
               const margen = calcularMargen(producto.costo, producto.precio);
 
               return (
-                <TableRow
-                  key={producto.id}
-                  className={cn(bajoMinimo && "bg-red-50 dark:bg-red-950/40")}
-                >
-                  <TableCell>
-                    <div className="font-medium">{producto.nombre}</div>
-                    <div className="text-muted-foreground text-xs">
+                <TableRow key={producto.id}>
+                  <TableCell className="whitespace-normal">
+                    <div className="font-semibold">{producto.nombre}</div>
+                    <div className="text-xs text-muted-foreground tabular-nums">
                       {producto.codigoBarras}
                     </div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell">
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">
                     {producto.categoriaNombre ?? "—"}
                   </TableCell>
                   {puedeGestionar && (
@@ -150,7 +190,7 @@ export function ProductosTable({
                         : formatCurrency(producto.costo)}
                     </TableCell>
                   )}
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="text-right font-semibold tabular-nums">
                     {formatCurrency(producto.precio)}
                   </TableCell>
                   {puedeGestionar && (
@@ -158,14 +198,8 @@ export function ProductosTable({
                       {formatPercent(margen)}
                     </TableCell>
                   )}
-                  <TableCell
-                    className={cn(
-                      "text-right tabular-nums",
-                      bajoMinimo &&
-                        "font-semibold text-red-600 dark:text-red-400",
-                    )}
-                  >
-                    {producto.stockActual} {producto.unidadVenta}
+                  <TableCell className="text-right">
+                    <StockCell producto={producto} />
                   </TableCell>
                   {puedeGestionar && (
                     <TableCell>
@@ -197,7 +231,7 @@ export function ProductosTable({
               <TableRow>
                 <TableCell
                   colSpan={puedeGestionar ? 7 : 4}
-                  className="text-muted-foreground text-center"
+                  className="py-10 text-center text-muted-foreground"
                 >
                   No se encontraron productos.
                 </TableCell>
