@@ -90,7 +90,9 @@ insert into public.configuracion (comercio_id, clave, valor)
 select co.id, c.clave, c.valor
 from public.comercios co, (values
   ('moneda', '{"codigo": "ARS", "locale": "es-AR"}'::jsonb),
-  ('ticket', '{"titulo": "Kiosko Demo"}'::jsonb)
+  ('ticket', '{"titulo": "Kiosko Demo"}'::jsonb),
+  -- Fase 4c: tope de descuento del cajero, en %.
+  ('descuento_max_cajero_pct', '10'::jsonb)
 ) as c(clave, valor)
 where co.nombre = 'Kiosko Demo';
 

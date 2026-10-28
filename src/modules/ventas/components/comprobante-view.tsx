@@ -35,6 +35,11 @@ export function ComprobanteView({
             >
               <span>
                 {item.cantidad} × {item.nombre}
+                {item.descuento > 0 && (
+                  <span className="block text-xs text-success-text">
+                    Descuento − {formatCurrency(item.descuento)}
+                  </span>
+                )}
               </span>
               <span className="font-semibold tabular-nums">
                 {formatCurrency(item.subtotal)}
@@ -51,6 +56,14 @@ export function ComprobanteView({
             {comprobante.medioPagoNombre}
           </span>
         </div>
+        {comprobante.descuentoTotal > 0 && (
+          <div className="flex justify-between text-muted-foreground">
+            <span>Descuento sobre el total</span>
+            <span className="font-semibold text-success-text tabular-nums">
+              − {formatCurrency(comprobante.descuentoTotal)}
+            </span>
+          </div>
+        )}
         {comprobante.vuelto !== null && (
           <div className="flex justify-between text-muted-foreground">
             <span>Vuelto</span>
