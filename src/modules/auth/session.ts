@@ -18,7 +18,10 @@ export interface PerfilData {
 
 export function mustChangePasswordFromMetadata(metadata: unknown): boolean {
   if (typeof metadata !== "object" || metadata === null) return false;
-  return (metadata as { must_change_password?: unknown }).must_change_password === true;
+  return (
+    (metadata as { must_change_password?: unknown }).must_change_password ===
+    true
+  );
 }
 
 export function buildSessionProfile(

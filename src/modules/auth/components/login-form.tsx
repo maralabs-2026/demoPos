@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { loginSchema } from "../schemas";
-import { loginErrorMessages, mapLoginError, type LoginErrorCode } from "../login-error";
+import {
+  loginErrorMessages,
+  mapLoginError,
+  type LoginErrorCode,
+} from "../login-error";
 
 export function LoginForm({
   onSuccess,
@@ -63,7 +67,8 @@ export function LoginForm({
       }
 
       onSuccess?.({
-        mustChangePassword: data.user.user_metadata.must_change_password === true,
+        mustChangePassword:
+          data.user.app_metadata.must_change_password === true,
       });
     } catch (error) {
       setAuthError(mapLoginError(error));
@@ -74,19 +79,19 @@ export function LoginForm({
     }
   }
 
-  const inputClasses =
-    "h-[52px] w-full rounded-xl border-border bg-background px-4 py-0 text-base md:text-base placeholder:text-muted-foreground focus:border-ring aria-invalid:ring-0";
+  const inputClasses = "h-12 text-base md:text-base";
 
   return (
-    <div className="w-full rounded-xl bg-background md:max-w-[420px] md:border md:border-border md:p-10">
-      <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-5 md:gap-6">
-        <h1 className="text-2xl font-normal tracking-tight text-foreground md:text-[28px]">
-          Iniciar sesión
-        </h1>
+    <div className="w-full md:max-w-[420px] md:rounded-3xl md:border md:border-border md:bg-card md:p-10 md:shadow-[0_30px_70px_rgba(34,42,38,0.08)]">
+      <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <h1 className="text-3xl md:text-4xl">Iniciar sesión</h1>
+        <p className="text-sm text-muted-foreground">
+          Ingresá con tu correo y contraseña.
+        </p>
 
-        <div aria-hidden className="h-3 md:h-2" />
+        <div aria-hidden className="h-3" />
 
-        <label htmlFor="login-email" className="text-sm text-foreground">
+        <label htmlFor="login-email" className="text-sm font-semibold">
           Correo electrónico
         </label>
         <Input
@@ -101,10 +106,10 @@ export function LoginForm({
           className={inputClasses}
         />
         {fieldErrors.email && (
-          <p className="text-destructive text-sm">{fieldErrors.email}</p>
+          <p className="text-sm text-destructive">{fieldErrors.email}</p>
         )}
 
-        <label htmlFor="login-password" className="text-sm text-foreground">
+        <label htmlFor="login-password" className="mt-2 text-sm font-semibold">
           Contraseña
         </label>
         <Input
@@ -119,19 +124,23 @@ export function LoginForm({
           className={inputClasses}
         />
         {fieldErrors.password && (
-          <p className="text-destructive text-sm">{fieldErrors.password}</p>
+          <p className="text-sm text-destructive">{fieldErrors.password}</p>
         )}
 
         {authError && (
-          <p role="alert" className="text-destructive text-sm">
+          <p
+            role="alert"
+            className="mt-2 rounded-lg bg-destructive-soft px-4 py-3 text-sm font-medium text-destructive"
+          >
             {loginErrorMessages[authError]}
           </p>
         )}
 
         <Button
           type="submit"
+          size="lg"
           disabled={isSubmitting}
-          className="h-[52px] w-full rounded-xl tracking-wide uppercase disabled:pointer-events-auto disabled:cursor-not-allowed"
+          className="mt-4 w-full disabled:pointer-events-auto disabled:cursor-not-allowed"
         >
           Ingresar
         </Button>

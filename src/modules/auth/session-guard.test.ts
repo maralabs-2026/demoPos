@@ -16,7 +16,9 @@ function makeProfile(overrides: Partial<SessionProfile> = {}): SessionProfile {
 
 describe("mustChangePassword", () => {
   it("bloquea una sesión con contraseña temporal pendiente", () => {
-    expect(mustChangePassword(makeProfile({ must_change_password: true }))).toBe(true);
+    expect(
+      mustChangePassword(makeProfile({ must_change_password: true })),
+    ).toBe(true);
   });
 
   it("permite una sesión con must_change_password=false", () => {

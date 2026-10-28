@@ -2,8 +2,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -27,6 +25,13 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-foreground: var(--warning-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -34,90 +39,66 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
   --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* Escala del UI kit: 8 / 14 / 20 / 28 px. */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-2xl: calc(var(--radius) * 2);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 :root {
-  /* Paleta indigo/navy de la identidad visual del comercio. */
-  --background: #ffffff;
-  --foreground: #0d253d;
+  /* Paleta del UI kit POS (Figma Make): azul de acción, lima para
+     confirmaciones, tinta casi negra y fondo "cloud" cálido. */
+  --background: #f3f4ef;
+  --foreground: #171918;
   --card: #ffffff;
-  --card-foreground: #0d253d;
+  --card-foreground: #171918;
   --popover: #ffffff;
-  --popover-foreground: #0d253d;
-  --primary: #533afd;
+  --popover-foreground: #171918;
+  --primary: #315cf5;
+  --primary-hover: #2347ce;
   --primary-foreground: #ffffff;
-  --secondary: #f6f9fc;
-  --secondary-foreground: #0d253d;
-  --muted: #f6f9fc;
-  --muted-foreground: #64748d;
-  --accent: #b9b9f9;
-  --accent-foreground: #4434d4;
-  --destructive: #ea2261;
-  --border: #e3e8ee;
-  --input: #a8c3de;
-  --ring: #533afd;
-  --chart-1: #533afd;
-  --chart-2: #ea2261;
-  --chart-3: #f96bee;
-  --chart-4: #665efd;
-  --chart-5: #1c1e54;
-  --radius: 0.75rem;
+  --secondary: #ffffff;
+  --secondary-foreground: #171918;
+  --muted: #f3f4ef;
+  /* #646964 y no #6f746f: da 5:1 sobre el fondo (WCAG AA pide 4,5:1 para texto). */
+  --muted-foreground: #646964;
+  --accent: #edf1ff;
+  --accent-foreground: #315cf5;
+  --destructive: #d93b3b;
+  --destructive-soft: #fdecec;
+  --success: #b8f72c;
+  --success-soft: #efffc8;
+  --success-foreground: #171918;
+  --warning: #ff9d56;
+  --warning-soft: #fff0e3;
+  --warning-foreground: #a94e0b;
+  --border: #dfe2dc;
+  --input: #cfd3cc;
+  --ring: #315cf5;
+  --chart-1: #315cf5;
+  --chart-2: #b8f72c;
+  --chart-3: #ff9d56;
+  --chart-4: #171918;
+  --chart-5: #6f746f;
+  --radius: 0.875rem;
   --sidebar: #ffffff;
-  --sidebar-foreground: #0d253d;
-  --sidebar-primary: #533afd;
+  --sidebar-foreground: #171918;
+  --sidebar-primary: #315cf5;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #b9b9f9;
-  --sidebar-accent-foreground: #4434d4;
-  --sidebar-border: #e3e8ee;
-  --sidebar-ring: #533afd;
-}
-
-.dark {
-  /* Extrapolado del "dark-app dashboard track" descrito en la guía: no trae
-     hex explícitos para modo oscuro, así que se arma con la misma paleta. */
-  --background: #0d253d;
-  --foreground: #ffffff;
-  --card: #1c1e54;
-  --card-foreground: #ffffff;
-  --popover: #1c1e54;
-  --popover-foreground: #ffffff;
-  --primary: #665efd;
-  --primary-foreground: #ffffff;
-  --secondary: #273951;
-  --secondary-foreground: #ffffff;
-  --muted: #273951;
-  --muted-foreground: #a8c3de;
-  --accent: #2e2b8c;
-  --accent-foreground: #ffffff;
-  --destructive: #ea2261;
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 18%);
-  --ring: #665efd;
-  --chart-1: #665efd;
-  --chart-2: #ea2261;
-  --chart-3: #f96bee;
-  --chart-4: #533afd;
-  --chart-5: #b9b9f9;
-  --sidebar: #1c1e54;
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #665efd;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #2e2b8c;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: #665efd;
+  --sidebar-accent: #edf1ff;
+  --sidebar-accent-foreground: #315cf5;
+  --sidebar-border: #dfe2dc;
+  --sidebar-ring: #315cf5;
 }
 
 @layer base {
@@ -125,10 +106,16 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground font-light;
-    font-feature-settings: "ss01";
+    @apply bg-background text-foreground;
+    font-synthesis: none;
+    -webkit-tap-highlight-color: transparent;
   }
   html {
     @apply font-sans;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-semibold tracking-tight;
   }
 }

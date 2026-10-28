@@ -1,14 +1,11 @@
-import { redirect } from "next/navigation";
-import { getAuthProfile } from "@/modules/auth";
+import { requireRol } from "@/modules/auth";
 import { getCategorias, getProductos } from "@/modules/productos";
 import { PreciosForm } from "@/modules/productos/components/precios-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function PreciosPage() {
-  const profile = await getAuthProfile();
-  if (!profile) redirect("/login");
-  if (profile.rol === "cajero") redirect("/productos");
+  await requireRol("/productos/precios");
 
   const [productosResult, categoriasResult] = await Promise.all([
     getProductos(),
@@ -18,9 +15,12 @@ export default async function PreciosPage() {
   return (
     <main className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6">
       <div>
-        <h1 className="text-2xl font-light tracking-tight">Actualizar precios</h1>
+        <h1 className="text-2xl font-light tracking-tight">
+          Actualizar precios
+        </h1>
         <p className="text-muted-foreground text-sm">
-          Subí o bajá los precios de una categoría, o de todo el catálogo, con un porcentaje.
+          Subí o bajá los precios de una categoría, o de todo el catálogo, con
+          un porcentaje.
         </p>
       </div>
 
@@ -29,7 +29,10 @@ export default async function PreciosPage() {
       ) : !categoriasResult.ok ? (
         <p className="text-destructive text-sm">{categoriasResult.error}</p>
       ) : (
-        <PreciosForm productos={productosResult.data} categorias={categoriasResult.data} />
+        <PreciosForm
+          productos={productosResult.data}
+          categorias={categoriasResult.data}
+        />
       )}
     </main>
   );
