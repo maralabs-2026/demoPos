@@ -37,6 +37,7 @@ const TODOS: readonly Rol[] = ["dueno", "encargado", "cajero"];
 export const ROUTE_ROLES = {
   "/vender": TODOS,
   "/productos": TODOS,
+  "/productos/precios": ["dueno", "encargado"],
   "/stock": ["dueno", "encargado"],
   "/reportes": ["dueno", "encargado"],
   "/config": ["dueno"],
