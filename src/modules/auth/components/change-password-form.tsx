@@ -4,39 +4,11 @@ import { useState, type FormEvent } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createClient } from "@/lib/supabase/client";
-import { changePasswordSchema } from "../schemas";
+import { cambiarContrasena } from "../actions";
 import { loginErrorMessages } from "../login-error";
+import { changePasswordSchema } from "../schemas";
 
-interface PasswordErrorLike {
-  status?: number;
-  code?: string;
-  message?: string;
-}
-
-function resolvePasswordError(error: unknown): string {
-  const { status, code, message } = (
-    typeof error === "object" && error !== null ? error : {}
-  ) as PasswordErrorLike;
-  const detail = `${code ?? ""} ${message ?? ""}`.toLowerCase();
-
-  if (status === 429 || detail.includes("too many") || detail.includes("rate limit")) {
-    return loginErrorMessages.too_many_attempts;
-  }
-  if (detail.includes("should be different")) {
-    return "La contraseña nueva debe ser distinta de la actual";
-  }
-  if (detail.includes("fetch") || detail.includes("network")) {
-    return loginErrorMessages.network;
-  }
-  return "No se pudo cambiar la contraseña. Intentá de nuevo.";
-}
-
-export function ChangePasswordForm({
-  onSuccess,
-}: {
-  onSuccess?: () => void;
-}) {
+export function ChangePasswordForm({ onSuccess }: { onSuccess?: () => void }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNew, setShowNew] = useState(false);
@@ -56,10 +28,14 @@ export function ChangePasswordForm({
       confirmPassword,
     });
     if (!parsed.success) {
-      const errors: Partial<Record<"newPassword" | "confirmPassword", string>> = {};
+      const errors: Partial<Record<"newPassword" | "confirmPassword", string>> =
+        {};
       for (const issue of parsed.error.issues) {
         const key = String(issue.path[0] ?? "");
-        if ((key === "newPassword" || key === "confirmPassword") && !errors[key]) {
+        if (
+          (key === "newPassword" || key === "confirmPassword") &&
+          !errors[key]
+        ) {
           errors[key] = issue.message;
         }
       }
@@ -72,34 +48,26 @@ export function ChangePasswordForm({
     setFormError(null);
     setIsSubmitting(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.updateUser({
-        password: parsed.data.newPassword,
-        data: { must_change_password: false },
-      });
-
-      if (error) {
-        setFormError(resolvePasswordError(error));
+      const result = await cambiarContrasena(parsed.data);
+      if (!result.ok) {
+        setFormError(result.error);
         return;
       }
 
       onSuccess?.();
-    } catch (error) {
-      setFormError(resolvePasswordError(error));
+    } catch {
+      setFormError(loginErrorMessages.network);
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  const inputClasses =
-    "h-[48px] w-full rounded-xl border-border bg-background pl-4 pr-12 py-0 text-base md:text-base shadow-[0_1px_2px_rgba(13,37,61,0.05)] placeholder:text-muted-foreground focus:border-ring aria-invalid:ring-0";
+  const inputClasses = "h-12 pr-12 text-base md:text-base";
 
   return (
-    <div className="w-full rounded-xl bg-background p-5 shadow-[0_4px_24px_rgba(13,37,61,0.04)] md:max-w-[440px] md:p-10">
+    <div className="w-full md:max-w-[440px] md:rounded-3xl md:border md:border-border md:bg-card md:p-10 md:shadow-[0_30px_70px_rgba(34,42,38,0.08)]">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-normal tracking-tight text-foreground md:text-[28px]">
-          Cambiar contraseña
-        </h1>
+        <h1 className="text-3xl md:text-4xl">Cambiar contraseña</h1>
         <p className="text-sm text-muted-foreground">
           Debés cambiar tu contraseña temporal antes de continuar.
         </p>
@@ -111,7 +79,10 @@ export function ChangePasswordForm({
         className="mt-5 flex flex-col gap-5"
       >
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="change-password-new" className="text-[13px] text-foreground">
+          <label
+            htmlFor="change-password-new"
+            className="text-sm font-semibold"
+          >
             Nueva contraseña
           </label>
           <div className="relative">
@@ -133,18 +104,24 @@ export function ChangePasswordForm({
               aria-label={showNew ? "Ocultar contraseña" : "Mostrar contraseña"}
               className="absolute top-1/2 right-4 h-5 w-5 -translate-y-1/2 p-0 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:translate-y-0"
             >
-              {showNew ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+              {showNew ? (
+                <EyeOff className="size-5" />
+              ) : (
+                <Eye className="size-5" />
+              )}
             </Button>
           </div>
           {fieldErrors.newPassword && (
-            <p className="text-destructive text-sm">{fieldErrors.newPassword}</p>
+            <p className="text-sm text-destructive">
+              {fieldErrors.newPassword}
+            </p>
           )}
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="change-password-confirm"
-            className="text-[13px] text-foreground"
+            className="text-sm font-semibold"
           >
             Confirmar contraseña
           </label>
@@ -164,19 +141,30 @@ export function ChangePasswordForm({
               variant="ghost"
               size="icon"
               onClick={() => setShowConfirm((v) => !v)}
-              aria-label={showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
+              aria-label={
+                showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"
+              }
               className="absolute top-1/2 right-4 h-5 w-5 -translate-y-1/2 p-0 text-muted-foreground hover:bg-transparent hover:text-muted-foreground active:translate-y-0"
             >
-              {showConfirm ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+              {showConfirm ? (
+                <EyeOff className="size-5" />
+              ) : (
+                <Eye className="size-5" />
+              )}
             </Button>
           </div>
           {fieldErrors.confirmPassword && (
-            <p className="text-destructive text-sm">{fieldErrors.confirmPassword}</p>
+            <p className="text-sm text-destructive">
+              {fieldErrors.confirmPassword}
+            </p>
           )}
         </div>
 
         {formError && (
-          <p role="alert" className="text-destructive text-sm">
+          <p
+            role="alert"
+            className="rounded-lg bg-destructive-soft px-4 py-3 text-sm font-medium text-destructive"
+          >
             {formError}
           </p>
         )}
@@ -184,7 +172,8 @@ export function ChangePasswordForm({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="mt-2 h-[48px] w-full rounded-xl text-[15px] uppercase tracking-wide disabled:pointer-events-auto disabled:cursor-not-allowed"
+          size="lg"
+          className="mt-2 w-full disabled:pointer-events-auto disabled:cursor-not-allowed"
         >
           Cambiar contraseña
         </Button>
