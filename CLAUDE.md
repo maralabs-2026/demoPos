@@ -137,11 +137,11 @@ ABM de productos con categoría, código de barras, costo (en `productos_costos`
 **Validación:** importar el CSV de seed, subir 10% una categoría y verificar en base que solo esa categoría cambió. Tests unitarios de los schemas Zod.
 
 ### Fase 4 — Pantalla de cobro completa
-Sobre la pantalla de la demo: descuento por ítem y sobre el total según rol, pagos combinados con varios medios, atajos `+`/`-` cantidad, integración con `registrar_venta`, manejo de errores de stock y concurrencia. Promociones y combos que se aplican solos en el ticket: precio por cantidad, NxM, combo fijo y porcentaje por producto o categoría, con vigencia por día y horario; ABM de promociones para dueño y encargado.
+Sobre la pantalla de la demo: apertura de caja con monto inicial (adelantada de la Fase 5, porque `registrar_venta` exige una caja abierta), descuento por ítem y sobre el total según rol (dueño y encargado sin límite; cajero hasta un porcentaje máximo que define el dueño en configuración, 10 % por defecto), pagos combinados con varios medios, atajos `+`/`-` cantidad, integración con `registrar_venta`, manejo de errores de stock y concurrencia. Promociones y combos que se aplican solos en el ticket: precio por cantidad, NxM, combo fijo y porcentaje por producto o categoría, con vigencia por día y horario; ABM de promociones para dueño y encargado.
 **Validación:** test Playwright que hace una venta completa solo con teclado en menos de 6 acciones. Dos ventas simultáneas del mismo producto con stock 1: una debe fallar limpiamente. Una venta con una promo activa guarda el descuento en la venta y el total coincide con el de la pantalla.
 
 ### Fase 5 — Caja
-Apertura con monto inicial, cierre con conteo por medio de pago, diferencia calculada, historial de cajas. Un cajero no puede vender sin caja abierta. Retiros e ingresos de efectivo durante el turno, con motivo, que entran en el arqueo. Gastos del comercio (fijos y variables, pagados o por pagar) para dueño y encargado; un gasto pagado con la caja abierta se registra también como retiro.
+Cierre con conteo por medio de pago, diferencia calculada, historial de cajas. Un cajero no puede vender sin caja abierta. Retiros e ingresos de efectivo durante el turno, con motivo, que entran en el arqueo. Gastos del comercio (fijos y variables, pagados o por pagar) para dueño y encargado; un gasto pagado con la caja abierta se registra también como retiro.
 **Validación:** abrir caja, hacer 3 ventas con distintos medios, cerrar y verificar que los totales por medio de pago coinciden con la base. Con un retiro y un gasto pagado con la caja, el efectivo esperado del cierre los descuenta.
 
 ### Fase 6 — Reportes y comprobantes
