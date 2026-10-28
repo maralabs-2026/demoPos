@@ -40,3 +40,25 @@ export async function getMediosPago(): Promise<ActionResult<MedioPago[]>> {
   if (error) return fail(error.message);
   return ok(data ?? []);
 }
+
+const DESCUENTO_MAX_CAJERO_DEFAULT = 10;
+
+// Tope de descuento del cajero, en % (clave descuento_max_cajero_pct, 0012). Sin la clave, 10.
+export async function getDescuentoMaxCajeroPct(): Promise<
+  ActionResult<number>
+> {
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("configuracion")
+    .select("valor")
+    .eq("clave", "descuento_max_cajero_pct")
+    .maybeSingle();
+
+  if (error) return fail("No se pudo leer la configuración de descuentos.");
+  const valor = Number(data?.valor);
+  return ok(Number.isFinite(valor) ? valor : DESCUENTO_MAX_CAJERO_DEFAULT);
+}

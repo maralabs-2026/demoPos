@@ -24,12 +24,15 @@ import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { registrarVenta, type Comprobante } from "../actions";
 import { resolverPagos, restantePorAsignar, type PagoParcial } from "../pagos";
+import { calcularTotales, descuentoDeLinea } from "../totales";
 import { ComprobanteView } from "./comprobante-view";
 
 type CartItem = {
   productoId: string;
   nombre: string;
   precio: number;
+  // Descuento de la línea en %, de 0 al tope del rol.
+  descuentoPct: number;
   unidadVenta: string;
   cantidad: number;
   stockDisponible: number;
@@ -78,10 +81,13 @@ function KeyHint({ children }: { children: React.ReactNode }) {
 
 export function VentaScreen({
   cajaId,
+  descuentoMaxPct,
   productosIniciales,
   mediosPago,
 }: {
   cajaId: string;
+  // 100 para dueño y encargado; el tope de configuración para el cajero.
+  descuentoMaxPct: number;
   productosIniciales: Producto[];
   mediosPago: MedioPago[];
 }) {
@@ -90,6 +96,7 @@ export function VentaScreen({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState(TODAS);
+  const [descuentoTotalPct, setDescuentoTotalPct] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [medioPagoId, setMedioPagoId] = useState(mediosPago[0]?.id ?? "");
   const [montoRecibido, setMontoRecibido] = useState<number | null>(null);
@@ -109,9 +116,10 @@ export function VentaScreen({
   const medioSeleccionado = mediosPago.find((m) => m.id === medioPagoId);
   // Redondeado a centavos: sin esto, "Exacto" o un monto tipeado pueden quedar
   // por debajo de un total como 1234.5600000000002.
-  const total =
-    Math.round(cart.reduce((acc, i) => acc + i.precio * i.cantidad, 0) * 100) /
-    100;
+  // Mismo redondeo que registrar_venta: si no, el pago no coincidiría con el total de la base.
+  const totales = calcularTotales(cart, descuentoTotalPct);
+  const total = totales.total;
+  const descuentos = totales.descuentoItems + totales.descuentoTotal;
   const cantidadItems = cart.reduce((acc, i) => acc + i.cantidad, 0);
   const vuelto =
     medioSeleccionado?.tipo === "efectivo" && montoRecibido !== null
@@ -145,6 +153,7 @@ export function VentaScreen({
           unidadVenta: producto.unidadVenta,
           cantidad: 1,
           stockDisponible: producto.stockActual,
+          descuentoPct: 0,
         },
       ];
     });
@@ -191,6 +200,26 @@ export function VentaScreen({
     );
   }
 
+  function porcentajeValido(texto: string): number {
+    const pct = Number(texto.replace(",", "."));
+    if (!Number.isFinite(pct) || pct <= 0) return 0;
+    if (pct > descuentoMaxPct) {
+      setError(`Tu tope de descuento es ${descuentoMaxPct} %`);
+      return descuentoMaxPct;
+    }
+    setError(null);
+    return Math.round(pct * 100) / 100;
+  }
+
+  function cambiarDescuentoLinea(productoId: string, texto: string) {
+    const pct = porcentajeValido(texto);
+    setCart((prev) =>
+      prev.map((i) =>
+        i.productoId === productoId ? { ...i, descuentoPct: pct } : i,
+      ),
+    );
+  }
+
   function quitarDelCarrito(productoId: string) {
     setCart((prev) => prev.filter((i) => i.productoId !== productoId));
   }
@@ -199,6 +228,7 @@ export function VentaScreen({
     setCart([]);
     setMontoRecibido(null);
     setPagosCombinados(null);
+    setDescuentoTotalPct(0);
     setError(null);
   }
 
@@ -283,7 +313,9 @@ export function VentaScreen({
         items: cart.map((i) => ({
           productoId: i.productoId,
           cantidad: i.cantidad,
+          descuentoPct: i.descuentoPct,
         })),
+        descuentoPct: descuentoTotalPct,
         // Los montos suman el total de la pantalla: si un precio cambió en la base,
         // registrar_venta lo rechaza.
         pagos: resueltos.pagos,
@@ -314,6 +346,7 @@ export function VentaScreen({
       setCart([]);
       setMontoRecibido(null);
       setPagosCombinados(null);
+      setDescuentoTotalPct(0);
       setError(null);
     });
   }
@@ -525,6 +558,21 @@ export function VentaScreen({
                   <p className="text-xs text-muted-foreground tabular-nums">
                     {formatCurrency(item.precio, { decimals: 0 })} c/u
                   </p>
+                  <label className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                    Desc.
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      aria-label={`Descuento de ${item.nombre} en porcentaje`}
+                      placeholder="0"
+                      value={item.descuentoPct || ""}
+                      onChange={(e) =>
+                        cambiarDescuentoLinea(item.productoId, e.target.value)
+                      }
+                      className="h-7 w-12 rounded-md border border-input bg-card px-1.5 text-right text-xs tabular-nums focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    />
+                    %
+                  </label>
                 </div>
                 <QuantityStepper
                   value={item.cantidad}
@@ -540,7 +588,16 @@ export function VentaScreen({
                   onEnter={() => inputRef.current?.focus()}
                 />
                 <p className="min-w-[72px] text-right font-display text-[15px] font-bold tabular-nums">
-                  {formatCurrency(item.precio * item.cantidad, { decimals: 0 })}
+                  {item.descuentoPct > 0 && (
+                    <span className="block text-xs font-medium text-muted-foreground line-through">
+                      {formatCurrency(item.precio * item.cantidad, {
+                        decimals: 0,
+                      })}
+                    </span>
+                  )}
+                  {formatCurrency(
+                    item.precio * item.cantidad - descuentoDeLinea(item),
+                  )}
                 </p>
                 <Button
                   variant="ghost"
@@ -751,11 +808,53 @@ export function VentaScreen({
           </div>
         )}
 
+        {cart.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="descuento-total"
+              className="flex items-center justify-between gap-3 text-sm font-semibold"
+            >
+              Descuento sobre el total
+              <span className="flex items-center gap-1 font-normal text-muted-foreground">
+                <input
+                  id="descuento-total"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={descuentoTotalPct || ""}
+                  onChange={(e) =>
+                    setDescuentoTotalPct(porcentajeValido(e.target.value))
+                  }
+                  className="h-9 w-16 rounded-lg border border-input bg-card px-2 text-right text-sm text-foreground tabular-nums focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                />
+                %
+              </span>
+            </label>
+            {descuentoMaxPct < 100 && (
+              <p className="text-xs text-muted-foreground">
+                Tu tope de descuento es {descuentoMaxPct} %.
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-col gap-2 rounded-2xl border border-border bg-muted p-4">
           <div className="flex items-baseline justify-between text-sm text-muted-foreground tabular-nums">
             <span>Artículos</span>
             <span>{cantidadItems}</span>
           </div>
+          {descuentos > 0 && (
+            <>
+              <div className="flex items-baseline justify-between text-sm text-muted-foreground tabular-nums">
+                <span>Subtotal</span>
+                <span>{formatCurrency(totales.bruto)}</span>
+              </div>
+              <div className="flex items-baseline justify-between text-sm font-semibold text-success-text tabular-nums">
+                <span>Descuentos</span>
+                <span>− {formatCurrency(descuentos)}</span>
+              </div>
+            </>
+          )}
           <div className="flex items-baseline justify-between gap-3">
             <CardEyebrow>Total</CardEyebrow>
             <p className="font-display text-[44px] leading-[48px] font-extrabold tracking-[-0.02em] tabular-nums">

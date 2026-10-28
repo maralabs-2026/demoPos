@@ -9,6 +9,7 @@ export type ComprobanteItem = {
   nombre: string;
   cantidad: number;
   precioUnitario: number;
+  descuento: number;
   subtotal: number;
 };
 
@@ -16,6 +17,7 @@ export type Comprobante = {
   ventaId: string;
   items: ComprobanteItem[];
   total: number;
+  descuentoTotal: number;
   medioPagoNombre: string;
   vuelto: number | null;
   fecha: string;
@@ -29,10 +31,12 @@ const PV_CAJA_INVALIDA = "PV002";
 const PV_PAGO_INVALIDO = "PV003";
 const PV_DATOS_INVALIDOS = "PV004";
 const PV_PRODUCTO_INEXISTENTE = "PV005";
+const PV_DESCUENTO_EXCEDIDO = "PV011";
 
 type RpcResult = {
   venta_id: string;
   total: number;
+  descuento: number;
   vuelto: number;
   created_at: string;
 };
@@ -41,6 +45,7 @@ type ItemRow = {
   nombre: string;
   cantidad: number;
   precio_unitario: number;
+  descuento: number;
   subtotal: number;
 };
 
@@ -74,7 +79,7 @@ export async function registrarVenta(
   if (!parsed.success) {
     return fail(parsed.error.issues[0]?.message ?? "Datos de venta inválidos");
   }
-  const { cajaId, items, pagos } = parsed.data;
+  const { cajaId, items, pagos, descuentoPct } = parsed.data;
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("registrar_venta", {
@@ -82,7 +87,9 @@ export async function registrarVenta(
     p_items: items.map((i) => ({
       producto_id: i.productoId,
       cantidad: i.cantidad,
+      descuento_pct: i.descuentoPct ?? 0,
     })),
+    p_descuento_pct: descuentoPct ?? 0,
     p_pagos: pagos.map((p) => ({
       medio_pago_id: p.medioPagoId,
       monto: p.monto,
@@ -114,6 +121,10 @@ export async function registrarVenta(
         return fail(
           "Un producto del ticket ya no existe. Recargá la pantalla.",
         );
+      case PV_DESCUENTO_EXCEDIDO:
+        return fail(
+          `Ese descuento supera tu tope de ${error.details ?? "10"} %. Pedile a un encargado que lo haga.`,
+        );
       case PV_DATOS_INVALIDOS:
         return fail("Revisá el ticket: hay cantidades o montos inválidos.");
       default:
@@ -127,7 +138,7 @@ export async function registrarVenta(
   const [itemsResult, pagosResult] = await Promise.all([
     supabase
       .from("venta_items")
-      .select("nombre, cantidad, precio_unitario, subtotal")
+      .select("nombre, cantidad, precio_unitario, descuento, subtotal")
       .eq("venta_id", venta.venta_id)
       .overrideTypes<ItemRow[]>(),
     supabase
@@ -148,9 +159,11 @@ export async function registrarVenta(
       nombre: i.nombre,
       cantidad: i.cantidad,
       precioUnitario: Number(i.precio_unitario),
+      descuento: Number(i.descuento),
       subtotal: Number(i.subtotal),
     })),
     total: Number(venta.total),
+    descuentoTotal: Number(venta.descuento ?? 0),
     medioPagoNombre: pagosRows
       .map((p) => p.medios_pago?.nombre)
       .filter(Boolean)
