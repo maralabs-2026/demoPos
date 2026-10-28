@@ -37,7 +37,9 @@ export function PreciosForm({
   const categoriaId = categoria === TODAS ? null : categoria;
   const afectados = useMemo(
     () =>
-      categoriaId === null ? productos : productos.filter((p) => p.categoriaId === categoriaId),
+      categoriaId === null
+        ? productos
+        : productos.filter((p) => p.categoriaId === categoriaId),
     [productos, categoriaId],
   );
 
@@ -128,17 +130,22 @@ export function PreciosForm({
             <TableBody>
               {afectados.map((p) => (
                 <TableRow key={p.id}>
-                  <TableCell className="whitespace-normal">{p.nombre}</TableCell>
+                  <TableCell className="whitespace-normal">
+                    {p.nombre}
+                  </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {formatCurrency(p.precio)}
                   </TableCell>
                   <TableCell
                     className={cn(
                       "text-right tabular-nums",
-                      pctValido && (pct > 0 ? "text-emerald-600" : "text-destructive"),
+                      pctValido &&
+                        (pct > 0 ? "text-emerald-600" : "text-destructive"),
                     )}
                   >
-                    {pctValido ? formatCurrency(precioActualizado(p.precio, pct)) : "—"}
+                    {pctValido
+                      ? formatCurrency(precioActualizado(p.precio, pct))
+                      : "—"}
                   </TableCell>
                 </TableRow>
               ))}

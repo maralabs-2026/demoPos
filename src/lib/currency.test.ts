@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, formatCurrency, parseMonto } from "./currency";
+import {
+  formatAmount,
+  formatCurrency,
+  formatPercent,
+  parseMonto,
+} from "./currency";
 
 describe("formatCurrency", () => {
   it("formats with dot as thousands separator and comma as decimals", () => {
@@ -52,5 +57,16 @@ describe("parseMonto", () => {
 describe("formatCurrency sin decimales", () => {
   it("formatea montos redondos", () => {
     expect(formatCurrency(10000, { decimals: 0 })).toBe("$ 10.000");
+  });
+});
+
+describe("formatPercent", () => {
+  it("formatea con coma decimal y un decimal como máximo", () => {
+    expect(formatPercent(33.333)).toBe("33,3 %");
+    expect(formatPercent(-25)).toBe("-25 %");
+  });
+
+  it("muestra una raya sin valor", () => {
+    expect(formatPercent(null)).toBe("—");
   });
 });

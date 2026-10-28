@@ -1,17 +1,20 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { canAccess, getAuthProfile } from "@/modules/auth";
-import { getProductos } from "@/modules/productos";
+import { getCategorias, getProductos } from "@/modules/productos";
 import { ProductosTable } from "@/modules/productos/components/productos-table";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProductosPage() {
-  const [result, profile] = await Promise.all([
-    getProductos(),
+  // Todo en paralelo: la RLS de productos_costos ya le oculta los costos al cajero, así que se
+  // pueden pedir sin esperar el perfil.
+  const [profile, productosResult, categoriasResult] = await Promise.all([
     getAuthProfile(),
+    getProductos(undefined, true),
+    getCategorias(),
   ]);
-  const puedeEditarPrecios =
+  const puedeGestionar =
     profile !== null && canAccess(profile.rol, "/productos/precios");
 
   return (
@@ -20,10 +23,12 @@ export default async function ProductosPage() {
         <div>
           <h1 className="text-3xl">Productos</h1>
           <p className="text-muted-foreground text-sm">
-            Consulta de catálogo y stock.
+            {puedeGestionar
+              ? "Gestión de catálogo y stock."
+              : "Consulta de catálogo y stock."}
           </p>
         </div>
-        {puedeEditarPrecios && (
+        {puedeGestionar && (
           <Link
             href="/productos/precios"
             className={buttonVariants({ variant: "outline" })}
@@ -33,10 +38,16 @@ export default async function ProductosPage() {
         )}
       </div>
 
-      {result.ok ? (
-        <ProductosTable productos={result.data} />
+      {!productosResult.ok ? (
+        <p className="text-destructive text-sm">{productosResult.error}</p>
+      ) : !categoriasResult.ok ? (
+        <p className="text-destructive text-sm">{categoriasResult.error}</p>
       ) : (
-        <p className="text-destructive text-sm">{result.error}</p>
+        <ProductosTable
+          productos={productosResult.data}
+          categorias={categoriasResult.data}
+          puedeGestionar={puedeGestionar}
+        />
       )}
     </main>
   );

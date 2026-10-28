@@ -43,3 +43,12 @@ export function parseMonto(texto: string): number | null {
   if (!/^\d+(\.\d{0,2})?$/.test(normalizado)) return Number.NaN;
   return Number(normalizado);
 }
+
+const percentFormatter = new Intl.NumberFormat("es-AR", {
+  maximumFractionDigits: 1,
+});
+
+// "33,3 %", o "—" si no hay valor.
+export function formatPercent(value: number | null): string {
+  return value === null ? "—" : `${percentFormatter.format(value)} %`;
+}
