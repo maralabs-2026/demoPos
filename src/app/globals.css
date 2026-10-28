@@ -6,8 +6,10 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-plex-mono);
   --font-heading: var(--font-sans);
+  /* Montos y títulos (Manrope) y códigos de barras (IBM Plex Mono), del sistema Mostrador. */
+  --font-display: var(--font-manrope);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -29,6 +31,7 @@
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-success-foreground: var(--success-foreground);
+  --color-success-text: var(--success-text);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-warning-foreground: var(--warning-foreground);
@@ -56,49 +59,53 @@
 }
 
 :root {
-  /* Paleta del UI kit POS (Figma Make): azul de acción, lima para
-     confirmaciones, tinta casi negra y fondo "cloud" cálido. */
-  --background: #f3f4ef;
-  --foreground: #171918;
+  /* Paleta del sistema de diseño Mostrador (artifact "Mostrador"). Los nombres son los del kit:
+     background = canvas, card = surface, primary = brand, success = cobro, warning = alerta,
+     destructive = peligro, border = line, input = line-strong. */
+  --background: #f4f6f9;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #171918;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #171918;
-  --primary: #315cf5;
-  --primary-hover: #2347ce;
+  --popover-foreground: #0f172a;
+  --primary: #2f54eb;
+  --primary-hover: #2443c7;
   --primary-foreground: #ffffff;
   --secondary: #ffffff;
-  --secondary-foreground: #171918;
-  --muted: #f3f4ef;
-  /* #646964 y no #6f746f: da 5:1 sobre el fondo (WCAG AA pide 4,5:1 para texto). */
-  --muted-foreground: #646964;
+  --secondary-foreground: #0f172a;
+  --muted: #f8fafc;
+  --muted-foreground: #475467;
   --accent: #edf1ff;
-  --accent-foreground: #315cf5;
-  --destructive: #d93b3b;
+  --accent-foreground: #2f54eb;
+  --destructive: #c62f2f;
   --destructive-soft: #fdecec;
-  --success: #b8f72c;
-  --success-soft: #efffc8;
-  --success-foreground: #171918;
-  --warning: #ff9d56;
-  --warning-soft: #fff0e3;
-  --warning-foreground: #a94e0b;
-  --border: #dfe2dc;
-  --input: #cfd3cc;
-  --ring: #315cf5;
-  --chart-1: #315cf5;
-  --chart-2: #b8f72c;
-  --chart-3: #ff9d56;
-  --chart-4: #171918;
-  --chart-5: #6f746f;
-  --radius: 0.875rem;
+  /* Verde solo para cobrar y confirmar plata. Texto blanco encima; sobre el fondo suave,
+     success-text (no success-foreground, que es blanco). */
+  --success: #0f7a55;
+  --success-soft: #e6f6ef;
+  --success-foreground: #ffffff;
+  --success-text: #0b6345;
+  --warning: #b45309;
+  --warning-soft: #fff4e5;
+  --warning-foreground: #92400e;
+  --border: #e3e8ef;
+  /* Borde de controles: 3:1 sobre fondo y tarjetas. */
+  --input: #7b879a;
+  --ring: #2f54eb;
+  --chart-1: #2f54eb;
+  --chart-2: #0f7a55;
+  --chart-3: #c2410c;
+  --chart-4: #0e7490;
+  --chart-5: #7c3aed;
+  --radius: 1rem;
   --sidebar: #ffffff;
-  --sidebar-foreground: #171918;
-  --sidebar-primary: #315cf5;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #2f54eb;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #edf1ff;
-  --sidebar-accent-foreground: #315cf5;
-  --sidebar-border: #dfe2dc;
-  --sidebar-ring: #315cf5;
+  --sidebar-accent-foreground: #2f54eb;
+  --sidebar-border: #e3e8ef;
+  --sidebar-ring: #2f54eb;
 }
 
 @layer base {

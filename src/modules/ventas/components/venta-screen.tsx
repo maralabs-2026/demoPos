@@ -7,12 +7,12 @@ import {
   ScanBarcode,
   Search,
   Split,
-  Trash2,
   TriangleAlert,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardEyebrow, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardEyebrow } from "@/components/ui/card";
+import { CategoryTabs } from "@/components/ui/category-tabs";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
@@ -35,6 +35,47 @@ type CartItem = {
   stockDisponible: number;
 };
 
+const TODAS = "Todos";
+
+// Estado del stock como en el StockChip de Mostrador: al día, bajo el mínimo o sin stock.
+function StockChip({ producto }: { producto: Producto }) {
+  const sin = producto.stockActual <= 0;
+  const bajo = !sin && producto.stockActual < producto.stockMinimo;
+  return (
+    <span
+      className={cn(
+        "inline-flex h-[22px] items-center gap-1.5 self-start rounded-full px-2 text-xs font-semibold tabular-nums",
+        sin
+          ? "bg-destructive-soft text-destructive"
+          : bajo
+            ? "bg-warning-soft text-warning-foreground"
+            : "border border-border bg-card text-muted-foreground",
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "size-1.5 rounded-full",
+          sin ? "bg-destructive" : bajo ? "bg-warning" : "bg-success",
+        )}
+      />
+      {sin
+        ? "Sin stock"
+        : bajo
+          ? `Bajo · ${producto.stockActual}`
+          : `Stock ${producto.stockActual}`}
+    </span>
+  );
+}
+
+function KeyHint({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-current/30 px-1 font-mono text-[11px] font-semibold opacity-85">
+      {children}
+    </kbd>
+  );
+}
+
 export function VentaScreen({
   cajaId,
   productosIniciales,
@@ -48,6 +89,7 @@ export function VentaScreen({
   const [productos, setProductos] = useState(productosIniciales);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [busqueda, setBusqueda] = useState("");
+  const [categoria, setCategoria] = useState(TODAS);
   const [error, setError] = useState<string | null>(null);
   const [medioPagoId, setMedioPagoId] = useState(mediosPago[0]?.id ?? "");
   const [montoRecibido, setMontoRecibido] = useState<number | null>(null);
@@ -285,6 +327,15 @@ export function VentaScreen({
       } else if (e.key === "F4") {
         e.preventDefault();
         cancelarVenta();
+      } else if (e.key === "/" && e.target !== inputRef.current) {
+        const target = e.target as HTMLElement | null;
+        if (
+          target instanceof HTMLInputElement ||
+          target instanceof HTMLTextAreaElement
+        )
+          return;
+        e.preventDefault();
+        inputRef.current?.focus();
       } else if (e.key === "+" || e.key === "-") {
         // Solo con la búsqueda vacía (o fuera de un campo): "Coca-Cola" se tiene que poder escribir.
         const target = e.target as HTMLElement | null;
@@ -310,6 +361,25 @@ export function VentaScreen({
     isPending,
   ]);
 
+  const categorias = [
+    TODAS,
+    ...Array.from(
+      new Set(
+        productos
+          .map((p) => p.categoriaNombre)
+          .filter((c): c is string => Boolean(c)),
+      ),
+    ),
+  ];
+  const termino = busqueda.trim().toLowerCase();
+  const catalogo = productos.filter(
+    (p) =>
+      (categoria === TODAS || p.categoriaNombre === categoria) &&
+      (!termino ||
+        p.nombre.toLowerCase().includes(termino) ||
+        p.codigoBarras.includes(termino)),
+  );
+
   if (comprobante) {
     return (
       <ComprobanteView
@@ -320,8 +390,11 @@ export function VentaScreen({
   }
 
   return (
-    <div className="grid items-start gap-5 lg:grid-cols-[1fr_340px]">
-      <div className="flex flex-col gap-4">
+    <div className="flex flex-wrap items-start gap-4 pb-24 lg:pb-0">
+      <section
+        aria-label="Catálogo"
+        className="flex min-w-0 flex-[999_1_560px] flex-col gap-3"
+      >
         <div className="relative">
           <Search
             aria-hidden="true"
@@ -331,7 +404,7 @@ export function VentaScreen({
             ref={inputRef}
             autoFocus
             aria-label="Buscar producto"
-            placeholder="Escaneá o buscá un producto..."
+            placeholder="Buscá por nombre o escaneá el código"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             onKeyDown={(e) => {
@@ -340,8 +413,11 @@ export function VentaScreen({
                 handleBuscarSubmit();
               }
             }}
-            className="h-13 rounded-full pl-12 text-base md:text-base"
+            className="h-13 rounded-xl border-primary pr-12 pl-12 text-base shadow-[0_0_0_3px_var(--accent)] md:text-base"
           />
+          <span className="absolute top-1/2 right-3 hidden -translate-y-1/2 text-muted-foreground sm:block">
+            <KeyHint>/</KeyHint>
+          </span>
         </div>
 
         {error && (
@@ -354,40 +430,100 @@ export function VentaScreen({
           </p>
         )}
 
-        <Card className="gap-0">
-          <CardHeader className="pb-2">
-            <div>
-              <CardEyebrow>Venta actual</CardEyebrow>
-              <CardTitle className="mt-1">
-                {cart.length === 1 ? "1 producto" : `${cart.length} productos`}
-                {cantidadItems !== cart.length && (
-                  <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    {cantidadItems} unidades
+        <CategoryTabs
+          items={categorias.map((c) => ({ value: c, label: c }))}
+          value={categoria}
+          onValueChange={setCategoria}
+        />
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(176px,1fr))]">
+          {catalogo.map((producto) => {
+            const sinStock = producto.stockActual <= 0;
+            return (
+              <button
+                key={producto.id}
+                type="button"
+                aria-disabled={sinStock}
+                onClick={() => {
+                  agregarAlCarrito(producto);
+                  inputRef.current?.focus();
+                }}
+                className={cn(
+                  "flex min-w-0 flex-col gap-1.5 rounded-2xl border border-border bg-card p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-colors hover:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
+                  sinStock && "cursor-not-allowed opacity-55",
+                )}
+              >
+                <StockChip producto={producto} />
+                {producto.categoriaNombre && (
+                  <span className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+                    {producto.categoriaNombre}
                   </span>
                 )}
-              </CardTitle>
-            </div>
-          </CardHeader>
-          {cart.length === 0 && (
-            <div className="flex flex-col items-center gap-3 py-10 text-center text-sm text-muted-foreground">
-              <span className="grid size-12 place-items-center rounded-full bg-muted">
-                <ScanBarcode aria-hidden="true" className="size-6" />
-              </span>
-              Escaneá o buscá un producto para empezar la venta.
-            </div>
+                <span className="line-clamp-2 min-h-[38px] text-sm leading-[19px] font-semibold">
+                  {producto.nombre}
+                </span>
+                <span className="font-mono text-xs text-muted-foreground">
+                  {producto.codigoBarras}
+                </span>
+                <span className="mt-0.5 flex items-end justify-between gap-2">
+                  <span className="font-display text-lg leading-[22px] font-extrabold tabular-nums">
+                    {formatCurrency(producto.precio, { decimals: 0 })}
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "grid size-8 place-items-center rounded-lg",
+                      sinStock
+                        ? "bg-muted text-muted-foreground"
+                        : "bg-primary text-primary-foreground",
+                    )}
+                  >
+                    <Plus className="size-4" />
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+          {catalogo.length === 0 && (
+            <p className="col-span-full py-10 text-center text-sm text-muted-foreground">
+              No hay productos que coincidan con la búsqueda.
+            </p>
           )}
+        </div>
+      </section>
+
+      <Card
+        id="ticket"
+        aria-label="Ticket"
+        className="w-full max-w-[420px] min-w-0 flex-[1_1_360px] gap-4 lg:sticky lg:top-6"
+      >
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="font-display text-lg font-bold">Ticket en curso</h2>
+          <span className="text-xs text-muted-foreground">
+            {cantidadItems === 1 ? "1 artículo" : `${cantidadItems} artículos`}
+          </span>
+        </div>
+
+        {cart.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-6 text-center text-sm text-muted-foreground">
+            <span className="grid size-12 place-items-center rounded-full bg-muted">
+              <ScanBarcode aria-hidden="true" className="size-6" />
+            </span>
+            Escaneá o tocá un producto para empezar la venta.
+          </div>
+        ) : (
           <ul className="flex flex-col">
             {cart.map((item) => (
               <li
                 key={item.productoId}
-                className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border py-3 last:border-0"
+                className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2.5 border-b border-border py-2.5 last:border-0"
               >
-                <div className="min-w-0 basis-full sm:flex-1 sm:basis-0">
-                  <p className="truncate text-sm font-semibold">
+                <div className="min-w-0">
+                  <p className="line-clamp-2 text-sm leading-[19px] font-semibold">
                     {item.nombre}
                   </p>
                   <p className="text-xs text-muted-foreground tabular-nums">
-                    {formatCurrency(item.precio)} c/u
+                    {formatCurrency(item.precio, { decimals: 0 })} c/u
                   </p>
                 </div>
                 <QuantityStepper
@@ -403,8 +539,8 @@ export function VentaScreen({
                   onValueChange={(n) => actualizarCantidad(item.productoId, n)}
                   onEnter={() => inputRef.current?.focus()}
                 />
-                <p className="ml-auto w-24 text-right text-sm font-bold tabular-nums">
-                  {formatCurrency(item.precio * item.cantidad)}
+                <p className="min-w-[72px] text-right font-display text-[15px] font-bold tabular-nums">
+                  {formatCurrency(item.precio * item.cantidad, { decimals: 0 })}
                 </p>
                 <Button
                   variant="ghost"
@@ -412,21 +548,18 @@ export function VentaScreen({
                   aria-label={`Quitar ${item.nombre}`}
                   onClick={() => quitarDelCarrito(item.productoId)}
                 >
-                  <Trash2 />
+                  <X />
                 </Button>
               </li>
             ))}
           </ul>
-        </Card>
-      </div>
-
-      <Card className="gap-5 lg:sticky lg:top-6">
-        <div>
-          <CardEyebrow>Total</CardEyebrow>
-          <p className="mt-1 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl">
-            {formatCurrency(total)}
+        )}
+        {cart.length > 0 && (
+          <p className="-mt-2 hidden text-xs text-muted-foreground sm:block">
+            <KeyHint>+</KeyHint> <KeyHint>−</KeyHint> cambian la cantidad del
+            último producto.
           </p>
-        </div>
+        )}
 
         {pagosCombinados === null ? (
           <>
@@ -438,7 +571,7 @@ export function VentaScreen({
               <p id="medio-pago-label" className="text-sm font-semibold">
                 Medio de pago
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {mediosPago.map((medio) => (
                   <button
                     key={medio.id}
@@ -446,10 +579,10 @@ export function VentaScreen({
                     aria-pressed={medio.id === medioPagoId}
                     onClick={() => setMedioPagoId(medio.id)}
                     className={cn(
-                      "h-9 rounded-full border px-3.5 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none",
+                      "min-h-11 rounded-[12px] border px-1.5 py-1 text-[13px] leading-tight font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none",
                       medio.id === medioPagoId
-                        ? "border-primary bg-accent font-semibold text-primary"
-                        : "border-border bg-card hover:border-foreground",
+                        ? "border-primary bg-accent text-primary"
+                        : "border-input bg-card hover:bg-muted",
                     )}
                   >
                     {medio.nombre}
@@ -479,7 +612,7 @@ export function VentaScreen({
                       "flex items-center justify-between rounded-lg px-3.5 py-2.5 text-sm tabular-nums",
                       vuelto < 0
                         ? "bg-destructive-soft text-destructive"
-                        : "bg-success-soft text-success-foreground",
+                        : "bg-success-soft text-success-text",
                     )}
                   >
                     <span>{vuelto < 0 ? "Falta" : "Vuelto"}</span>
@@ -585,7 +718,7 @@ export function VentaScreen({
                   className={cn(
                     "flex items-center justify-between rounded-lg px-3.5 py-2.5 text-sm tabular-nums",
                     restante === 0
-                      ? "bg-success-soft text-success-foreground"
+                      ? "bg-success-soft text-success-text"
                       : "bg-destructive-soft text-destructive",
                   )}
                 >
@@ -618,31 +751,75 @@ export function VentaScreen({
           </div>
         )}
 
-        <div className="flex flex-col gap-2 pt-1">
+        <div className="flex flex-col gap-2 rounded-2xl border border-border bg-muted p-4">
+          <div className="flex items-baseline justify-between text-sm text-muted-foreground tabular-nums">
+            <span>Artículos</span>
+            <span>{cantidadItems}</span>
+          </div>
+          <div className="flex items-baseline justify-between gap-3">
+            <CardEyebrow>Total</CardEyebrow>
+            <p className="font-display text-[44px] leading-[48px] font-extrabold tracking-[-0.02em] tabular-nums">
+              {formatCurrency(total)}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
           <Button
-            className="w-full"
+            className="h-14 w-full rounded-2xl text-[17px] shadow-[0_6px_16px_rgba(15,122,85,0.28)] disabled:shadow-none"
+            variant="success"
             size="lg"
             disabled={isPending}
             onClick={cobrar}
           >
-            {isPending ? "Cobrando..." : "Cobrar"}
-            <kbd className="rounded-md bg-white/20 px-1.5 py-0.5 text-xs font-semibold">
-              F2
-            </kbd>
+            {isPending
+              ? "Cobrando..."
+              : total > 0
+                ? `Cobrá ${formatCurrency(total, { decimals: 0 })}`
+                : "Cobrá"}
+            <KeyHint>F2</KeyHint>
           </Button>
           <Button
             className="w-full"
-            variant="outline"
+            variant="ghost"
             disabled={isPending}
             onClick={cancelarVenta}
           >
-            Cancelar
-            <kbd className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-semibold">
-              F4
-            </kbd>
+            Cancelá la venta
+            <KeyHint>F4</KeyHint>
           </Button>
         </div>
       </Card>
+
+      {/* Celular: el ticket queda debajo del catálogo; el total y el acceso al cobro quedan fijos
+          arriba de la barra de módulos, como la hoja inferior del diseño. */}
+      {cart.length > 0 && (
+        <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-card px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] lg:hidden">
+          <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
+            <div className="flex flex-col">
+              <span className="text-xs text-muted-foreground">
+                {cantidadItems === 1
+                  ? "1 artículo"
+                  : `${cantidadItems} artículos`}
+              </span>
+              <span className="font-display text-2xl leading-7 font-extrabold tabular-nums">
+                {formatCurrency(total, { decimals: 0 })}
+              </span>
+            </div>
+            <Button
+              variant="success"
+              size="lg"
+              onClick={() =>
+                document
+                  .getElementById("ticket")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+            >
+              Ir a cobrar
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
