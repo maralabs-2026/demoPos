@@ -1,14 +1,11 @@
-import { redirect } from "next/navigation";
-import { getAuthProfile } from "@/modules/auth";
+import { requireRol } from "@/modules/auth";
 import { getCategorias, getProductos } from "@/modules/productos";
 import { CsvImport } from "@/modules/productos/components/csv-import";
 
 export const dynamic = "force-dynamic";
 
 export default async function ImportarProductosPage() {
-  const profile = await getAuthProfile();
-  if (!profile) redirect("/login");
-  if (profile.rol === "cajero") redirect("/productos");
+  await requireRol("/productos/importar");
 
   const [productosResult, categoriasResult] = await Promise.all([
     getProductos(),
