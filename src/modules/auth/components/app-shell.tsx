@@ -14,7 +14,9 @@ export function AppShell({
   return (
     <>
       <Navigation profile={profile} />
-      <div className="pb-14 md:pb-0">{children}</div>
+      <div className="pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-60">
+        {children}
+      </div>
     </>
   );
 }
