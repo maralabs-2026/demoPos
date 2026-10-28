@@ -3,10 +3,7 @@
 // form never reveals whether an email exists.
 
 export type LoginErrorCode =
-  | "invalid_credentials"
-  | "too_many_attempts"
-  | "user_disabled"
-  | "network";
+  "invalid_credentials" | "too_many_attempts" | "user_disabled" | "network";
 
 export const loginErrorMessages: Record<LoginErrorCode, string> = {
   invalid_credentials: "Correo o contraseña incorrectos",
@@ -25,6 +22,30 @@ function toAuthErrorLike(error: unknown): AuthErrorLike {
   if (typeof error !== "object" || error === null) return {};
   const { status, code, message } = error as AuthErrorLike;
   return { status, code, message };
+}
+
+// Errores al cambiar la contraseña (lo usa la server action cambiarContrasena).
+export function mapPasswordChangeError(error: unknown): string {
+  const { status, code, message } = toAuthErrorLike(error);
+  const detail = `${code ?? ""} ${message ?? ""}`.toLowerCase();
+
+  if (
+    status === 429 ||
+    detail.includes("too many") ||
+    detail.includes("rate limit")
+  ) {
+    return loginErrorMessages.too_many_attempts;
+  }
+  if (
+    detail.includes("same_password") ||
+    detail.includes("should be different")
+  ) {
+    return "La contraseña nueva debe ser distinta de la actual";
+  }
+  if (detail.includes("weak_password")) {
+    return "La contraseña es muy débil. Probá con una más larga.";
+  }
+  return "No se pudo cambiar la contraseña. Intentá de nuevo.";
 }
 
 export function mapLoginError(error: unknown): LoginErrorCode {

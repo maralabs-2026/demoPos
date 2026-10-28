@@ -6,3 +6,7 @@ export type { Rol, SessionProfile } from "./session";
 export { mustChangePassword } from "./session-guard";
 export { splitBrandName } from "./brand";
 export { getAuthProfile } from "./queries";
+export { requireRol } from "./guard";
+export { canAccess, ROUTE_ROLES } from "./navigation";
+export type { AppRoute } from "./navigation";
+export { ROL_LABELS, rolBadgeVariant } from "./roles";

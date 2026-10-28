@@ -5,6 +5,9 @@
 --        -v dueno_pw='...' -v encargado_pw='...' -v cajero_pw='...' \
 --        -f supabase/seed_dev_users.sql
 --
+-- El cajero arranca con contraseña temporal: must_change_password va en app_metadata, que el
+-- usuario no puede escribir; solo se limpia con la server action cambiarContrasena.
+--
 -- Requiere que el seed base ya esté cargado (comercio 'Kiosko Demo'). Los UUID son fijos para
 -- que los tests puedan referenciarlos; si ya existen, el script falla en lugar de duplicar.
 
@@ -24,7 +27,7 @@ insert into auth.users (
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-4000-8000-0000000000c3',
    'authenticated', 'authenticated', 'cajero@kiosko.demo',
    extensions.crypt(:'cajero_pw', extensions.gen_salt('bf')), now(),
-   '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '');
+   '{"provider":"email","providers":["email"],"must_change_password":true}', '{}', now(), now(), '', '', '', '');
 
 insert into auth.identities (
   id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at

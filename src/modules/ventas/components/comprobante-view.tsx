@@ -1,4 +1,6 @@
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardEyebrow } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
 import type { Comprobante } from "../actions";
 
@@ -14,49 +16,60 @@ export function ComprobanteView({
   });
 
   return (
-    <div className="mx-auto max-w-sm space-y-6 rounded-lg border p-6">
-      <div className="text-center">
-        <p className="text-lg font-light tracking-tight">Venta cobrada</p>
-        <p className="text-muted-foreground text-xs">{fecha}</p>
+    <Card className="mx-auto max-w-sm gap-5 p-6">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <span className="grid size-12 place-items-center rounded-full bg-success text-success-foreground">
+          <Check aria-hidden="true" className="size-6" />
+        </span>
+        <h2 className="text-xl">Venta cobrada</h2>
+        <p className="text-xs text-muted-foreground">{fecha}</p>
       </div>
 
-      <ul className="divide-y text-sm">
-        {comprobante.items.map((item, idx) => (
-          <li key={idx} className="flex justify-between py-2">
-            <span>
-              {item.cantidad} × {item.nombre}
-            </span>
-            <span className="tabular-nums">
-              {formatCurrency(item.subtotal)}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <div>
+        <CardEyebrow>Detalle</CardEyebrow>
+        <ul className="mt-1 text-sm">
+          {comprobante.items.map((item, idx) => (
+            <li
+              key={idx}
+              className="flex justify-between gap-3 border-b border-border py-2.5"
+            >
+              <span>
+                {item.cantidad} × {item.nombre}
+              </span>
+              <span className="font-semibold tabular-nums">
+                {formatCurrency(item.subtotal)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-      <div className="space-y-1 border-t pt-4 text-sm">
-        <div className="flex justify-between text-base font-normal">
-          <span>Total</span>
-          <span className="tabular-nums">
-            {formatCurrency(comprobante.total)}
+      <div className="flex flex-col gap-2 border-t border-dashed border-input pt-4 text-sm">
+        <div className="flex justify-between text-muted-foreground">
+          <span>Medio de pago</span>
+          <span className="font-semibold text-foreground">
+            {comprobante.medioPagoNombre}
           </span>
         </div>
-        <div className="text-muted-foreground flex justify-between">
-          <span>Medio de pago</span>
-          <span>{comprobante.medioPagoNombre}</span>
-        </div>
         {comprobante.vuelto !== null && (
-          <div className="flex justify-between font-medium">
+          <div className="flex justify-between text-muted-foreground">
             <span>Vuelto</span>
-            <span className="tabular-nums">
+            <span className="font-semibold text-foreground tabular-nums">
               {formatCurrency(comprobante.vuelto)}
             </span>
           </div>
         )}
+        <div className="flex items-baseline justify-between pt-2">
+          <span className="font-semibold">Total</span>
+          <span className="text-2xl font-bold tracking-tight tabular-nums">
+            {formatCurrency(comprobante.total)}
+          </span>
+        </div>
       </div>
 
-      <Button className="w-full" size="lg" onClick={onNuevaVenta}>
+      <Button autoFocus className="w-full" size="lg" onClick={onNuevaVenta}>
         Nueva venta
       </Button>
-    </div>
+    </Card>
   );
 }
