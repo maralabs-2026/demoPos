@@ -528,7 +528,7 @@ export function VentaScreen({
       <Card
         id="ticket"
         aria-label="Ticket"
-        className="w-full max-w-[420px] min-w-0 flex-[1_1_360px] gap-4 lg:sticky lg:top-6"
+        className="w-full max-w-[420px] min-w-0 flex-[1_1_360px] gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto"
       >
         <div className="flex items-baseline justify-between gap-2">
           <h2 className="font-display text-lg font-bold">Ticket en curso</h2>
