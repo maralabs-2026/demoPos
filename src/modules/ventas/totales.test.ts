@@ -63,3 +63,26 @@ describe("calcularTotales", () => {
     });
   });
 });
+
+describe("calcularTotales con promociones", () => {
+  it("la promo se descuenta antes del manual, como en la base", () => {
+    // 2 Coca con 2x1 ($ 2.500 de promo) y 10 % manual sobre los $ 2.500 que quedan: $ 250.
+    const t = calcularTotales(
+      [{ precio: 2500, cantidad: 2, descuentoPct: 10, promoDescuento: 2500 }],
+      0,
+    );
+    expect(t).toEqual({
+      bruto: 5000,
+      descuentoItems: 2750,
+      descuentoTotal: 0,
+      total: 2250,
+    });
+  });
+
+  it("sin promo el resultado no cambia", () => {
+    expect(
+      calcularTotales([{ precio: 2500, cantidad: 2, descuentoPct: 10 }], 0)
+        .total,
+    ).toBe(4500);
+  });
+});

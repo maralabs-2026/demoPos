@@ -2,20 +2,28 @@ import { getAuthProfile } from "@/modules/auth";
 import { getCajaAbierta } from "@/modules/caja";
 import { AbrirCaja } from "@/modules/caja/components/abrir-caja";
 import { getDescuentoMaxCajeroPct, getMediosPago } from "@/modules/config";
+import { getPromociones } from "@/modules/promociones/queries";
 import { getProductos } from "@/modules/productos";
 import { VentaScreen } from "@/modules/ventas/components/venta-screen";
 
 export const dynamic = "force-dynamic";
 
 export default async function VenderPage() {
-  const [profile, cajaResult, productosResult, mediosPagoResult, topeResult] =
-    await Promise.all([
-      getAuthProfile(),
-      getCajaAbierta(),
-      getProductos(),
-      getMediosPago(),
-      getDescuentoMaxCajeroPct(),
-    ]);
+  const [
+    profile,
+    cajaResult,
+    productosResult,
+    mediosPagoResult,
+    topeResult,
+    promosResult,
+  ] = await Promise.all([
+    getAuthProfile(),
+    getCajaAbierta(),
+    getProductos(),
+    getMediosPago(),
+    getDescuentoMaxCajeroPct(),
+    getPromociones(),
+  ]);
   // Dueño y encargado sin tope; el cajero, hasta lo que diga la configuración.
   const descuentoMaxPct =
     profile?.rol === "cajero" ? (topeResult.ok ? topeResult.data : 10) : 100;
@@ -26,8 +34,16 @@ export default async function VenderPage() {
       ? productosResult.error
       : !mediosPagoResult.ok
         ? mediosPagoResult.error
-        : null;
-  if (error || !cajaResult.ok || !productosResult.ok || !mediosPagoResult.ok) {
+        : !promosResult.ok
+          ? promosResult.error
+          : null;
+  if (
+    error ||
+    !cajaResult.ok ||
+    !productosResult.ok ||
+    !mediosPagoResult.ok ||
+    !promosResult.ok
+  ) {
     return (
       <main className="p-6">
         <p className="text-destructive text-sm">{error}</p>
@@ -51,6 +67,7 @@ export default async function VenderPage() {
         descuentoMaxPct={descuentoMaxPct}
         productosIniciales={productosResult.data}
         mediosPago={mediosPagoResult.data}
+        promos={promosResult.data}
       />
     </main>
   );

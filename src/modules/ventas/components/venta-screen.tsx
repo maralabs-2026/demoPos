@@ -25,11 +25,13 @@ import { cn } from "@/lib/utils";
 import { registrarVenta, type Comprobante } from "../actions";
 import { resolverPagos, restantePorAsignar, type PagoParcial } from "../pagos";
 import { calcularTotales, descuentoDeLinea } from "../totales";
+import { ahoraEnCordoba, mejorPromo, type Promo } from "@/modules/promociones";
 import { ComprobanteView } from "./comprobante-view";
 
 type CartItem = {
   productoId: string;
   nombre: string;
+  categoriaId: string | null;
   precio: number;
   // Descuento de la línea en %, de 0 al tope del rol.
   descuentoPct: number;
@@ -84,12 +86,15 @@ export function VentaScreen({
   descuentoMaxPct,
   productosIniciales,
   mediosPago,
+  promos,
 }: {
   cajaId: string;
   // 100 para dueño y encargado; el tope de configuración para el cajero.
   descuentoMaxPct: number;
   productosIniciales: Producto[];
   mediosPago: MedioPago[];
+  // Promos del comercio; se aplican solas, igual que en registrar_venta.
+  promos: Promo[];
 }) {
   const router = useRouter();
   const [productos, setProductos] = useState(productosIniciales);
@@ -117,7 +122,30 @@ export function VentaScreen({
   // Redondeado a centavos: sin esto, "Exacto" o un monto tipeado pueden quedar
   // por debajo de un total como 1234.5600000000002.
   // Mismo redondeo que registrar_venta: si no, el pago no coincidiría con el total de la base.
-  const totales = calcularTotales(cart, descuentoTotalPct);
+  // Promo de cada línea (la de mayor descuento vigente). Mismo cálculo que la base.
+  const ahora = ahoraEnCordoba();
+  const promoPorLinea = new Map(
+    cart.map((i) => [
+      i.productoId,
+      mejorPromo(
+        promos,
+        {
+          productoId: i.productoId,
+          categoriaId: i.categoriaId,
+          precio: i.precio,
+          cantidad: i.cantidad,
+        },
+        ahora,
+      ),
+    ]),
+  );
+  const totales = calcularTotales(
+    cart.map((i) => ({
+      ...i,
+      promoDescuento: promoPorLinea.get(i.productoId)?.descuento ?? 0,
+    })),
+    descuentoTotalPct,
+  );
   const total = totales.total;
   const descuentos = totales.descuentoItems + totales.descuentoTotal;
   const cantidadItems = cart.reduce((acc, i) => acc + i.cantidad, 0);
@@ -153,6 +181,7 @@ export function VentaScreen({
           unidadVenta: producto.unidadVenta,
           cantidad: 1,
           stockDisponible: producto.stockActual,
+          categoriaId: producto.categoriaId,
           descuentoPct: 0,
         },
       ];
@@ -558,6 +587,11 @@ export function VentaScreen({
                   <p className="text-xs text-muted-foreground tabular-nums">
                     {formatCurrency(item.precio, { decimals: 0 })} c/u
                   </p>
+                  {promoPorLinea.get(item.productoId) && (
+                    <p className="truncate text-xs font-semibold text-success-text">
+                      Promo: {promoPorLinea.get(item.productoId)?.nombre}
+                    </p>
+                  )}
                   <label className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                     Desc.
                     <input
@@ -596,7 +630,12 @@ export function VentaScreen({
                     </span>
                   )}
                   {formatCurrency(
-                    item.precio * item.cantidad - descuentoDeLinea(item),
+                    item.precio * item.cantidad -
+                      descuentoDeLinea({
+                        ...item,
+                        promoDescuento:
+                          promoPorLinea.get(item.productoId)?.descuento ?? 0,
+                      }),
                   )}
                 </p>
                 <Button

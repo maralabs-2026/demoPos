@@ -39,6 +39,7 @@ export const ROUTE_ROLES = {
   "/productos": TODOS,
   "/productos/precios": ["dueno", "encargado"],
   "/productos/importar": ["dueno", "encargado"],
+  "/promociones": ["dueno", "encargado"],
   "/stock": ["dueno", "encargado"],
   "/reportes": ["dueno", "encargado"],
   "/config": ["dueno"],

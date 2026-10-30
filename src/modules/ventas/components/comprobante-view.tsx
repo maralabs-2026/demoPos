@@ -35,6 +35,11 @@ export function ComprobanteView({
             >
               <span>
                 {item.cantidad} × {item.nombre}
+                {item.promocion && (
+                  <span className="block text-xs font-semibold text-success-text">
+                    Promo: {item.promocion}
+                  </span>
+                )}
                 {item.descuento > 0 && (
                   <span className="block text-xs text-success-text">
                     Descuento − {formatCurrency(item.descuento)}

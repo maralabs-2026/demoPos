@@ -10,6 +10,7 @@ export type ComprobanteItem = {
   cantidad: number;
   precioUnitario: number;
   descuento: number;
+  promocion: string | null;
   subtotal: number;
 };
 
@@ -46,6 +47,7 @@ type ItemRow = {
   cantidad: number;
   precio_unitario: number;
   descuento: number;
+  promocion_nombre: string | null;
   subtotal: number;
 };
 
@@ -138,7 +140,9 @@ export async function registrarVenta(
   const [itemsResult, pagosResult] = await Promise.all([
     supabase
       .from("venta_items")
-      .select("nombre, cantidad, precio_unitario, descuento, subtotal")
+      .select(
+        "nombre, cantidad, precio_unitario, descuento, promocion_nombre, subtotal",
+      )
       .eq("venta_id", venta.venta_id)
       .overrideTypes<ItemRow[]>(),
     supabase
@@ -160,6 +164,7 @@ export async function registrarVenta(
       cantidad: i.cantidad,
       precioUnitario: Number(i.precio_unitario),
       descuento: Number(i.descuento),
+      promocion: i.promocion_nombre ?? null,
       subtotal: Number(i.subtotal),
     })),
     total: Number(venta.total),
