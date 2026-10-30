@@ -1,6 +1,17 @@
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import type { Promo, TipoPromo } from "./logica";
+import type { Combo, Promo, TipoPromo } from "./logica";
+
+type ComboRow = {
+  id: string;
+  nombre: string;
+  precio: number;
+  dias: number[];
+  desde: string;
+  hasta: string;
+  activa: boolean;
+  combo_items: { producto_id: string; cantidad: number }[];
+};
 
 type PromoRow = {
   id: string;
@@ -53,6 +64,38 @@ export async function getPromociones(): Promise<ActionResult<Promo[]>> {
       desde: r.desde,
       hasta: r.hasta,
       activa: r.activa,
+    })),
+  );
+}
+
+// Combos del comercio, en orden de creación (así se aplican en la base).
+export async function getCombos(): Promise<ActionResult<Combo[]>> {
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("combos")
+    .select(
+      "id, nombre, precio, dias, desde, hasta, activa, combo_items(producto_id, cantidad)",
+    )
+    .order("created_at", { ascending: true })
+    .overrideTypes<ComboRow[]>();
+  if (error) return fail("No se pudieron cargar los combos.");
+
+  return ok(
+    (data ?? []).map((r) => ({
+      id: r.id,
+      nombre: r.nombre,
+      precio: Number(r.precio),
+      dias: r.dias as number[],
+      desde: r.desde,
+      hasta: r.hasta,
+      activa: r.activa,
+      items: r.combo_items.map((i) => ({
+        productoId: i.producto_id,
+        cantidad: i.cantidad,
+      })),
     })),
   );
 }

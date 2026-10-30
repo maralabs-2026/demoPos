@@ -11,6 +11,8 @@ export type LineaTotal = {
   descuentoPct: number;
   // Descuento de la promo que aplica a la línea (0 si no hay).
   promoDescuento?: number;
+  // Parte del descuento de combos que cae en esta línea (0 si no hay).
+  comboDescuento?: number;
 };
 
 export type Totales = {
@@ -22,13 +24,14 @@ export type Totales = {
 
 const aCentavos = (pesos: number) => Math.round(pesos * 100);
 
-// Lo que se descuenta de la línea: promo + manual (sobre el precio ya promocionado).
+// Lo que se descuenta de la línea: combo + promo + manual (sobre el precio ya promocionado).
 export function descuentoDeLinea(linea: LineaTotal): number {
   const brutoC = aCentavos(linea.precio) * linea.cantidad;
+  const comboC = aCentavos(linea.comboDescuento ?? 0);
   const promoC = aCentavos(linea.promoDescuento ?? 0);
   const pctC = aCentavos(linea.descuentoPct); // porcentaje en centésimas
-  const manualC = Math.round(((brutoC - promoC) * pctC) / 10000);
-  return (promoC + manualC) / 100;
+  const manualC = Math.round(((brutoC - comboC - promoC) * pctC) / 10000);
+  return (comboC + promoC + manualC) / 100;
 }
 
 export function calcularTotales(

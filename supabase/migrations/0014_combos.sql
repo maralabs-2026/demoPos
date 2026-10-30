@@ -444,3 +444,47 @@ $$;
 
 revoke execute on function public.registrar_venta(uuid, jsonb, jsonb, numeric) from public, anon;
 grant execute on function public.registrar_venta(uuid, jsonb, jsonb, numeric) to authenticated;
+
+-- Alta de un combo con sus productos, en una sola transacción: no queda un combo sin productos.
+-- Dueño y encargado (como las promos). Un producto repetido o de otro comercio falla por FK o PK.
+create or replace function public.crear_combo(
+  p_nombre text,
+  p_precio numeric,
+  p_dias smallint[],
+  p_desde time,
+  p_hasta time,
+  p_items jsonb
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_comercio uuid;
+  v_rol public.rol_usuario;
+  v_id uuid;
+begin
+  select comercio_id, rol into v_comercio, v_rol
+    from public.perfiles where id = auth.uid() and activo;
+  if v_comercio is null or v_rol not in ('dueno', 'encargado') then
+    raise exception 'Tu rol no puede administrar combos' using errcode = '42501';
+  end if;
+  if jsonb_typeof(p_items) is distinct from 'array' or jsonb_array_length(p_items) < 2 then
+    raise exception 'Un combo necesita al menos dos productos' using errcode = 'PV004';
+  end if;
+
+  insert into public.combos (comercio_id, nombre, precio, dias, desde, hasta)
+  values (v_comercio, p_nombre, p_precio, p_dias, p_desde, p_hasta)
+  returning id into v_id;
+
+  insert into public.combo_items (combo_id, comercio_id, producto_id, cantidad)
+  select v_id, v_comercio, (e ->> 'producto_id')::uuid, (e ->> 'cantidad')::integer
+    from jsonb_array_elements(p_items) e;
+
+  return v_id;
+end
+$$;
+
+revoke execute on function public.crear_combo(text, numeric, smallint[], time, time, jsonb) from public, anon;
+grant execute on function public.crear_combo(text, numeric, smallint[], time, time, jsonb) to authenticated;

@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getAuthProfile } from "@/modules/auth";
-import { promocionSchema, type PromocionInput } from "./schemas";
+import {
+  comboSchema,
+  promocionSchema,
+  type ComboInput,
+  type PromocionInput,
+} from "./schemas";
 
 // Dueño y encargado administran las promos (CLAUDE.md, sección 3). La RLS es la barrera real.
 async function requirePromos(): Promise<ActionResult<string>> {
@@ -72,6 +77,64 @@ export async function cambiarActivaPromocion(
   if (error) return fail("No se pudo cambiar la promo. Probá de nuevo.");
   if (!data || data.length === 0) {
     return fail("La promo ya no existe. Recargá la página.");
+  }
+
+  revalidatePath("/promociones");
+  revalidatePath("/vender");
+  return ok(null);
+}
+
+// Alta atómica del combo y sus productos (crear_combo, migración 0014).
+export async function crearCombo(input: ComboInput): Promise<ActionResult<null>> {
+  const parsed = comboSchema.safeParse(input);
+  if (!parsed.success) {
+    return fail(parsed.error.issues[0]?.message ?? "Datos del combo inválidos");
+  }
+  const comercio = await requirePromos();
+  if (!comercio.ok) return comercio;
+
+  const v = parsed.data;
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("crear_combo", {
+    p_nombre: v.nombre,
+    p_precio: v.precio,
+    p_dias: v.dias,
+    p_desde: v.desde,
+    p_hasta: v.hasta,
+    p_items: v.items.map((i) => ({
+      producto_id: i.productoId,
+      cantidad: i.cantidad,
+    })),
+  });
+  if (error) {
+    return fail(
+      error.code === "23505"
+        ? "Un producto aparece dos veces en el combo."
+        : "No se pudo guardar el combo. Probá de nuevo.",
+    );
+  }
+
+  revalidatePath("/promociones");
+  revalidatePath("/vender");
+  return ok(null);
+}
+
+export async function cambiarActivaCombo(
+  id: string,
+  activa: boolean,
+): Promise<ActionResult<null>> {
+  const comercio = await requirePromos();
+  if (!comercio.ok) return comercio;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("combos")
+    .update({ activa })
+    .eq("id", id)
+    .select("id");
+  if (error) return fail("No se pudo cambiar el combo. Probá de nuevo.");
+  if (!data || data.length === 0) {
+    return fail("El combo ya no existe. Recargá la página.");
   }
 
   revalidatePath("/promociones");
