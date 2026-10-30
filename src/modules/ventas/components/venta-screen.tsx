@@ -528,7 +528,7 @@ export function VentaScreen({
       <Card
         id="ticket"
         aria-label="Ticket"
-        className="w-full max-w-[420px] min-w-0 flex-[1_1_360px] gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto"
+        className="w-full max-w-[460px] min-w-0 flex-[1_1_360px] gap-2.5 p-4"
       >
         <div className="flex items-baseline justify-between gap-2">
           <h2 className="font-display text-lg font-bold">Ticket en curso</h2>
@@ -549,16 +549,16 @@ export function VentaScreen({
             {cart.map((item) => (
               <li
                 key={item.productoId}
-                className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2.5 border-b border-border py-2.5 last:border-0"
+                className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2 border-b border-border py-1.5 last:border-0"
               >
                 <div className="min-w-0">
-                  <p className="line-clamp-2 text-sm leading-[19px] font-semibold">
+                  <p className="truncate text-sm leading-[19px] font-semibold">
                     {item.nombre}
                   </p>
                   <p className="text-xs text-muted-foreground tabular-nums">
                     {formatCurrency(item.precio, { decimals: 0 })} c/u
                   </p>
-                  <label className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                  <label className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                     Desc.
                     <input
                       type="text"
@@ -569,7 +569,7 @@ export function VentaScreen({
                       onChange={(e) =>
                         cambiarDescuentoLinea(item.productoId, e.target.value)
                       }
-                      className="h-7 w-12 rounded-md border border-input bg-card px-1.5 text-right text-xs tabular-nums focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      className="h-6 w-11 rounded-md border border-input bg-card px-1.5 text-right text-xs tabular-nums focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     />
                     %
                   </label>
@@ -611,24 +611,18 @@ export function VentaScreen({
             ))}
           </ul>
         )}
-        {cart.length > 0 && (
-          <p className="-mt-2 hidden text-xs text-muted-foreground sm:block">
-            <KeyHint>+</KeyHint> <KeyHint>−</KeyHint> cambian la cantidad del
-            último producto.
-          </p>
-        )}
 
         {pagosCombinados === null ? (
           <>
             <div
               role="group"
               aria-labelledby="medio-pago-label"
-              className="flex flex-col gap-2"
+              className="flex flex-col gap-1.5"
             >
               <p id="medio-pago-label" className="text-sm font-semibold">
                 Medio de pago
               </p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1.5">
                 {mediosPago.map((medio) => (
                   <button
                     key={medio.id}
@@ -636,7 +630,7 @@ export function VentaScreen({
                     aria-pressed={medio.id === medioPagoId}
                     onClick={() => setMedioPagoId(medio.id)}
                     className={cn(
-                      "min-h-11 rounded-[12px] border px-1.5 py-1 text-[13px] leading-tight font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none",
+                      "h-9 rounded-[10px] border px-1 text-xs leading-tight font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none",
                       medio.id === medioPagoId
                         ? "border-primary bg-accent text-primary"
                         : "border-input bg-card hover:bg-muted",
@@ -649,7 +643,7 @@ export function VentaScreen({
             </div>
 
             {medioSeleccionado?.tipo === "efectivo" && (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1.5">
                 <label
                   className="text-sm font-semibold"
                   htmlFor="monto-recibido"
@@ -666,7 +660,7 @@ export function VentaScreen({
                 {vuelto !== null && (
                   <div
                     className={cn(
-                      "flex items-center justify-between rounded-lg px-3.5 py-2.5 text-sm tabular-nums",
+                      "flex items-center justify-between rounded-lg px-3 py-1.5 text-sm tabular-nums",
                       vuelto < 0
                         ? "bg-destructive-soft text-destructive"
                         : "bg-success-soft text-success-text",
@@ -809,7 +803,7 @@ export function VentaScreen({
         )}
 
         {cart.length > 0 && (
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col">
             <label
               htmlFor="descuento-total"
               className="flex items-center justify-between gap-3 text-sm font-semibold"
@@ -830,19 +824,10 @@ export function VentaScreen({
                 %
               </span>
             </label>
-            {descuentoMaxPct < 100 && (
-              <p className="text-xs text-muted-foreground">
-                Tu tope de descuento es {descuentoMaxPct} %.
-              </p>
-            )}
           </div>
         )}
 
-        <div className="flex flex-col gap-2 rounded-2xl border border-border bg-muted p-4">
-          <div className="flex items-baseline justify-between text-sm text-muted-foreground tabular-nums">
-            <span>Artículos</span>
-            <span>{cantidadItems}</span>
-          </div>
+        <div className="flex flex-col gap-1 rounded-2xl border border-border bg-muted px-4 py-3">
           {descuentos > 0 && (
             <>
               <div className="flex items-baseline justify-between text-sm text-muted-foreground tabular-nums">
@@ -857,15 +842,15 @@ export function VentaScreen({
           )}
           <div className="flex items-baseline justify-between gap-3">
             <CardEyebrow>Total</CardEyebrow>
-            <p className="font-display text-[44px] leading-[48px] font-extrabold tracking-[-0.02em] tabular-nums">
+            <p className="font-display text-[36px] leading-[40px] font-extrabold tracking-[-0.02em] tabular-nums">
               {formatCurrency(total)}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
           <Button
-            className="h-14 w-full rounded-2xl text-[17px] shadow-[0_6px_16px_rgba(15,122,85,0.28)] disabled:shadow-none"
+            className="h-12 w-full rounded-2xl text-[16px] shadow-[0_6px_16px_rgba(15,122,85,0.28)] disabled:shadow-none"
             variant="success"
             size="lg"
             disabled={isPending}
@@ -879,7 +864,7 @@ export function VentaScreen({
             <KeyHint>F2</KeyHint>
           </Button>
           <Button
-            className="w-full"
+            className="h-9 w-full"
             variant="ghost"
             disabled={isPending}
             onClick={cancelarVenta}
