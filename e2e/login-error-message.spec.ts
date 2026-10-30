@@ -28,7 +28,11 @@ function passwordIncorrecta(real: string): string {
   return base.slice(0, -1) + (base.endsWith("a") ? "b" : "a");
 }
 
-async function mensajeDeLoginFallido(page: Page, email: string, password: string) {
+async function mensajeDeLoginFallido(
+  page: Page,
+  email: string,
+  password: string,
+) {
   await page.goto("/login");
   await page.getByLabel("Correo electrónico", { exact: true }).fill(email);
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
