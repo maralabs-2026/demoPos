@@ -259,6 +259,8 @@ begin
          and v_hora between p.desde and p.hasta
          and ((p.alcance = 'producto' and p.producto_id = v_prod.id)
            or (p.alcance = 'categoria' and p.categoria_id = v_prod.categoria_id))
+       -- En un empate gana la promo más antigua: la pantalla usa el mismo orden.
+       order by p.created_at, p.id
     loop
       v_promo_d := public.descuento_promocion(v_promo, v_prod.precio, v_item.cantidad);
       if v_promo_d > v_promo_mejor_d then
