@@ -42,6 +42,12 @@ export default async function ProductosPage() {
             >
               Actualizar precios
             </Link>
+            <Link
+              href="/promociones"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              Promos y combos
+            </Link>
           </div>
         )}
       </div>
