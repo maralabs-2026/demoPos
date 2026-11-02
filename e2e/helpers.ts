@@ -32,3 +32,19 @@ export async function abrirCajaSiHaceFalta(page: Page) {
     timeout: 20_000,
   });
 }
+
+// Pausa las promos de prueba "E2E..." que hayan quedado activas en una corrida anterior.
+// Corre solo contra la base de pruebas: si una promo E2E queda activa, gana el desempate
+// (la más antigua) y la promo del test deja de aplicarse.
+export async function pausarPromosDeEnsayo(page: Page) {
+  await page.goto("/promociones");
+  const pausar = page
+    .getByRole("listitem")
+    .filter({ hasText: "E2E " })
+    .getByRole("button", { name: "Pausar" });
+  while ((await pausar.count()) > 0) {
+    const antes = await pausar.count();
+    await pausar.first().click();
+    await expect(pausar).toHaveCount(antes - 1, { timeout: 15_000 });
+  }
+}

@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { abrirCajaSiHaceFalta, login, passwordDe } from "./helpers";
+import {
+  abrirCajaSiHaceFalta,
+  login,
+  passwordDe,
+  pausarPromosDeEnsayo,
+} from "./helpers";
 
 // Fase 4d de punta a punta: crear una promo 2x1, cobrar dos unidades y ver el descuento en el
 // ticket y en la venta. Al terminar, la promo se pausa para no alterar otras pruebas.
@@ -12,6 +17,8 @@ test("promo 2x1: dos Coca cobran $ 2.500 y el ticket muestra la promo", async ({
   page,
 }) => {
   await login(page, "dueno@kiosko.demo", passwordDe("E2E_DUENO_PASSWORD"));
+  // Promos E2E de corridas anteriores: sin esto, una vieja podría ganar el desempate.
+  await pausarPromosDeEnsayo(page);
 
   try {
     // Crear la promo en /promociones (valores por defecto: llevá 2, pagá 1, todos los días).
