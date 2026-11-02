@@ -4,10 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardEyebrow } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toaster";
+import { formatCurrency, parseMonto } from "@/lib/currency";
 import type { Producto } from "@/modules/productos";
-import { cambiarActivaCombo, crearCombo } from "../actions";
+import { cambiarActivaCombo, crearCombo, eliminarCombo } from "../actions";
 import type { Combo } from "../logica";
 import type { ComboInput } from "../schemas";
 
@@ -33,6 +35,7 @@ export function CombosSection({
   const [hasta, setHasta] = useState("23:59");
   // Productos elegidos: id -> cantidad (texto del input).
   const [elegidos, setElegidos] = useState<Record<string, string>>({});
+  const [aEliminar, setAEliminar] = useState<Combo | null>(null);
 
   const nombreDe = (id: string) =>
     productos.find((p) => p.id === id)?.nombre ?? "Producto";
@@ -58,7 +61,7 @@ export function CombosSection({
 
     const input: ComboInput = {
       nombre,
-      precio: precio.trim() === "" ? (NaN as number) : Number(precio.replace(",", ".")),
+      precio: parseMonto(precio) ?? Number.NaN,
       dias,
       desde,
       hasta,
@@ -91,8 +94,31 @@ export function CombosSection({
     router.refresh();
   }
 
+  async function confirmarEliminar(combo: Combo) {
+    const result = await eliminarCombo(combo.id);
+    if (!result.ok) {
+      toast.error("No se pudo eliminar el combo", result.error);
+      return;
+    }
+    toast.success("Combo eliminado", combo.nombre);
+    router.refresh();
+  }
+
   return (
     <section className="flex flex-col gap-6">
+      <ConfirmDialog
+        open={aEliminar !== null}
+        onOpenChange={(open) => {
+          if (!open) setAEliminar(null);
+        }}
+        title="¿Eliminar el combo?"
+        description={`"${aEliminar?.nombre ?? ""}" deja de aplicarse. Las ventas ya hechas no cambian.`}
+        confirmLabel="Eliminar"
+        destructive
+        onConfirm={() => {
+          if (aEliminar) void confirmarEliminar(aEliminar);
+        }}
+      />
       <Card className="gap-3">
         <CardEyebrow>Combos del comercio</CardEyebrow>
         {combos.length === 0 ? (
@@ -107,20 +133,28 @@ export function CombosSection({
                 <div className="min-w-0">
                   <p className="font-semibold">{c.nombre}</p>
                   <p className="text-sm text-muted-foreground">
-                    ${" "}
-                    {c.precio.toLocaleString("es-AR")} ·{" "}
+                    {formatCurrency(c.precio)} ·{" "}
                     {c.items
                       .map((i) => `${i.cantidad} × ${nombreDe(i.productoId)}`)
                       .join(" + ")}
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => alternarActiva(c)}
-                >
-                  {c.activa ? "Pausar" : "Activar"}
-                </Button>
+                <div className="flex shrink-0 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => alternarActiva(c)}
+                  >
+                    {c.activa ? "Pausar" : "Activar"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAEliminar(c)}
+                  >
+                    Eliminar
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>

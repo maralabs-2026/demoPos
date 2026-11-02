@@ -105,7 +105,7 @@ export const comboSchema = z
       .max(120, { error: "El nombre es demasiado largo" }),
     precio: z
       .number({ error: "Escribí el precio del combo" })
-      .min(0, { error: "El precio no puede ser negativo" }),
+      .positive({ error: "El precio del combo tiene que ser mayor a cero" }),
     dias: z
       .array(z.number().int().min(0).max(6))
       .min(1, { error: "Elegí al menos un día" }),

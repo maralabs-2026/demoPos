@@ -25,7 +25,7 @@ const ROLES_CATALOGO: readonly Rol[] = ["dueno", "encargado"];
 const PG_INSUFFICIENT_PRIVILEGE = "42501";
 const PG_NUMERIC_OVERFLOW = "22003"; // un precio quedaría fuera de numeric(12,2)
 const PG_UNIQUE_VIOLATION = "23505"; // (comercio_id, codigo_barras)
-const PG_FOREIGN_KEY_VIOLATION = "23503"; // el producto ya tiene ventas o movimientos
+const PG_FOREIGN_KEY_VIOLATION = "23503"; // ventas, movimientos, promos o combos lo usan
 const PV_PRODUCTO_INEXISTENTE = "PV005";
 const PV_PORCENTAJE_INVALIDO = "PV007";
 const PV_CATEGORIA_INVALIDA = "PV008";
@@ -183,7 +183,7 @@ export async function eliminarProducto(
   if (error) {
     if (error.code === PG_FOREIGN_KEY_VIOLATION) {
       return fail(
-        "No se puede eliminar: el producto ya tiene ventas o movimientos de stock.",
+        "No se puede eliminar: el producto tiene ventas o movimientos de stock, o está en una promo o un combo.",
       );
     }
     return fail("No se pudo eliminar el producto. Probá de nuevo.");
