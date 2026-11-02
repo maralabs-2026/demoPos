@@ -74,6 +74,7 @@ export default async function VenderPage() {
         mediosPago={mediosPagoResult.data}
         promos={promosResult.data}
         combos={combosResult.data}
+        horaServidorMs={Date.now()}
       />
     </main>
   );

@@ -94,6 +94,7 @@ export function VentaScreen({
   mediosPago,
   promos,
   combos,
+  horaServidorMs,
 }: {
   cajaId: string;
   // 100 para dueño y encargado; el tope de configuración para el cajero.
@@ -104,6 +105,8 @@ export function VentaScreen({
   promos: Promo[];
   // Combos fijos del comercio, en orden de creación (ver 0014).
   combos: Combo[];
+  // Date.now() del servidor al armar la página.
+  horaServidorMs: number;
 }) {
   const router = useRouter();
   const [productos, setProductos] = useState(productosIniciales);
@@ -120,6 +123,7 @@ export function VentaScreen({
   );
   const [comprobante, setComprobante] = useState<Comprobante | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [desfaseRelojMs] = useState(() => horaServidorMs - Date.now());
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -133,7 +137,8 @@ export function VentaScreen({
   // Mismo redondeo que registrar_venta: si no, el pago no coincidiría con el total de la base.
   // Combos y promos: mismo cálculo que registrar_venta (0013 y 0014). Primero los combos sobre el
   // ticket completo; después, la promo de mayor descuento sobre las unidades que no usó un combo.
-  const ahora = ahoraEnCordoba();
+  // La vigencia usa la hora del servidor: el reloj de la PC del kiosco puede estar desfasado.
+  const ahora = ahoraEnCordoba(new Date(Date.now() + desfaseRelojMs));
   const combosPorLinea = aplicarCombos(
     cart.map((i) => ({
       productoId: i.productoId,
@@ -389,7 +394,13 @@ export function VentaScreen({
         setError(result.error);
         toast.error("No se pudo cobrar", result.error);
         // La caja se cerró en otro lado: la página vuelve a pedir que se abra.
-        if (result.error.startsWith("Tu caja está cerrada")) router.refresh();
+        // El total cambió: trae promos y combos al día sin perder el carrito.
+        if (
+          result.error.startsWith("Tu caja está cerrada") ||
+          result.error.startsWith("El total cambió")
+        ) {
+          router.refresh();
+        }
         return;
       }
 

@@ -115,7 +115,7 @@ export async function registrarVenta(
         }
         if (error.message.includes("no coinciden")) {
           return fail(
-            "El total cambió porque se actualizó algún precio. Recargá la pantalla y cobrá de nuevo.",
+            "El total cambió porque se actualizó un precio, una promo o un combo. Revisá el ticket y cobrá de nuevo. Si vuelve a pasar, recargá la pantalla.",
           );
         }
         return fail("Elegí un medio de pago válido.");
