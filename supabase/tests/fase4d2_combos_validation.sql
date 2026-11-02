@@ -1,11 +1,12 @@
--- Validación de la Fase 4d-2: combo fijo en registrar_venta (0014).
--- Necesita las migraciones 0001-0014 y el seed base (comercio "Kiosko Demo", Coca-Cola a $ 2.500).
+-- Validación de la Fase 4d-2: combo fijo en registrar_venta (0014 y 0015).
+-- Necesita las migraciones 0001-0015 y el seed base (comercio "Kiosko Demo", Coca-Cola a $ 2.500).
 --
 --   supabase db query --linked -f supabase/tests/fase4d2_combos_validation.sql
 --
 -- Un único bloque DO: crea sus usuarios, cajas, promos y combos de prueba y SIEMPRE aborta con
 -- "PV999: VALIDACION OK (todo revertido)" para no dejar rastro. Los roles se simulan como
--- PostgREST (SET ROLE + claims JWT). Desactiva las promos existentes solo dentro de la transacción.
+-- PostgREST (SET ROLE + claims JWT). Desactiva promos y combos existentes solo dentro de la
+-- transacción.
 
 do $$
 declare
@@ -21,6 +22,14 @@ declare
   dow_otro integer;
   combo_precio numeric;
   combo_id uuid;
+  combo2_id uuid;
+  combo_redondeo uuid;
+  promo_id uuid;
+  regalo constant uuid := '00000000-0000-4000-8000-0000000008a0';
+  prod_a constant uuid := '00000000-0000-4000-8000-0000000008a1';
+  prod_b constant uuid := '00000000-0000-4000-8000-0000000008a2';
+  prod_c constant uuid := '00000000-0000-4000-8000-0000000008a3';
+  repartos numeric[];
   esperado numeric;
   resultado jsonb;
   descuentos numeric;
@@ -70,8 +79,21 @@ begin
   insert into public.cajas (comercio_id, usuario_id, monto_inicial)
   values (comercio, dueno, 0) returning id into caja;
 
-  -- Sin promos por línea: el efecto medido es solo el del combo.
+  -- Sin promos por línea ni otros combos: el efecto medido es solo el del combo de prueba.
   update public.promociones set activa = false where comercio_id = comercio;
+  update public.combos set activa = false where comercio_id = comercio;
+
+  -- Productos para el caso de redondeo: uno de regalo, con el menor id, y tres iguales.
+  insert into public.productos (id, comercio_id, nombre, codigo_barras, precio)
+  values (regalo, comercio, 'Regalo (test)', 'TEST-COMBO-0', 0),
+         (prod_a, comercio, 'A (test)', 'TEST-COMBO-A', 10.01),
+         (prod_b, comercio, 'B (test)', 'TEST-COMBO-B', 10.01),
+         (prod_c, comercio, 'C (test)', 'TEST-COMBO-C', 10.01);
+
+  -- Stock de sobra para que el script no dependa del seed.
+  insert into public.movimientos_stock (comercio_id, producto_id, tipo, cantidad, usuario_id)
+  select comercio, p, 'ingreso', 50, dueno
+    from unnest(array[coca, otro, regalo, prod_a, prod_b, prod_c]) p;
 
   -- Combo Coca + otro producto, con $ 500 de descuento sobre la suma de precios.
   combo_precio := coca_precio + otro_precio - 500;
@@ -141,6 +163,86 @@ begin
     raise exception 'FAIL (d): el combo se aplicó sin todos sus productos (%)', resultado;
   end if;
   ok := array_append(ok, 'combo: no se aplica si falta un producto');
+
+  -- -------------------------------------------------------------------------------------------
+  -- (f) Combo + promo: el 10 % de la Coca solo aplica a las dos unidades que no usó el combo.
+  -- -------------------------------------------------------------------------------------------
+  insert into public.promociones (comercio_id, nombre, tipo, alcance, producto_id, porcentaje)
+  values (comercio, 'Promo test', 'porcentaje', 'producto', coca, 10) returning id into promo_id;
+  esperado := combo_precio + 2 * coca_precio * 0.9;
+  resultado := public.registrar_venta(caja,
+    jsonb_build_array(jsonb_build_object('producto_id', coca, 'cantidad', 3),
+                      jsonb_build_object('producto_id', otro, 'cantidad', 1)),
+    jsonb_build_array(jsonb_build_object('medio_pago_id', efectivo, 'monto', esperado,
+                                         'recibido', esperado)));
+  if (resultado ->> 'total')::numeric <> esperado then
+    raise exception 'FAIL (f): esperado % y dio %', esperado, resultado;
+  end if;
+  select promocion_nombre into nombre_combo
+    from public.venta_items
+   where venta_id = (resultado ->> 'venta_id')::uuid and producto_id = coca;
+  if nombre_combo <> 'Combo test + Promo test' then
+    raise exception 'FAIL (f): snapshot de la promo incorrecto (%)', nombre_combo;
+  end if;
+  update public.promociones set activa = false where id = promo_id;
+  ok := array_append(ok, 'combo + promo: la promo aplica solo a las unidades libres');
+
+  -- -------------------------------------------------------------------------------------------
+  -- (g) Combo + descuento manual: el 10 % se calcula sobre el precio ya con el combo.
+  -- -------------------------------------------------------------------------------------------
+  esperado := round(combo_precio * 0.9, 2);
+  resultado := public.registrar_venta(caja,
+    jsonb_build_array(
+      jsonb_build_object('producto_id', coca, 'cantidad', 1, 'descuento_pct', 10),
+      jsonb_build_object('producto_id', otro, 'cantidad', 1, 'descuento_pct', 10)),
+    jsonb_build_array(jsonb_build_object('medio_pago_id', efectivo, 'monto', esperado,
+                                         'recibido', esperado)));
+  if abs((resultado ->> 'total')::numeric - esperado) > 0.01 then
+    raise exception 'FAIL (g): esperado % y dio %', esperado, resultado;
+  end if;
+  ok := array_append(ok, 'combo + manual: el descuento se suma sobre el precio del combo');
+
+  -- -------------------------------------------------------------------------------------------
+  -- (h) Dos combos en el ticket: cada uno usa sus unidades, sin reusarlas.
+  -- -------------------------------------------------------------------------------------------
+  insert into public.combos (comercio_id, nombre, precio, created_at)
+  values (comercio, 'Combo test 2', coca_precio + 10.01 - 100, now() + interval '1 minute')
+  returning id into combo2_id;
+  insert into public.combo_items (combo_id, comercio_id, producto_id, cantidad)
+  values (combo2_id, comercio, coca, 1), (combo2_id, comercio, prod_a, 1);
+  esperado := combo_precio + coca_precio + 10.01 - 100;
+  resultado := public.registrar_venta(caja,
+    jsonb_build_array(jsonb_build_object('producto_id', coca, 'cantidad', 2),
+                      jsonb_build_object('producto_id', otro, 'cantidad', 1),
+                      jsonb_build_object('producto_id', prod_a, 'cantidad', 1)),
+    jsonb_build_array(jsonb_build_object('medio_pago_id', efectivo, 'monto', esperado,
+                                         'recibido', esperado)));
+  if (resultado ->> 'total')::numeric <> esperado then
+    raise exception 'FAIL (h): esperado % y dio %', esperado, resultado;
+  end if;
+  update public.combos set activa = false where id = combo2_id;
+  ok := array_append(ok, 'dos combos: se aplican los dos sin reusar unidades');
+
+  -- -------------------------------------------------------------------------------------------
+  -- (i) Reparto al centavo con un regalo a $ 0. Mismos números que combos.test.ts.
+  -- -------------------------------------------------------------------------------------------
+  update public.combos set activa = false where id = combo_id;
+  insert into public.combos (comercio_id, nombre, precio)
+  values (comercio, 'Combo redondeo', 20) returning id into combo_redondeo;
+  insert into public.combo_items (combo_id, comercio_id, producto_id, cantidad)
+  select combo_redondeo, comercio, p, 1 from unnest(array[regalo, prod_a, prod_b, prod_c]) p;
+  resultado := public.registrar_venta(caja,
+    (select jsonb_agg(jsonb_build_object('producto_id', p, 'cantidad', 1))
+       from unnest(array[regalo, prod_a, prod_b, prod_c]) p),
+    jsonb_build_array(jsonb_build_object('medio_pago_id', efectivo, 'monto', 20, 'recibido', 20)));
+  select array_agg(promocion_descuento order by producto_id) into repartos
+    from public.venta_items where venta_id = (resultado ->> 'venta_id')::uuid;
+  if repartos <> array[0, 3.34, 3.35, 3.34]::numeric[] then
+    raise exception 'FAIL (i): reparto incorrecto (%)', repartos;
+  end if;
+  update public.combos set activa = false where id = combo_redondeo;
+  update public.combos set activa = true where id = combo_id;
+  ok := array_append(ok, 'reparto: al centavo, sin negativos y con un producto a $ 0');
 
   -- -------------------------------------------------------------------------------------------
   -- (e) Fuera de vigencia: el combo no se aplica hoy.

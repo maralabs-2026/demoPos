@@ -117,9 +117,8 @@ export function mejorPromo(
 }
 
 // Combo fijo (0014): varios productos distintos por un precio fijo. Espejo de la lógica de
-// registrar_venta: se aplica solo con todos sus productos, tantas veces como entren, sobre las
-// unidades que no usó otro combo; el descuento se reparte por precio, el resto va al menor
-// producto_id.
+// registrar_venta (0015): se aplica solo con todos sus productos, tantas veces como entren, sobre
+// las unidades que no usó otro combo; el descuento se reparte por precio, en orden de producto_id.
 export type ComboItem = { productoId: string; cantidad: number };
 
 export type Combo = {
@@ -172,22 +171,23 @@ export function aplicarCombos(
     );
     const descUnitC = brutoUnitC - aCentavos(combo.precio);
     if (descUnitC <= 0) continue;
-    const descKC = descUnitC * k;
-    const brutoKC = brutoUnitC * k;
+    let restanteC = descUnitC * k;
+    let brutoRestanteC = brutoUnitC * k;
 
-    // Reparto: cada línea (salvo la de menor producto_id) recibe su parte redondeada; esa, el resto.
+    // Reparto por producto_id: cada línea recibe su parte de lo que queda por repartir. Así ninguna
+    // queda negativa ni supera su importe, y la última se lleva el resto exacto.
     const ordenados = [...partes].sort((a, b) =>
       a.item.productoId < b.item.productoId ? -1 : 1,
     );
     const repartos = new Map<string, number>();
-    let otrosC = 0;
-    for (const p of ordenados.slice(1)) {
+    for (const p of ordenados) {
       const xC = aCentavos(p.linea!.precio) * p.item.cantidad * k;
-      const parte = Math.round((descKC * xC) / brutoKC);
+      const parte =
+        brutoRestanteC > 0 ? Math.round((restanteC * xC) / brutoRestanteC) : 0;
       repartos.set(p.item.productoId, parte);
-      otrosC += parte;
+      restanteC -= parte;
+      brutoRestanteC -= xC;
     }
-    repartos.set(ordenados[0].item.productoId, descKC - otrosC);
 
     partes.forEach((p) => {
       const linea = p.linea!;

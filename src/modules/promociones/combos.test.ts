@@ -100,6 +100,31 @@ describe("aplicarCombos", () => {
     expect(r.get(OTRO)?.descuento).toBe(0);
   });
 
+  // Mismos números que el caso (i) de supabase/tests/fase4d2_combos_validation.sql: la pantalla y la
+  // base tienen que repartir igual, también con un producto de regalo y un medio centavo.
+  it("reparte al centavo sin negativos, con un producto a $ 0", () => {
+    const lineas = ["id0-regalo", "id1-a", "id2-b", "id3-c"].map((productoId, i) => ({
+      productoId,
+      categoriaId: null,
+      precio: i === 0 ? 0 : 10.01,
+      cantidad: 1,
+    }));
+    const r = aplicarCombos(
+      lineas,
+      [
+        {
+          ...comboBase,
+          precio: 20,
+          items: lineas.map((l) => ({ productoId: l.productoId, cantidad: 1 })),
+        },
+      ],
+      ahora,
+    );
+    expect(lineas.map((l) => r.get(l.productoId)?.descuento)).toEqual([
+      0, 3.34, 3.35, 3.34,
+    ]);
+  });
+
   it("un combo no reusa unidades que ya usó otro combo", () => {
     const otro: Combo = { ...comboBase, id: "c2", nombre: "Combo 2", precio: 5000 };
     const r = aplicarCombos(
