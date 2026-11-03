@@ -52,19 +52,20 @@ Reglas fijas: autenticación real con Supabase; usuarios de prueba exclusivament
   - `0001`–`0008` no cambiaron: `git diff -- supabase/migrations` vacío. La base compartida `kiosko-demo` no se tocó.
   - Diferencia menor contra la base compartida, sin efecto en CA6: los movimientos de stock inicial quedan con `motivo = 'Stock inicial'` (del seed) en vez de `'Stock inicial (migración)'` (de 0004), porque el seed corrió con `productos` ya vacía.
 
-## Estado de verificación (2026-10-08)
+## Estado de verificación
 
 | CA | Estado | Evidencia / qué falta |
 | --- | --- | --- |
 | CA1 | **Verificado en ejecución** | `npm run test:e2e` → 5 passed contra Supabase real; `e2e/login-error-message.spec.ts` prueba los dos casos con el mismo mensaje |
 | CA2 | **Verificado en ejecución** | Con usuario real de Supabase: login, `/perfil`, refresh de página, sesión activa y datos del perfil visibles (2026-10-08) |
 | CA3 | **Verificado en ejecución** | DevTools: sessionStorage de `http://localhost:3000` vacío; tras el refresh de `/perfil` la sesión siguió activa y el perfil mostró Dueño Demo / DUEÑO / Kiosko Demo (2026-10-08) |
-| CA4 | **Verificado en ejecución** | Cajero con `must_change_password: true` → redirigido a `/cambiar-contrasena`; tras el cambio → `/vender` y en Supabase Authentication la `app_metadata` quedó en `false` (2026-10-08) |
+| CA4 (histórico, `user_metadata`) | **Verificado en ejecución** | Cajero con `must_change_password: true` en `user_metadata` → redirigido a `/cambiar-contrasena`; tras el cambio → `/vender` y en Supabase Authentication la metadata quedó en `false` (2026-10-08) |
+| CA4 (actual, `app_metadata`) | **Verificado en ejecución** | Proyecto descartable `kiosko-demo-test`, cajero del seed: `app_metadata.must_change_password` inicialmente `true`; login → `/cambiar-contrasena`; cambio por el flujo real → `app_metadata.must_change_password: false` y redirección a `/vender` (2026-11-03) |
 | CA5 | **Verificado en ejecución** | Navegación y `/perfil` con sesión real: Dueño y Cajero ven menú y datos propios de su rol (2026-10-08) |
 | CA6 | **Verificado en ejecución** | Base descartable `kiosko-demo-test`: ANTES `anon` veía 40 filas de `productos` (reproducción terminada con `ROLLBACK`); DESPUÉS `ERROR: 42501 permission denied for table productos`; post-rollback: `current_user` = postgres, 0 grants a `anon` y 0 policy `demo_anon_read_productos`. `0001`–`0008` sin cambios y la base compartida nunca se tocó |
 | CA7 | Verificado | `mock.ts` y `mock.test.ts` no existen; 0 referencias a `getMockSession`/`storeMockSession`/`clearMockSession`; `npm run test`, `lint`, `build` y `test:e2e` en verde |
 
-CA2–CA5 verificadas manualmente el 2026-10-08; detalle por CA en las filas de esta tabla y en `spec.md`.
+CA2–CA5 verificadas manualmente el 2026-10-08 (CA4 en esa fecha se probó con el flag en `user_metadata`); CA4 se volvió a verificar el 2026-11-03 con `app_metadata` en `kiosko-demo-test`. Detalle por CA en las filas de esta tabla y en `spec.md`.
 
 Migraciones aplicadas solo en la base descartable `kiosko-demo-test` (`0001`–`0007`, `supabase/seed.sql` y `0008`); la base compartida `kiosko-demo` no se usó para ninguna. `git diff -- supabase/migrations` está vacío: los 8 archivos intactos.
 
