@@ -74,7 +74,7 @@ src/
 **Costos**
 - El costo no es una columna de `productos`: vive en la tabla `productos_costos` (`comercio_id not null`, montos `numeric(12,2)`), porque la RLS no filtra por columna.
 - RLS de `productos_costos`: solo `dueno` y `encargado` pueden leer, insertar y modificar. El cajero no accede a la tabla de ninguna forma.
-- El costo al momento de la venta (para la ganancia estimada) se guarda como snapshot fuera de `venta_items`, con la misma restricción por rol. Dónde exactamente se define antes de cerrar la Fase 3.
+- El costo al momento de la venta (para la ganancia estimada) se guarda como snapshot en `venta_items_costos`, fuera de `venta_items`, con la misma restricción por rol y sin escritura directa: lo llena un trigger al insertar cada ítem. Es por unidad. Sin fila significa que el producto no tenía costo cargado, no que costó $ 0.
 
 ## 4. Convenciones
 
