@@ -1,4 +1,5 @@
--- Fixture de e2e/stock-concurrencia.spec.ts: un producto con stock exactamente 1.
+-- Fixture de los tests e2e: un producto con stock exactamente 1 (e2e/stock-concurrencia.spec.ts)
+-- y stock suficiente de los productos que venden los demás tests. Correrlo antes de cada suite.
 -- SOLO para la base de pruebas (kiosko-demo-test). Es idempotente: si el producto ya existe,
 -- deja su stock en 1 con un ajuste de la diferencia.
 --
@@ -31,7 +32,18 @@ begin
   select v_comercio, v_producto, 'ajuste', 1 - stock_actual, 'Fixture e2e', v_dueno
     from public.productos
    where id = v_producto and stock_actual <> 1;
+
+  -- Coca-Cola y Bon o Bon: cada corrida de los tests de venta, promo y combo las consume.
+  insert into public.movimientos_stock
+    (comercio_id, producto_id, tipo, cantidad, motivo, usuario_id)
+  select v_comercio, id, 'ajuste', 50 - stock_actual, 'Fixture e2e', v_dueno
+    from public.productos
+   where comercio_id = v_comercio
+     and codigo_barras in ('7790010000154', '7790010000017')
+     and stock_actual < 50;
 end
 $$;
 
-select nombre, stock_actual from public.productos where codigo_barras = '9990000000999';
+select nombre, stock_actual from public.productos
+ where codigo_barras in ('9990000000999', '7790010000154', '7790010000017')
+ order by nombre;
