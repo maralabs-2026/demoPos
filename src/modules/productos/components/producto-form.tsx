@@ -1,9 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { crearProducto, editarProducto } from "../actions";
+import { useEffect, useRef, useState } from "react";
+import {
+  crearProducto,
+  editarProducto,
+  guardarFotoProducto,
+  quitarFotoProducto,
+} from "../actions";
+import { achicarFoto } from "../foto";
 import type { Categoria, Producto } from "../queries";
-import { calcularMargen } from "../schemas";
+import { calcularMargen, FOTO_TIPO } from "../schemas";
+import { FotoProducto } from "@/components/foto-producto";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatPercent, parseMonto } from "@/lib/currency";
@@ -21,7 +28,8 @@ function montoAEditar(value: number | null | undefined): string {
 type ProductoFormProps = {
   categorias: Categoria[];
   producto?: Producto;
-  onSuccess?: () => void;
+  // `aviso`: el producto se guardó, pero algo de la foto falló.
+  onSuccess?: (aviso?: string) => void;
   onCancel?: () => void;
 };
 
@@ -46,6 +54,19 @@ export function ProductoForm({
   );
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const [fotoNueva, setFotoNueva] = useState<Blob | null>(null);
+  const [fotoVistaPrevia, setFotoVistaPrevia] = useState<string | null>(null);
+  const [quitarFoto, setQuitarFoto] = useState(false);
+  const [procesandoFoto, setProcesandoFoto] = useState(false);
+  const fotoInputRef = useRef<HTMLInputElement>(null);
+  const fotoVisible =
+    fotoVistaPrevia ?? (quitarFoto ? null : (producto?.fotoUrl ?? null));
+
+  useEffect(() => {
+    if (!fotoVistaPrevia) return;
+    return () => URL.revokeObjectURL(fotoVistaPrevia);
+  }, [fotoVistaPrevia]);
+
   // Costo vacío = costo desconocido. Un texto que no se entiende (NaN) nunca se guarda como vacío.
   const costoNumero = parseMonto(costo);
   const precioNumero = parseMonto(precio);
@@ -55,6 +76,55 @@ export function ProductoForm({
     precioInvalido || costoInvalido
       ? null
       : calcularMargen(costoNumero, precioNumero);
+
+  async function handleFoto(event: React.ChangeEvent<HTMLInputElement>) {
+    const archivo = event.target.files?.[0];
+    if (!archivo) return;
+    setError("");
+    setProcesandoFoto(true);
+    try {
+      const blob = await achicarFoto(archivo);
+      setFotoNueva(blob);
+      setFotoVistaPrevia(URL.createObjectURL(blob));
+      setQuitarFoto(false);
+    } catch {
+      setError("No se pudo leer esa imagen. Probá con un JPG o un PNG.");
+    } finally {
+      setProcesandoFoto(false);
+    }
+  }
+
+  function handleQuitarFoto() {
+    setFotoNueva(null);
+    setFotoVistaPrevia(null);
+    setQuitarFoto(true);
+    if (fotoInputRef.current) fotoInputRef.current.value = "";
+  }
+
+  // Corre con el producto ya guardado: si falla, no se puede reintentar con el mismo formulario
+  // (crearía el producto otra vez), así que devuelve un aviso en vez de dejarlo abierto.
+  async function guardarCambiosFoto(id: string): Promise<string | undefined> {
+    const aviso = "El producto se guardó, pero la foto no. Editalo y probá de nuevo.";
+    try {
+      if (fotoNueva) {
+        const formData = new FormData();
+        formData.set("productoId", id);
+        formData.set(
+          "foto",
+          new File([fotoNueva], "foto.jpg", { type: FOTO_TIPO }),
+        );
+        const result = await guardarFotoProducto(formData);
+        return result.ok ? undefined : aviso;
+      }
+      if (quitarFoto) {
+        const result = await quitarFotoProducto(id);
+        return result.ok ? undefined : aviso;
+      }
+      return undefined;
+    } catch {
+      return aviso;
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -93,7 +163,7 @@ export function ProductoForm({
         setError(result.error);
         return;
       }
-      onSuccess?.();
+      onSuccess?.(await guardarCambiosFoto(result.data.id));
     } catch {
       setError("No se pudo conectar. Revisá la conexión y probá de nuevo.");
     } finally {
@@ -123,6 +193,34 @@ export function ProductoForm({
           placeholder="Ej. Coca Cola 500 ml"
           required
         />
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="producto-foto" className="text-sm font-medium">
+          Foto (opcional)
+        </label>
+        <div className="flex items-center gap-3">
+          <FotoProducto src={fotoVisible} className="size-16" />
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
+            <Input
+              id="producto-foto"
+              ref={fotoInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => void handleFoto(event)}
+            />
+            {fotoVisible && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleQuitarFoto}
+              >
+                Quitar foto
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -230,7 +328,7 @@ export function ProductoForm({
       )}
 
       <div className="flex gap-2">
-        <Button type="submit" disabled={guardando}>
+        <Button type="submit" disabled={guardando || procesandoFoto}>
           {guardando ? "Guardando..." : producto ? "Guardar cambios" : "Crear"}
         </Button>
 

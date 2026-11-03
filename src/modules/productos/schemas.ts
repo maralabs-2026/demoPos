@@ -45,6 +45,41 @@ export const productoSchema = z.object({
 
 export type ProductoInput = z.input<typeof productoSchema>;
 
+// ---- Foto del producto ----
+
+export const FOTOS_BUCKET = "productos";
+export const FOTO_TIPO = "image/jpeg";
+export const FOTO_LADO_MAX = 320;
+// Mismo tope que el bucket (migración 0016).
+export const FOTO_MAX_BYTES = 524_288;
+
+// El navegador achica la foto antes de subirla (foto.ts), así que acá siempre llega un JPEG chico.
+export const fotoProductoSchema = z.object({
+  productoId: z.uuid({ error: "El producto no es válido" }),
+  foto: z
+    .file({ error: "Elegí una foto" })
+    .min(1, { error: "Elegí una foto" })
+    .max(FOTO_MAX_BYTES, { error: "La foto es demasiado pesada" })
+    .mime([FOTO_TIPO], { error: "La foto no es válida" }),
+});
+
+// El tipo del archivo lo declara el cliente; esto mira el contenido real.
+export function esJpeg(bytes: Uint8Array): boolean {
+  return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+}
+
+// Lleva el lado más largo a FOTO_LADO_MAX, sin agrandar las fotos más chicas.
+export function medidasFoto(
+  ancho: number,
+  alto: number,
+): { ancho: number; alto: number } {
+  const escala = Math.min(1, FOTO_LADO_MAX / Math.max(ancho, alto));
+  return {
+    ancho: Math.max(1, Math.round(ancho * escala)),
+    alto: Math.max(1, Math.round(alto * escala)),
+  };
+}
+
 // Precio y costo que se vieron al abrir el formulario de edición (control de cambios simultáneos).
 export const valoresAnterioresSchema = z.object({
   precio: z.number().finite(),

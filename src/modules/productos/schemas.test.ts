@@ -4,12 +4,74 @@ import {
   CSV_MAX_FILAS,
   actualizarPreciosSchema,
   calcularMargen,
+  esJpeg,
+  FOTO_LADO_MAX,
+  FOTO_MAX_BYTES,
+  fotoProductoSchema,
+  medidasFoto,
   precioActualizado,
   productoSchema,
   validarCsvProductos,
 } from "./schemas";
 
 const CATEGORIA = "3f8a1c2e-5b7d-4e9f-8a6b-1c2d3e4f5a6b";
+
+describe("foto del producto", () => {
+  const foto = (bytes: number, type = "image/jpeg") =>
+    new File([new Uint8Array(bytes)], "foto.jpg", { type });
+
+  it("acepta un JPEG dentro del tope", () => {
+    const result = fotoProductoSchema.safeParse({
+      productoId: CATEGORIA,
+      foto: foto(FOTO_MAX_BYTES),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it.each([
+    ["vacía", foto(0)],
+    ["demasiado pesada", foto(FOTO_MAX_BYTES + 1)],
+    ["de otro tipo", foto(10, "image/svg+xml")],
+    ["que no es un archivo", "foto.jpg"],
+    ["faltante", null],
+  ])("rechaza una foto %s", (_caso, valor) => {
+    const result = fotoProductoSchema.safeParse({
+      productoId: CATEGORIA,
+      foto: valor,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rechaza un producto que no es un uuid", () => {
+    const result = fotoProductoSchema.safeParse({
+      productoId: "../otro-comercio",
+      foto: foto(10),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("reconoce un JPEG por su contenido", () => {
+    expect(esJpeg(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]))).toBe(true);
+    expect(esJpeg(new TextEncoder().encode("<svg>"))).toBe(false);
+    expect(esJpeg(new Uint8Array())).toBe(false);
+  });
+
+  it("achica el lado más largo sin deformar", () => {
+    expect(medidasFoto(3200, 1600)).toEqual({
+      ancho: FOTO_LADO_MAX,
+      alto: FOTO_LADO_MAX / 2,
+    });
+    expect(medidasFoto(1600, 3200)).toEqual({
+      ancho: FOTO_LADO_MAX / 2,
+      alto: FOTO_LADO_MAX,
+    });
+  });
+
+  it("no agranda una foto chica ni deja un lado en cero", () => {
+    expect(medidasFoto(100, 50)).toEqual({ ancho: 100, alto: 50 });
+    expect(medidasFoto(10000, 1).alto).toBe(1);
+  });
+});
 
 describe("actualizarPreciosSchema", () => {
   it("acepta una categoría y un porcentaje positivo", () => {

@@ -1,11 +1,16 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getAuthProfile, type Rol, type SessionProfile } from "@/modules/auth";
 import {
   actualizarPreciosSchema,
+  esJpeg,
+  FOTO_TIPO,
+  FOTOS_BUCKET,
+  fotoProductoSchema,
   productoSchema,
   validarCsvProductos,
   valoresAnterioresSchema,
@@ -178,7 +183,7 @@ export async function eliminarProducto(
     .from("productos")
     .delete()
     .eq("id", id)
-    .select("id");
+    .select("id, foto_path");
 
   if (error) {
     if (error.code === PG_FOREIGN_KEY_VIOLATION) {
@@ -191,6 +196,94 @@ export async function eliminarProducto(
   if (!data || data.length === 0) {
     return fail("El producto ya no existe. Recargá la página.");
   }
+
+  const fotoPath = (data[0] as { foto_path: string | null }).foto_path;
+  if (fotoPath) await supabase.storage.from(FOTOS_BUCKET).remove([fotoPath]);
+
+  revalidarCatalogo();
+  return ok({ id });
+}
+
+// Cada foto tiene un nombre nuevo para que nadie siga viendo la anterior por la caché de la URL.
+// Si no se puede borrar el archivo viejo queda sin uso, pero el producto ya muestra la foto nueva.
+export async function guardarFotoProducto(
+  formData: FormData,
+): Promise<ActionResult<ProductoGuardado>> {
+  const parsed = fotoProductoSchema.safeParse({
+    productoId: formData.get("productoId"),
+    foto: formData.get("foto"),
+  });
+  if (!parsed.success) {
+    return fail(parsed.error.issues[0]?.message ?? "La foto no es válida");
+  }
+  const { productoId, foto } = parsed.data;
+  const bytes = new Uint8Array(await foto.arrayBuffer());
+  if (!esJpeg(bytes)) return fail("La foto no es válida");
+
+  const auth = await requireRolCatalogo("Tu rol no puede gestionar productos.");
+  if (!auth.ok) return auth;
+
+  const supabase = await createClient();
+  const { data: producto, error: errorProducto } = await supabase
+    .from("productos")
+    .select("foto_path")
+    .eq("id", productoId)
+    .maybeSingle<{ foto_path: string | null }>();
+  if (errorProducto) return fail("No se pudo guardar la foto. Probá de nuevo.");
+  if (!producto) return fail("El producto ya no existe. Recargá la página.");
+
+  const fotos = supabase.storage.from(FOTOS_BUCKET);
+  const path = `${auth.data.comercio_id}/${productoId}/${randomUUID()}.jpg`;
+  const { error: errorSubida } = await fotos.upload(path, bytes, {
+    contentType: FOTO_TIPO,
+    cacheControl: "31536000",
+  });
+  if (errorSubida) return fail("No se pudo subir la foto. Probá de nuevo.");
+
+  const { data: actualizados, error } = await supabase
+    .from("productos")
+    .update({ foto_path: path })
+    .eq("id", productoId)
+    .select("id");
+  if (error || !actualizados || actualizados.length === 0) {
+    await fotos.remove([path]);
+    return fail("No se pudo guardar la foto. Probá de nuevo.");
+  }
+
+  if (producto.foto_path) await fotos.remove([producto.foto_path]);
+
+  revalidarCatalogo();
+  return ok({ id: productoId });
+}
+
+export async function quitarFotoProducto(
+  id: string,
+): Promise<ActionResult<ProductoGuardado>> {
+  if (!id) return fail("El producto no es válido");
+
+  const auth = await requireRolCatalogo("Tu rol no puede gestionar productos.");
+  if (!auth.ok) return auth;
+
+  const supabase = await createClient();
+  const { data: producto, error: errorProducto } = await supabase
+    .from("productos")
+    .select("foto_path")
+    .eq("id", id)
+    .maybeSingle<{ foto_path: string | null }>();
+  if (errorProducto) return fail("No se pudo quitar la foto. Probá de nuevo.");
+  if (!producto) return fail("El producto ya no existe. Recargá la página.");
+  if (!producto.foto_path) return ok({ id });
+
+  const { data: actualizados, error } = await supabase
+    .from("productos")
+    .update({ foto_path: null })
+    .eq("id", id)
+    .select("id");
+  if (error || !actualizados || actualizados.length === 0) {
+    return fail("No se pudo quitar la foto. Probá de nuevo.");
+  }
+
+  await supabase.storage.from(FOTOS_BUCKET).remove([producto.foto_path]);
 
   revalidarCatalogo();
   return ok({ id });
