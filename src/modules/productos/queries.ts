@@ -1,6 +1,10 @@
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { buscarProductosSchema, type BuscarProductosInput } from "./schemas";
+import {
+  buscarProductosSchema,
+  FOTOS_BUCKET,
+  type BuscarProductosInput,
+} from "./schemas";
 
 export type Producto = {
   id: string;
@@ -14,6 +18,7 @@ export type Producto = {
   stockActual: number;
   stockMinimo: number;
   unidadVenta: string;
+  fotoUrl: string | null;
 };
 
 // TODO(demo): tipos escritos a mano porque todavía no se corrió `supabase gen types`.
@@ -27,13 +32,14 @@ type ProductoRow = {
   stock_minimo: number;
   unidad_venta: string;
   categoria_id: string | null;
+  foto_path: string | null;
   categorias: { nombre: string } | null;
   // PostgREST puede devolver la relación 1 a 1 como objeto o como arreglo.
   productos_costos?: { costo: number } | { costo: number }[] | null;
 };
 
 const COLUMNAS =
-  "id, nombre, codigo_barras, precio, stock_actual, stock_minimo, unidad_venta, categoria_id, categorias(nombre)";
+  "id, nombre, codigo_barras, precio, stock_actual, stock_minimo, unidad_venta, categoria_id, foto_path, categorias(nombre)";
 
 function costoDe(row: ProductoRow): number | null {
   const rel = Array.isArray(row.productos_costos)
@@ -81,6 +87,10 @@ export async function getProductos(
     stockActual: row.stock_actual,
     stockMinimo: row.stock_minimo,
     unidadVenta: row.unidad_venta,
+    fotoUrl: row.foto_path
+      ? supabase.storage.from(FOTOS_BUCKET).getPublicUrl(row.foto_path).data
+          .publicUrl
+      : null,
   }));
 
   return ok(productos);

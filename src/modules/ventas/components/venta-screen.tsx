@@ -19,6 +19,7 @@ import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { QuickAmounts } from "@/components/ui/quick-amounts";
 import { toast } from "@/components/ui/toaster";
 import type { MedioPago } from "@/modules/config";
+import { FotoProducto } from "@/components/foto-producto";
 import type { Producto } from "@/modules/productos";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
@@ -55,7 +56,7 @@ function StockChip({ producto }: { producto: Producto }) {
   return (
     <span
       className={cn(
-        "inline-flex h-[22px] items-center gap-1.5 self-start rounded-full px-2 text-xs font-semibold tabular-nums",
+        "inline-flex h-[22px] items-center gap-1.5 self-start rounded-full px-2 text-xs font-semibold whitespace-nowrap tabular-nums",
         sin
           ? "bg-destructive-soft text-destructive"
           : bajo
@@ -560,7 +561,13 @@ export function VentaScreen({
                   sinStock && "cursor-not-allowed opacity-55",
                 )}
               >
-                <StockChip producto={producto} />
+                <span className="flex items-start justify-between gap-2">
+                  <StockChip producto={producto} />
+                  <FotoProducto
+                    src={producto.fotoUrl}
+                    className="size-9 sm:size-12"
+                  />
+                </span>
                 {producto.categoriaNombre && (
                   <span className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
                     {producto.categoriaNombre}

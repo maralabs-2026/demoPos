@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
+import { FotoProducto } from "@/components/foto-producto";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,7 +74,8 @@ export function ProductosTable({
     (p) => p.stockActual <= 0 || p.stockActual < p.stockMinimo,
   ).length;
 
-  function cerrarFormulario() {
+  function cerrarFormulario(aviso?: string) {
+    setError(aviso ?? "");
     setFormulario(null);
     router.refresh();
   }
@@ -175,9 +177,17 @@ export function ProductosTable({
               return (
                 <TableRow key={producto.id}>
                   <TableCell className="whitespace-normal">
-                    <div className="font-semibold">{producto.nombre}</div>
-                    <div className="text-xs text-muted-foreground tabular-nums">
-                      {producto.codigoBarras}
+                    <div className="flex items-center gap-3">
+                      <FotoProducto
+                        src={producto.fotoUrl}
+                        className="size-10"
+                      />
+                      <div className="min-w-0">
+                        <div className="font-semibold">{producto.nombre}</div>
+                        <div className="text-xs text-muted-foreground tabular-nums">
+                          {producto.codigoBarras}
+                        </div>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground sm:table-cell">

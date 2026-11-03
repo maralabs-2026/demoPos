@@ -4,7 +4,9 @@ export {
   crearProducto,
   editarProducto,
   eliminarProducto,
+  guardarFotoProducto,
   importarProductos,
+  quitarFotoProducto,
 } from "./actions";
 export type {
   PreciosActualizados,
