@@ -115,3 +115,92 @@ export function mejorPromo(
   }
   return mejor;
 }
+
+// Combo fijo (0014): varios productos distintos por un precio fijo. Espejo de la lógica de
+// registrar_venta (0015): se aplica solo con todos sus productos, tantas veces como entren, sobre
+// las unidades que no usó otro combo; el descuento se reparte por precio, en orden de producto_id.
+export type ComboItem = { productoId: string; cantidad: number };
+
+export type Combo = {
+  id: string;
+  nombre: string;
+  precio: number;
+  // Mismo formato que Promo: días 0-6 y franja HH:MM:SS en hora de Córdoba.
+  dias: number[];
+  desde: string;
+  hasta: string;
+  activa: boolean;
+  items: ComboItem[];
+};
+
+// Lo que aporta el combo a una línea del ticket.
+export type DescuentoCombo = { descuento: number; nombres: string[]; consumido: number };
+
+// Combos en orden de creación, como los devuelve la consulta.
+export function aplicarCombos(
+  lineas: LineaPromo[],
+  combos: Combo[],
+  ahora: Ahora,
+): Map<string, DescuentoCombo> {
+  const estado = new Map(
+    lineas.map((l) => [
+      l.productoId,
+      { precio: l.precio, cantidad: l.cantidad, descC: 0, consumido: 0, nombres: [] as string[] },
+    ]),
+  );
+
+  for (const combo of combos) {
+    const vigente =
+      combo.activa &&
+      combo.dias.includes(ahora.dia) &&
+      ahora.hora >= combo.desde &&
+      ahora.hora <= combo.hasta;
+    if (!vigente || combo.items.length < 2) continue;
+
+    const partes = combo.items.map((item) => ({ item, linea: estado.get(item.productoId) }));
+    if (partes.some((p) => !p.linea)) continue;
+
+    const k = Math.min(
+      ...partes.map((p) => Math.floor((p.linea!.cantidad - p.linea!.consumido) / p.item.cantidad)),
+    );
+    if (k <= 0) continue;
+
+    const brutoUnitC = partes.reduce(
+      (acc, p) => acc + aCentavos(p.linea!.precio) * p.item.cantidad,
+      0,
+    );
+    const descUnitC = brutoUnitC - aCentavos(combo.precio);
+    if (descUnitC <= 0) continue;
+    let restanteC = descUnitC * k;
+    let brutoRestanteC = brutoUnitC * k;
+
+    // Reparto por producto_id: cada línea recibe su parte de lo que queda por repartir. Así ninguna
+    // queda negativa ni supera su importe, y la última se lleva el resto exacto.
+    const ordenados = [...partes].sort((a, b) =>
+      a.item.productoId < b.item.productoId ? -1 : 1,
+    );
+    const repartos = new Map<string, number>();
+    for (const p of ordenados) {
+      const xC = aCentavos(p.linea!.precio) * p.item.cantidad * k;
+      const parte =
+        brutoRestanteC > 0 ? Math.round((restanteC * xC) / brutoRestanteC) : 0;
+      repartos.set(p.item.productoId, parte);
+      restanteC -= parte;
+      brutoRestanteC -= xC;
+    }
+
+    partes.forEach((p) => {
+      const linea = p.linea!;
+      linea.descC += repartos.get(p.item.productoId) ?? 0;
+      linea.consumido += p.item.cantidad * k;
+      linea.nombres.push(combo.nombre);
+    });
+  }
+
+  return new Map(
+    [...estado.entries()].map(([id, e]) => [
+      id,
+      { descuento: e.descC / 100, nombres: e.nombres, consumido: e.consumido },
+    ]),
+  );
+}

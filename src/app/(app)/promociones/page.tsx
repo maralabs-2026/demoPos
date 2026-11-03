@@ -1,25 +1,30 @@
 import { requireRol } from "@/modules/auth";
 import { getCategorias, getProductos } from "@/modules/productos";
-import { getPromociones } from "@/modules/promociones/queries";
+import { CombosSection } from "@/modules/promociones/components/combos-section";
 import { PromocionesScreen } from "@/modules/promociones/components/promociones-screen";
+import { getCombos, getPromociones } from "@/modules/promociones/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function PromocionesPage() {
   await requireRol("/promociones");
 
-  const [promosResult, productosResult, categoriasResult] = await Promise.all([
-    getPromociones(),
-    getProductos(),
-    getCategorias(),
-  ]);
+  const [promosResult, combosResult, productosResult, categoriasResult] =
+    await Promise.all([
+      getPromociones(),
+      getCombos(),
+      getProductos(),
+      getCategorias(),
+    ]);
   const error = !promosResult.ok
     ? promosResult.error
-    : !productosResult.ok
-      ? productosResult.error
-      : !categoriasResult.ok
-        ? categoriasResult.error
-        : null;
+    : !combosResult.ok
+      ? combosResult.error
+      : !productosResult.ok
+        ? productosResult.error
+        : !categoriasResult.ok
+          ? categoriasResult.error
+          : null;
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
@@ -32,15 +37,22 @@ export default async function PromocionesPage() {
       </div>
       {error ||
       !promosResult.ok ||
+      !combosResult.ok ||
       !productosResult.ok ||
       !categoriasResult.ok ? (
         <p className="text-sm text-destructive">{error}</p>
       ) : (
-        <PromocionesScreen
-          promos={promosResult.data}
-          productos={productosResult.data}
-          categorias={categoriasResult.data}
-        />
+        <>
+          <PromocionesScreen
+            promos={promosResult.data}
+            productos={productosResult.data}
+            categorias={categoriasResult.data}
+          />
+          <CombosSection
+            combos={combosResult.data}
+            productos={productosResult.data}
+          />
+        </>
       )}
     </main>
   );

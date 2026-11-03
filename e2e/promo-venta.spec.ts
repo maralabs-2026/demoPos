@@ -23,7 +23,7 @@ test("promo 2x1: dos Coca cobran $ 2.500 y el ticket muestra la promo", async ({
   try {
     // Crear la promo en /promociones (valores por defecto: llevá 2, pagá 1, todos los días).
     await page.goto("/promociones");
-    await page.getByLabel("Nombre", { exact: true }).fill(NOMBRE_PROMO);
+    await page.getByLabel("Nombre", { exact: true }).first().fill(NOMBRE_PROMO);
     await page
       .locator("select:has(option:text-is('Coca-Cola 500ml'))")
       .selectOption({ label: "Coca-Cola 500ml" });

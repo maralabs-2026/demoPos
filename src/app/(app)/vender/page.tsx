@@ -2,7 +2,7 @@ import { getAuthProfile } from "@/modules/auth";
 import { getCajaAbierta } from "@/modules/caja";
 import { AbrirCaja } from "@/modules/caja/components/abrir-caja";
 import { getDescuentoMaxCajeroPct, getMediosPago } from "@/modules/config";
-import { getPromociones } from "@/modules/promociones/queries";
+import { getCombos, getPromociones } from "@/modules/promociones/queries";
 import { getProductos } from "@/modules/productos";
 import { VentaScreen } from "@/modules/ventas/components/venta-screen";
 
@@ -16,6 +16,7 @@ export default async function VenderPage() {
     mediosPagoResult,
     topeResult,
     promosResult,
+    combosResult,
   ] = await Promise.all([
     getAuthProfile(),
     getCajaAbierta(),
@@ -23,6 +24,7 @@ export default async function VenderPage() {
     getMediosPago(),
     getDescuentoMaxCajeroPct(),
     getPromociones(),
+    getCombos(),
   ]);
   // Dueño y encargado sin tope; el cajero, hasta lo que diga la configuración.
   const descuentoMaxPct =
@@ -36,13 +38,16 @@ export default async function VenderPage() {
         ? mediosPagoResult.error
         : !promosResult.ok
           ? promosResult.error
-          : null;
+          : !combosResult.ok
+            ? combosResult.error
+            : null;
   if (
     error ||
     !cajaResult.ok ||
     !productosResult.ok ||
     !mediosPagoResult.ok ||
-    !promosResult.ok
+    !promosResult.ok ||
+    !combosResult.ok
   ) {
     return (
       <main className="p-6">
@@ -68,6 +73,8 @@ export default async function VenderPage() {
         productosIniciales={productosResult.data}
         mediosPago={mediosPagoResult.data}
         promos={promosResult.data}
+        combos={combosResult.data}
+        horaServidorMs={Date.now()}
       />
     </main>
   );

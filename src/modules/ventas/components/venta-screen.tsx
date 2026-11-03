@@ -25,7 +25,13 @@ import { cn } from "@/lib/utils";
 import { registrarVenta, type Comprobante } from "../actions";
 import { resolverPagos, restantePorAsignar, type PagoParcial } from "../pagos";
 import { calcularTotales, descuentoDeLinea } from "../totales";
-import { ahoraEnCordoba, mejorPromo, type Promo } from "@/modules/promociones";
+import {
+  aplicarCombos,
+  ahoraEnCordoba,
+  mejorPromo,
+  type Combo,
+  type Promo,
+} from "@/modules/promociones";
 import { ComprobanteView } from "./comprobante-view";
 
 type CartItem = {
@@ -87,6 +93,8 @@ export function VentaScreen({
   productosIniciales,
   mediosPago,
   promos,
+  combos,
+  horaServidorMs,
 }: {
   cajaId: string;
   // 100 para dueño y encargado; el tope de configuración para el cajero.
@@ -95,6 +103,10 @@ export function VentaScreen({
   mediosPago: MedioPago[];
   // Promos del comercio; se aplican solas, igual que en registrar_venta.
   promos: Promo[];
+  // Combos fijos del comercio, en orden de creación (ver 0014).
+  combos: Combo[];
+  // Date.now() del servidor al armar la página.
+  horaServidorMs: number;
 }) {
   const router = useRouter();
   const [productos, setProductos] = useState(productosIniciales);
@@ -111,6 +123,7 @@ export function VentaScreen({
   );
   const [comprobante, setComprobante] = useState<Comprobante | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [desfaseRelojMs] = useState(() => horaServidorMs - Date.now());
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -122,27 +135,53 @@ export function VentaScreen({
   // Redondeado a centavos: sin esto, "Exacto" o un monto tipeado pueden quedar
   // por debajo de un total como 1234.5600000000002.
   // Mismo redondeo que registrar_venta: si no, el pago no coincidiría con el total de la base.
-  // Promo de cada línea (la de mayor descuento vigente). Mismo cálculo que la base.
-  const ahora = ahoraEnCordoba();
-  const promoPorLinea = new Map(
-    cart.map((i) => [
-      i.productoId,
-      mejorPromo(
-        promos,
+  // Combos y promos: mismo cálculo que registrar_venta (0013 y 0014). Primero los combos sobre el
+  // ticket completo; después, la promo de mayor descuento sobre las unidades que no usó un combo.
+  // La vigencia usa la hora del servidor: el reloj de la PC del kiosco puede estar desfasado.
+  const ahora = ahoraEnCordoba(new Date(Date.now() + desfaseRelojMs));
+  const combosPorLinea = aplicarCombos(
+    cart.map((i) => ({
+      productoId: i.productoId,
+      categoriaId: i.categoriaId,
+      precio: i.precio,
+      cantidad: i.cantidad,
+    })),
+    combos,
+    ahora,
+  );
+  const beneficioPorLinea = new Map(
+    cart.map((i) => {
+      const combo = combosPorLinea.get(i.productoId);
+      const libres = i.cantidad - (combo?.consumido ?? 0);
+      const promo =
+        libres > 0
+          ? mejorPromo(
+              promos,
+              {
+                productoId: i.productoId,
+                categoriaId: i.categoriaId,
+                precio: i.precio,
+                cantidad: libres,
+              },
+              ahora,
+            )
+          : null;
+      const nombres = [...(combo?.nombres ?? []), ...(promo ? [promo.nombre] : [])];
+      return [
+        i.productoId,
         {
-          productoId: i.productoId,
-          categoriaId: i.categoriaId,
-          precio: i.precio,
-          cantidad: i.cantidad,
+          comboDescuento: combo?.descuento ?? 0,
+          promoDescuento: promo?.descuento ?? 0,
+          nombre: nombres.join(" + "),
         },
-        ahora,
-      ),
-    ]),
+      ] as const;
+    }),
   );
   const totales = calcularTotales(
     cart.map((i) => ({
       ...i,
-      promoDescuento: promoPorLinea.get(i.productoId)?.descuento ?? 0,
+      comboDescuento: beneficioPorLinea.get(i.productoId)?.comboDescuento ?? 0,
+      promoDescuento: beneficioPorLinea.get(i.productoId)?.promoDescuento ?? 0,
     })),
     descuentoTotalPct,
   );
@@ -355,7 +394,13 @@ export function VentaScreen({
         setError(result.error);
         toast.error("No se pudo cobrar", result.error);
         // La caja se cerró en otro lado: la página vuelve a pedir que se abra.
-        if (result.error.startsWith("Tu caja está cerrada")) router.refresh();
+        // El total cambió: trae promos y combos al día sin perder el carrito.
+        if (
+          result.error.startsWith("Tu caja está cerrada") ||
+          result.error.startsWith("El total cambió")
+        ) {
+          router.refresh();
+        }
         return;
       }
 
@@ -587,9 +632,9 @@ export function VentaScreen({
                   <p className="text-xs text-muted-foreground tabular-nums">
                     {formatCurrency(item.precio, { decimals: 0 })} c/u
                   </p>
-                  {promoPorLinea.get(item.productoId) && (
+                  {beneficioPorLinea.get(item.productoId)?.nombre && (
                     <p className="truncate text-xs font-semibold text-success-text">
-                      Promo: {promoPorLinea.get(item.productoId)?.nombre}
+                      Promo: {beneficioPorLinea.get(item.productoId)?.nombre}
                     </p>
                   )}
                   <label className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
@@ -633,8 +678,10 @@ export function VentaScreen({
                     item.precio * item.cantidad -
                       descuentoDeLinea({
                         ...item,
+                        comboDescuento:
+                          beneficioPorLinea.get(item.productoId)?.comboDescuento ?? 0,
                         promoDescuento:
-                          promoPorLinea.get(item.productoId)?.descuento ?? 0,
+                          beneficioPorLinea.get(item.productoId)?.promoDescuento ?? 0,
                       }),
                   )}
                 </p>

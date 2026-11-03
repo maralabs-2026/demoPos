@@ -94,3 +94,49 @@ export const promocionSchema = z
 
 export type PromocionInput = z.input<typeof promocionSchema>;
 export type PromocionValidada = z.output<typeof promocionSchema>;
+
+// Combo fijo (0014): dos o más productos distintos por un precio fijo.
+export const comboSchema = z
+  .object({
+    nombre: z
+      .string()
+      .trim()
+      .min(1, { error: "Ponele un nombre al combo" })
+      .max(120, { error: "El nombre es demasiado largo" }),
+    precio: z
+      .number({ error: "Escribí el precio del combo" })
+      .positive({ error: "El precio del combo tiene que ser mayor a cero" }),
+    dias: z
+      .array(z.number().int().min(0).max(6))
+      .min(1, { error: "Elegí al menos un día" }),
+    desde: hora,
+    hasta: hora,
+    items: z
+      .array(
+        z.object({
+          productoId: z.string().min(1, { error: "Elegí el producto" }),
+          cantidad: entero(1, "La cantidad tiene que ser al menos 1"),
+        }),
+      )
+      .min(2, { error: "Un combo necesita al menos dos productos" }),
+  })
+  .superRefine((c, ctx) => {
+    const ids = c.items.map((i) => i.productoId);
+    if (new Set(ids).size !== ids.length) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["items"],
+        message: "Un producto aparece dos veces en el combo",
+      });
+    }
+    if (c.desde > c.hasta) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["hasta"],
+        message: "La hora de fin tiene que ser posterior a la de inicio",
+      });
+    }
+  });
+
+export type ComboInput = z.input<typeof comboSchema>;
+export type ComboValidado = z.output<typeof comboSchema>;
