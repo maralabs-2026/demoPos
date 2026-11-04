@@ -66,7 +66,9 @@ export function Navigation({ profile }: { profile: SessionProfile }) {
   const comercioNombre = profile.comercio;
 
   const links = getNavLinks(rol);
-  const activeHref = links.find((link) => pathname === link.href)?.href;
+  const activeHref = links.find(
+    (link) => pathname === link.href || pathname.startsWith(`${link.href}/`),
+  )?.href;
 
   return (
     <>

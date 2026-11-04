@@ -5,6 +5,7 @@ import {
   Settings,
   Store,
   User,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import type { Rol } from "./session";
@@ -16,6 +17,7 @@ export interface NavLink {
 }
 
 const VENDER: NavLink = { href: "/vender", label: "Vender", icon: Store };
+const CAJA: NavLink = { href: "/caja", label: "Caja", icon: Wallet };
 const PRODUCTOS: NavLink = {
   href: "/productos",
   label: "Productos",
@@ -36,6 +38,9 @@ const TODOS: readonly Rol[] = ["dueno", "encargado", "cajero"];
 // Encargado: todo menos configuración (sección 3 de CLAUDE.md). Cajero: sin reportes ni config.
 export const ROUTE_ROLES = {
   "/vender": TODOS,
+  "/caja": TODOS,
+  "/caja/historial": TODOS,
+  "/caja/cerrar": ["dueno", "encargado"],
   "/productos": TODOS,
   "/productos/precios": ["dueno", "encargado"],
   "/productos/importar": ["dueno", "encargado"],
@@ -54,6 +59,7 @@ export function canAccess(rol: Rol, route: AppRoute): boolean {
 
 const LINKS: readonly NavLink[] = [
   VENDER,
+  CAJA,
   PRODUCTOS,
   STOCK,
   REPORTES,
