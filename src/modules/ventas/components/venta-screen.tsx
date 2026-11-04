@@ -629,6 +629,8 @@ export function VentaScreen({
                 aria-disabled={sinStock}
                 onClick={() => {
                   agregarAlCarrito(producto);
+                  // Cierra el teclado si estaba buscando; en escritorio el foco vuelve enseguida.
+                  inputRef.current?.blur();
                   enfocarBusqueda();
                 }}
                 className={cn(

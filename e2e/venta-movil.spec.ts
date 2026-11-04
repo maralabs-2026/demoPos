@@ -27,6 +27,12 @@ test("celular: toca un producto, abre el carrito y cobra desde el panel", async 
   // Sin productos, el ticket no ocupa lugar debajo del catálogo.
   await expect(ticket).toBeHidden();
 
+  // Al entrar no se abre el teclado.
+  await expect(buscar).not.toBeFocused();
+
+  // Tocar un producto mientras se busca lo cierra.
+  await buscar.tap();
+  await expect(buscar).toBeFocused();
   await card.tap();
   await expect(card).toContainText("En el ticket: 1");
   await expect(buscar).not.toBeFocused();
