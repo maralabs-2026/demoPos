@@ -65,6 +65,7 @@ src/
 - Una venta nunca se borra. Anularla la marca como anulada y, en la misma transacción, genera los movimientos de stock inversos y el egreso en la caja abierta.
 - Las promociones aplicadas se guardan en la venta (snapshot), igual que los precios: cambiar o pausar una promo no altera ventas pasadas.
 - Retiros, ingresos y gastos pagados con la caja son movimientos de esa caja. Efectivo esperado al cierre = fondo inicial + ventas en efectivo + ingresos − retiros.
+- Una caja se cierra solo con `cerrar_caja`, con conteo por medio de pago. El conteo es a ciegas: el esperado se ve recién después de cerrar. Dueño y encargado pueden cerrar la caja de otro, y queda registrado quién la cerró. Un cierre no se corrige.
 
 **Roles**
 - `dueno`: todo.
