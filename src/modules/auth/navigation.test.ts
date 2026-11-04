@@ -6,9 +6,10 @@ function shape(rol: "dueno" | "encargado" | "cajero"): string[] {
 }
 
 describe("getNavLinks", () => {
-  it("dueño ve los 6 accesos", () => {
+  it("dueño ve los 7 accesos", () => {
     expect(shape("dueno")).toEqual([
       "/vender|Vender",
+      "/caja|Caja",
       "/productos|Productos",
       "/stock|Stock",
       "/reportes|Reportes",
@@ -20,6 +21,7 @@ describe("getNavLinks", () => {
   it("encargado ve Stock y Reportes pero no Config", () => {
     expect(shape("encargado")).toEqual([
       "/vender|Vender",
+      "/caja|Caja",
       "/productos|Productos",
       "/stock|Stock",
       "/reportes|Reportes",
@@ -27,9 +29,10 @@ describe("getNavLinks", () => {
     ]);
   });
 
-  it("cajero no ve Stock, Reportes ni Config", () => {
+  it("cajero ve Caja, pero no Stock, Reportes ni Config", () => {
     expect(shape("cajero")).toEqual([
       "/vender|Vender",
+      "/caja|Caja",
       "/productos|Productos",
       "/perfil|Mi perfil",
     ]);
@@ -45,6 +48,10 @@ describe("canAccess", () => {
     expect(canAccess("encargado", "/reportes")).toBe(true);
     expect(canAccess("encargado", "/config")).toBe(false);
     expect(canAccess("dueno", "/config")).toBe(true);
+    expect(canAccess("cajero", "/caja")).toBe(true);
+    expect(canAccess("cajero", "/caja/historial")).toBe(true);
+    expect(canAccess("cajero", "/caja/cerrar")).toBe(false);
+    expect(canAccess("encargado", "/caja/cerrar")).toBe(true);
   });
 
   it("cada link de la navegación tiene su regla de acceso", () => {
