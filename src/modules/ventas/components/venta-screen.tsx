@@ -3,11 +3,19 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ArrowLeftRight,
+  Banknote,
+  ChevronRight,
+  CreditCard,
   Plus,
+  QrCode,
   ScanBarcode,
   Search,
+  ShoppingBag,
   Split,
+  Tag,
   TriangleAlert,
+  UserRound,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,6 +57,37 @@ type CartItem = {
 
 const TODAS = "Todos";
 
+// Desde este ancho el ticket queda al costado; más chico, se abre como panel desde abajo.
+const ESCRITORIO = "(min-width: 1024px)";
+
+const ICONO_MEDIO = {
+  efectivo: Banknote,
+  tarjeta: CreditCard,
+  transferencia: ArrowLeftRight,
+  qr: QrCode,
+  cuenta_corriente: UserRound,
+} satisfies Record<MedioPago["tipo"], unknown>;
+
+// Stock del celular: corto, con el mismo color de alerta que el StockChip.
+function StockCorto({ producto }: { producto: Producto }) {
+  const sin = producto.stockActual <= 0;
+  const bajo = !sin && producto.stockActual < producto.stockMinimo;
+  return (
+    <span
+      className={cn(
+        "text-xs whitespace-nowrap tabular-nums lg:hidden",
+        sin
+          ? "font-semibold text-destructive"
+          : bajo
+            ? "font-semibold text-warning-foreground"
+            : "text-muted-foreground",
+      )}
+    >
+      {sin ? "Sin stock" : `${producto.stockActual} u.`}
+    </span>
+  );
+}
+
 // Estado del stock como en el StockChip de Mostrador: al día, bajo el mínimo o sin stock.
 function StockChip({ producto }: { producto: Producto }) {
   const sin = producto.stockActual <= 0;
@@ -82,7 +121,7 @@ function StockChip({ producto }: { producto: Producto }) {
 
 function KeyHint({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-current/30 px-1 font-mono text-[11px] font-semibold opacity-85">
+    <kbd className="hidden h-5 min-w-5 items-center justify-center rounded-md border border-current/30 px-1 font-mono text-[11px] font-semibold opacity-85 lg:inline-flex">
       {children}
     </kbd>
   );
@@ -125,12 +164,40 @@ export function VentaScreen({
   const [comprobante, setComprobante] = useState<Comprobante | null>(null);
   const [isPending, startTransition] = useTransition();
   const [desfaseRelojMs] = useState(() => horaServidorMs - Date.now());
+  // Panel abierto en celular y tablet; en escritorio siempre es null.
+  const [panel, setPanel] = useState<"carrito" | "cobro" | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const cerrarPanelRef = useRef<HTMLButtonElement>(null);
+
+  // En una pantalla táctil, enfocar el buscador abre el teclado y tapa el catálogo.
+  function enfocarBusqueda() {
+    if (panel || window.matchMedia("(pointer: coarse)").matches) return;
+    inputRef.current?.focus();
+  }
 
   useEffect(() => {
-    if (!comprobante) inputRef.current?.focus();
-  }, [comprobante, cart.length]);
+    if (!comprobante) enfocarBusqueda();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comprobante, cart.length, panel]);
+
+  // Con un panel abierto: el foco entra en él, la página de atrás no se desplaza, y si la ventana
+  // pasa a escritorio se cierra, porque ahí el ticket ya está a la vista.
+  useEffect(() => {
+    if (!panel) return;
+    cerrarPanelRef.current?.focus();
+    const overflowPrevio = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const escritorio = window.matchMedia(ESCRITORIO);
+    const cerrarEnEscritorio = () => {
+      if (escritorio.matches) setPanel(null);
+    };
+    escritorio.addEventListener("change", cerrarEnEscritorio);
+    return () => {
+      document.body.style.overflow = overflowPrevio;
+      escritorio.removeEventListener("change", cerrarEnEscritorio);
+    };
+  }, [panel]);
 
   const medioSeleccionado = mediosPago.find((m) => m.id === medioPagoId);
   // Redondeado a centavos: sin esto, "Exacto" o un monto tipeado pueden quedar
@@ -290,10 +357,12 @@ export function VentaScreen({
   }
 
   function quitarDelCarrito(productoId: string) {
+    if (cart.length === 1) setPanel(null);
     setCart((prev) => prev.filter((i) => i.productoId !== productoId));
   }
 
   function cancelarVenta() {
+    setPanel(null);
     setCart([]);
     setMontoRecibido(null);
     setPagosCombinados(null);
@@ -414,6 +483,7 @@ export function VentaScreen({
         ),
       );
       setComprobante(result.data);
+      setPanel(null);
       toast.success(
         "Venta registrada",
         `${formatCurrency(result.data.total)} · ${result.data.medioPagoNombre}`,
@@ -429,7 +499,9 @@ export function VentaScreen({
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (comprobante) return;
-      if (e.key === "F2") {
+      if (e.key === "Escape" && panel) {
+        setPanel(null);
+      } else if (e.key === "F2") {
         e.preventDefault();
         cobrar();
       } else if (e.key === "F4") {
@@ -467,6 +539,7 @@ export function VentaScreen({
     busqueda,
     comprobante,
     isPending,
+    panel,
   ]);
 
   const categorias = [
@@ -498,9 +571,10 @@ export function VentaScreen({
   }
 
   return (
-    <div className="flex flex-wrap items-start gap-4 pb-24 lg:pb-0">
+    <div className="flex flex-wrap items-start gap-4 pb-28 lg:pb-0">
       <section
         aria-label="Catálogo"
+        inert={panel !== null}
         className="flex min-w-0 flex-[999_1_560px] flex-col gap-3"
       >
         <div className="relative">
@@ -510,7 +584,6 @@ export function VentaScreen({
           />
           <Input
             ref={inputRef}
-            autoFocus
             aria-label="Buscar producto"
             placeholder="Buscá por nombre o escaneá el código"
             value={busqueda}
@@ -521,14 +594,14 @@ export function VentaScreen({
                 handleBuscarSubmit();
               }
             }}
-            className="h-13 rounded-xl border-primary pr-12 pl-12 text-base shadow-[0_0_0_3px_var(--accent)] md:text-base"
+            className="h-13 rounded-xl border-primary pr-3 pl-12 text-base sm:pr-12 shadow-[0_0_0_3px_var(--accent)] md:text-base"
           />
           <span className="absolute top-1/2 right-3 hidden -translate-y-1/2 text-muted-foreground sm:block">
             <KeyHint>/</KeyHint>
           </span>
         </div>
 
-        {error && (
+        {error && !panel && (
           <p
             role="alert"
             className="flex items-center gap-2 rounded-lg bg-destructive-soft px-4 py-3 text-sm font-medium text-destructive"
@@ -547,6 +620,8 @@ export function VentaScreen({
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(176px,1fr))]">
           {catalogo.map((producto) => {
             const sinStock = producto.stockActual <= 0;
+            const enTicket =
+              cart.find((i) => i.productoId === producto.id)?.cantidad ?? 0;
             return (
               <button
                 key={producto.id}
@@ -554,39 +629,50 @@ export function VentaScreen({
                 aria-disabled={sinStock}
                 onClick={() => {
                   agregarAlCarrito(producto);
-                  inputRef.current?.focus();
+                  // Cierra el teclado si estaba buscando; en escritorio el foco vuelve enseguida.
+                  inputRef.current?.blur();
+                  enfocarBusqueda();
                 }}
                 className={cn(
-                  "flex min-w-0 flex-col gap-1.5 rounded-2xl border border-border bg-card p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-colors hover:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
+                  "relative flex min-w-0 flex-col gap-1.5 rounded-2xl border border-border bg-card p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-colors hover:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
+                  enTicket > 0 && "border-primary ring-1 ring-primary hover:border-primary",
                   sinStock && "cursor-not-allowed opacity-55",
                 )}
               >
-                <span className="flex items-start justify-between gap-2">
+                <FotoProducto
+                  src={producto.fotoUrl}
+                  entera
+                  className="mb-1 h-28 w-full lg:h-32"
+                />
+                <span className="absolute top-2 right-2 hidden lg:block">
                   <StockChip producto={producto} />
-                  <FotoProducto
-                    src={producto.fotoUrl}
-                    className="size-9 sm:size-12"
-                  />
                 </span>
+                {enTicket > 0 && (
+                  <span className="absolute top-2 right-2 grid size-7 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground tabular-nums lg:right-auto lg:left-2">
+                    <span className="sr-only">En el ticket: </span>
+                    {enTicket}
+                  </span>
+                )}
                 {producto.categoriaNombre && (
-                  <span className="text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+                  <span className="hidden text-[11px] font-bold tracking-wide text-muted-foreground uppercase lg:block">
                     {producto.categoriaNombre}
                   </span>
                 )}
                 <span className="line-clamp-2 min-h-[38px] text-sm leading-[19px] font-semibold">
                   {producto.nombre}
                 </span>
-                <span className="font-mono text-xs text-muted-foreground">
+                <span className="hidden font-mono text-xs text-muted-foreground lg:block">
                   {producto.codigoBarras}
                 </span>
-                <span className="mt-0.5 flex items-end justify-between gap-2">
+                <span className="mt-0.5 flex items-center justify-between gap-2 lg:items-end">
                   <span className="font-display text-lg leading-[22px] font-extrabold tabular-nums">
                     {formatCurrency(producto.precio, { decimals: 0 })}
                   </span>
+                  <StockCorto producto={producto} />
                   <span
                     aria-hidden="true"
                     className={cn(
-                      "grid size-8 place-items-center rounded-lg",
+                      "hidden size-8 place-items-center rounded-lg lg:grid",
                       sinStock
                         ? "bg-muted text-muted-foreground"
                         : "bg-primary text-primary-foreground",
@@ -606,17 +692,83 @@ export function VentaScreen({
         </div>
       </section>
 
+      {panel && (
+        <div
+          aria-hidden="true"
+          onClick={() => setPanel(null)}
+          className="fixed inset-0 z-50 bg-foreground/40 lg:hidden"
+        />
+      )}
+
+      {/* Un solo ticket: al costado en escritorio; en celular y tablet, panel desde abajo con dos
+          vistas, carrito y cobro. Sin panel abierto, ahí queda solo la barra flotante. */}
       <Card
         id="ticket"
         aria-label="Ticket"
-        className="w-full max-w-[460px] min-w-0 flex-[1_1_360px] gap-2.5 p-4"
+        role={panel ? "dialog" : undefined}
+        aria-modal={panel ? true : undefined}
+        className={cn(
+          "w-full min-w-0 gap-2.5 p-4 lg:static lg:flex lg:max-h-none lg:max-w-[460px] lg:flex-[1_1_360px] lg:overflow-visible lg:rounded-xl",
+          panel
+            ? "fixed inset-x-0 bottom-0 z-50 max-h-[88dvh] overflow-y-auto rounded-t-3xl rounded-b-none pb-[calc(1rem+env(safe-area-inset-bottom))]"
+            : "hidden",
+        )}
       >
-        <div className="flex items-baseline justify-between gap-2">
-          <h2 className="font-display text-lg font-bold">Ticket en curso</h2>
-          <span className="text-xs text-muted-foreground">
-            {cantidadItems === 1 ? "1 artículo" : `${cantidadItems} artículos`}
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-display text-lg font-bold">
+            <span className="lg:hidden">
+              {panel === "cobro" ? "Cobrar" : "Ticket en curso"}
+            </span>
+            <span className="hidden lg:inline">Ticket en curso</span>
+          </h2>
+          <span className="flex items-center gap-2">
+            <span
+              className={cn(
+                "text-xs text-muted-foreground",
+                panel === "cobro" && "hidden lg:inline",
+              )}
+            >
+              {cantidadItems === 1 ? "1 artículo" : `${cantidadItems} artículos`}
+            </span>
+            {panel && (
+              <Button
+                ref={cerrarPanelRef}
+                variant="secondary"
+                size="icon-sm"
+                aria-label="Cerrar"
+                className="rounded-full lg:hidden"
+                onClick={() => setPanel(null)}
+              >
+                <X />
+              </Button>
+            )}
           </span>
         </div>
+
+        {error && panel && (
+          <p
+            role="alert"
+            className="flex items-center gap-2 rounded-lg bg-destructive-soft px-3 py-2 text-sm font-medium text-destructive"
+          >
+            <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
+            {error}
+          </p>
+        )}
+
+        {/* Total grande arriba del cobro en celular; en escritorio y en el carrito va más abajo. */}
+        {panel === "cobro" && (
+          <div className="py-1 text-center lg:hidden">
+            <p className="text-sm text-muted-foreground">Total a cobrar</p>
+            <p className="font-display text-[40px] leading-[44px] font-extrabold tracking-[-0.02em] tabular-nums">
+              {formatCurrency(total)}
+            </p>
+            {descuentos > 0 && (
+              <p className="text-sm font-semibold text-success-text tabular-nums">
+                Con − {formatCurrency(descuentos)} de descuento
+              </p>
+            )}
+          </div>
+        )}
 
         {cart.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center text-sm text-muted-foreground">
@@ -626,85 +778,105 @@ export function VentaScreen({
             Escaneá o tocá un producto para empezar la venta.
           </div>
         ) : (
-          <ul className="flex flex-col">
-            {cart.map((item) => (
-              <li
-                key={item.productoId}
-                className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2 border-b border-border py-1.5 last:border-0"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm leading-[19px] font-semibold">
-                    {item.nombre}
-                  </p>
-                  <p className="text-xs text-muted-foreground tabular-nums">
-                    {formatCurrency(item.precio, { decimals: 0 })} c/u
-                  </p>
-                  {beneficioPorLinea.get(item.productoId)?.nombre && (
-                    <p className="truncate text-xs font-semibold text-success-text">
-                      Promo: {beneficioPorLinea.get(item.productoId)?.nombre}
+          <ul
+            className={cn(
+              "flex flex-col",
+              panel === "cobro" && "hidden lg:flex",
+            )}
+          >
+            {cart.map((item) => {
+              const beneficio = beneficioPorLinea.get(item.productoId);
+              const bruto = item.precio * item.cantidad;
+              const descuentoLinea = descuentoDeLinea({
+                ...item,
+                comboDescuento: beneficio?.comboDescuento ?? 0,
+                promoDescuento: beneficio?.promoDescuento ?? 0,
+              });
+              return (
+                <li
+                  key={item.productoId}
+                  className="flex flex-col gap-1.5 border-b border-border py-2.5 last:border-0"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="line-clamp-2 min-w-0 text-sm leading-[19px] font-semibold">
+                      {item.nombre}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Quitar ${item.nombre}`}
+                      className="-mt-1 -mr-1 shrink-0"
+                      onClick={() => quitarDelCarrito(item.productoId)}
+                    >
+                      <X />
+                    </Button>
+                  </div>
+                  {beneficio?.nombre && (
+                    <p className="flex items-start gap-1.5 self-start rounded-md bg-success-soft px-2 py-1 text-xs leading-4 font-semibold text-success-text">
+                      <Tag aria-hidden="true" className="mt-0.5 size-3 shrink-0" />
+                      <span className="min-w-0 break-words">
+                        Promo: {beneficio.nombre}
+                      </span>
                     </p>
                   )}
-                  <label className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                    Desc.
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      aria-label={`Descuento de ${item.nombre} en porcentaje`}
-                      placeholder="0"
-                      value={item.descuentoPct || ""}
-                      onChange={(e) =>
-                        cambiarDescuentoLinea(item.productoId, e.target.value)
-                      }
-                      className="h-6 w-11 rounded-md border border-input bg-card px-1.5 text-right text-xs tabular-nums focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                    />
-                    %
-                  </label>
-                </div>
-                <QuantityStepper
-                  value={item.cantidad}
-                  max={item.stockDisponible}
-                  label={item.nombre}
-                  onDecrement={() =>
-                    actualizarCantidad(item.productoId, item.cantidad - 1)
-                  }
-                  onIncrement={() =>
-                    actualizarCantidad(item.productoId, item.cantidad + 1)
-                  }
-                  onValueChange={(n) => actualizarCantidad(item.productoId, n)}
-                  onEnter={() => inputRef.current?.focus()}
-                />
-                <p className="min-w-[72px] text-right font-display text-[15px] font-bold tabular-nums">
-                  {item.descuentoPct > 0 && (
-                    <span className="block text-xs font-medium text-muted-foreground line-through">
-                      {formatCurrency(item.precio * item.cantidad, {
-                        decimals: 0,
-                      })}
+                  <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                    <span className="tabular-nums">
+                      {formatCurrency(item.precio, { decimals: 0 })} c/u
                     </span>
-                  )}
-                  {formatCurrency(
-                    item.precio * item.cantidad -
-                      descuentoDeLinea({
-                        ...item,
-                        comboDescuento:
-                          beneficioPorLinea.get(item.productoId)?.comboDescuento ?? 0,
-                        promoDescuento:
-                          beneficioPorLinea.get(item.productoId)?.promoDescuento ?? 0,
-                      }),
-                  )}
-                </p>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`Quitar ${item.nombre}`}
-                  onClick={() => quitarDelCarrito(item.productoId)}
-                >
-                  <X />
-                </Button>
-              </li>
-            ))}
+                    <label className="flex items-center gap-1">
+                      Desc.
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        aria-label={`Descuento de ${item.nombre} en porcentaje`}
+                        placeholder="0"
+                        value={item.descuentoPct || ""}
+                        onChange={(e) =>
+                          cambiarDescuentoLinea(item.productoId, e.target.value)
+                        }
+                        className="h-6 w-11 rounded-md border border-input bg-card px-1.5 text-right text-xs tabular-nums focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      />
+                      %
+                    </label>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <QuantityStepper
+                      value={item.cantidad}
+                      max={item.stockDisponible}
+                      label={item.nombre}
+                      onDecrement={() =>
+                        actualizarCantidad(item.productoId, item.cantidad - 1)
+                      }
+                      onIncrement={() =>
+                        actualizarCantidad(item.productoId, item.cantidad + 1)
+                      }
+                      onValueChange={(n) =>
+                        actualizarCantidad(item.productoId, n)
+                      }
+                      onEnter={enfocarBusqueda}
+                    />
+                    <p className="text-right font-display text-[15px] font-bold tabular-nums">
+                      {descuentoLinea > 0 && (
+                        <span className="block text-xs font-medium text-muted-foreground line-through">
+                          {formatCurrency(bruto, { decimals: 0 })}
+                        </span>
+                      )}
+                      {formatCurrency(bruto - descuentoLinea)}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
 
+        {/* Vista de cobro: en el carrito del celular se oculta. */}
+        <div
+          className={cn(
+            "flex flex-col gap-2.5",
+            panel === "carrito" && "hidden lg:flex",
+          )}
+        >
         {pagosCombinados === null ? (
           <>
             <div
@@ -715,23 +887,30 @@ export function VentaScreen({
               <p id="medio-pago-label" className="text-sm font-semibold">
                 Medio de pago
               </p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {mediosPago.map((medio) => (
-                  <button
-                    key={medio.id}
-                    type="button"
-                    aria-pressed={medio.id === medioPagoId}
-                    onClick={() => setMedioPagoId(medio.id)}
-                    className={cn(
-                      "h-9 rounded-[10px] border px-1 text-xs leading-tight font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none",
-                      medio.id === medioPagoId
-                        ? "border-primary bg-accent text-primary"
-                        : "border-input bg-card hover:bg-muted",
-                    )}
-                  >
-                    {medio.nombre}
-                  </button>
-                ))}
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 lg:gap-1.5">
+                {mediosPago.map((medio) => {
+                  const Icono = ICONO_MEDIO[medio.tipo];
+                  return (
+                    <button
+                      key={medio.id}
+                      type="button"
+                      aria-pressed={medio.id === medioPagoId}
+                      onClick={() => setMedioPagoId(medio.id)}
+                      className={cn(
+                        "flex h-13 items-center gap-2 rounded-xl border px-3 text-left text-sm leading-tight font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none lg:h-9 lg:justify-center lg:rounded-[10px] lg:px-1 lg:text-center lg:text-xs",
+                        medio.id === medioPagoId
+                          ? "border-primary bg-accent text-primary"
+                          : "border-input bg-card hover:bg-muted",
+                      )}
+                    >
+                      <Icono
+                        aria-hidden="true"
+                        className="size-5 shrink-0 lg:hidden"
+                      />
+                      {medio.nombre}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -894,9 +1073,15 @@ export function VentaScreen({
             )}
           </div>
         )}
+        </div>
 
         {cart.length > 0 && (
-          <div className="flex flex-col">
+          <div
+            className={cn(
+              "flex flex-col",
+              panel === "cobro" && "hidden lg:flex",
+            )}
+          >
             <label
               htmlFor="descuento-total"
               className="flex items-center justify-between gap-3 text-sm font-semibold"
@@ -920,7 +1105,12 @@ export function VentaScreen({
           </div>
         )}
 
-        <div className="flex flex-col gap-1 rounded-2xl border border-border bg-muted px-4 py-3">
+        <div
+          className={cn(
+            "flex flex-col gap-1 rounded-2xl border border-border bg-muted px-4 py-3",
+            panel === "cobro" && "hidden lg:flex",
+          )}
+        >
           {descuentos > 0 && (
             <>
               <div className="flex items-baseline justify-between text-sm text-muted-foreground tabular-nums">
@@ -941,9 +1131,25 @@ export function VentaScreen({
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
+        <div className="sticky -bottom-4 -mx-4 -mb-4 flex flex-col gap-1.5 bg-card px-4 pt-2 pb-4 lg:static lg:m-0 lg:p-0">
+          {/* En el carrito del celular se pasa al cobro antes de confirmar. */}
           <Button
-            className="h-12 w-full rounded-2xl text-[16px] shadow-[0_6px_16px_rgba(15,122,85,0.28)] disabled:shadow-none"
+            className={cn(
+              "h-12 w-full rounded-2xl text-[16px] lg:hidden",
+              panel !== "carrito" && "hidden",
+            )}
+            variant="success"
+            size="lg"
+            onClick={() => setPanel("cobro")}
+          >
+            Seguí al cobro
+            <ChevronRight data-icon="inline-end" />
+          </Button>
+          <Button
+            className={cn(
+              "h-12 w-full rounded-2xl text-[16px] shadow-[0_6px_16px_rgba(15,122,85,0.28)] disabled:shadow-none",
+              panel === "carrito" && "hidden lg:inline-flex",
+            )}
             variant="success"
             size="lg"
             disabled={isPending}
@@ -957,7 +1163,10 @@ export function VentaScreen({
             <KeyHint>F2</KeyHint>
           </Button>
           <Button
-            className="h-9 w-full"
+            className={cn(
+              "h-9 w-full",
+              panel === "cobro" && "hidden lg:inline-flex",
+            )}
             variant="ghost"
             disabled={isPending}
             onClick={cancelarVenta}
@@ -968,33 +1177,40 @@ export function VentaScreen({
         </div>
       </Card>
 
-      {/* Celular: el ticket queda debajo del catálogo; el total y el acceso al cobro quedan fijos
-          arriba de la barra de módulos, como la hoja inferior del diseño. */}
+      {/* Celular y tablet: barra flotante arriba de la navegación, con el carrito y el cobro. */}
       {cart.length > 0 && (
-        <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-card px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] lg:hidden">
-          <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
-            <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">
-                {cantidadItems === 1
-                  ? "1 artículo"
-                  : `${cantidadItems} artículos`}
+        <div
+          inert={panel !== null}
+          className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-xl items-center justify-between gap-2 rounded-2xl bg-primary p-2 text-primary-foreground shadow-[0_8px_24px_rgba(15,23,42,0.28)] lg:hidden"
+        >
+          <button
+            type="button"
+            onClick={() => setPanel("carrito")}
+            className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-2 py-1 text-left focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:outline-none"
+          >
+            <span className="relative shrink-0">
+              <ShoppingBag aria-hidden="true" className="size-6" />
+              <span className="absolute -top-2 -right-2 grid h-5 min-w-5 place-items-center rounded-full bg-card px-1 text-xs font-bold text-primary tabular-nums">
+                <span className="sr-only">Artículos: </span>
+                {cantidadItems}
               </span>
-              <span className="font-display text-2xl leading-7 font-extrabold tabular-nums">
+            </span>
+            <span className="flex min-w-0 flex-col">
+              <span className="text-xs opacity-85">Ver carrito</span>
+              <span className="truncate font-display text-xl leading-6 font-extrabold tabular-nums">
                 {formatCurrency(total, { decimals: 0 })}
               </span>
-            </div>
-            <Button
-              variant="success"
-              size="lg"
-              onClick={() =>
-                document
-                  .getElementById("ticket")
-                  ?.scrollIntoView({ behavior: "smooth", block: "start" })
-              }
-            >
-              Ir a cobrar
-            </Button>
-          </div>
+            </span>
+          </button>
+          <Button
+            variant="secondary"
+            size="lg"
+            className="h-11 shrink-0 rounded-xl bg-card text-primary hover:bg-card"
+            onClick={() => setPanel("cobro")}
+          >
+            Cobrá
+            <ChevronRight data-icon="inline-end" />
+          </Button>
         </div>
       )}
     </div>
