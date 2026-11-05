@@ -38,10 +38,25 @@ export const pagoVentaSchema = z.object({
   recibido: montoSchema.optional(),
 });
 
+// Topes contra entradas absurdas, muy por encima de una venta real. El carrito junta por
+// producto, así que ITEMS_VENTA_MAX cuenta productos distintos.
+export const ITEMS_VENTA_MAX = 200;
+export const PAGOS_VENTA_MAX = 20;
+
 export const registrarVentaSchema = z.object({
   cajaId: z.string().uuid({ error: "Abrí tu caja para cobrar" }),
-  items: z.array(itemVentaSchema).min(1, "El carrito está vacío"),
-  pagos: z.array(pagoVentaSchema).min(1, "Elegí un medio de pago"),
+  items: z
+    .array(itemVentaSchema)
+    .min(1, "El carrito está vacío")
+    .max(ITEMS_VENTA_MAX, {
+      error: `La venta puede tener hasta ${ITEMS_VENTA_MAX} productos distintos`,
+    }),
+  pagos: z
+    .array(pagoVentaSchema)
+    .min(1, "Elegí un medio de pago")
+    .max(PAGOS_VENTA_MAX, {
+      error: `La venta puede tener hasta ${PAGOS_VENTA_MAX} pagos`,
+    }),
   // Descuento sobre el total, en porcentaje.
   descuentoPct: porcentajeSchema.optional(),
 });

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { registrarVentaSchema } from "./schemas";
+import {
+  ITEMS_VENTA_MAX,
+  PAGOS_VENTA_MAX,
+  registrarVentaSchema,
+} from "./schemas";
 
 const CAJA = "3f8a1c2e-5b7d-4e9f-8a6b-1c2d3e4f5a6b";
 const PRODUCTO = "4b9a2d3f-6c8e-4f0a-9b7c-2d3e4f5a6b7c";
@@ -57,5 +61,39 @@ describe("registrarVentaSchema", () => {
         pagos: [{ medioPagoId: MEDIO, monto: 0 }],
       }).success,
     ).toBe(false);
+  });
+
+  it("acepta hasta el tope de ítems y rechaza uno más", () => {
+    const items = (largo: number) =>
+      Array.from({ length: largo }, () => venta.items[0]);
+    expect(
+      registrarVentaSchema.safeParse({
+        ...venta,
+        items: items(ITEMS_VENTA_MAX),
+      }).success,
+    ).toBe(true);
+    expect(
+      registrarVentaSchema.safeParse({
+        ...venta,
+        items: items(ITEMS_VENTA_MAX + 1),
+      }).error?.issues[0]?.message,
+    ).toBe("La venta puede tener hasta 200 productos distintos");
+  });
+
+  it("acepta hasta el tope de pagos y rechaza uno más", () => {
+    const pagos = (largo: number) =>
+      Array.from({ length: largo }, () => venta.pagos[0]);
+    expect(
+      registrarVentaSchema.safeParse({
+        ...venta,
+        pagos: pagos(PAGOS_VENTA_MAX),
+      }).success,
+    ).toBe(true);
+    expect(
+      registrarVentaSchema.safeParse({
+        ...venta,
+        pagos: pagos(PAGOS_VENTA_MAX + 1),
+      }).error?.issues[0]?.message,
+    ).toBe("La venta puede tener hasta 20 pagos");
   });
 });
