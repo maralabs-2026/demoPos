@@ -28,7 +28,8 @@ export function StockScreen({
     if (!productoSeleccionadoId) inputRef.current?.focus();
   }, [productoSeleccionadoId]);
 
-  const seleccionado = productos.find((p) => p.id === productoSeleccionadoId) ?? null;
+  const seleccionado =
+    productos.find((p) => p.id === productoSeleccionadoId) ?? null;
 
   const resultados = useMemo(() => {
     const term = busqueda.trim().toLowerCase();
@@ -36,7 +37,8 @@ export function StockScreen({
     return productos
       .filter(
         (p) =>
-          p.nombre.toLowerCase().includes(term) || p.codigoBarras.toLowerCase().includes(term),
+          p.nombre.toLowerCase().includes(term) ||
+          p.codigoBarras.toLowerCase().includes(term),
       )
       .slice(0, MAX_RESULTADOS);
   }, [productos, busqueda]);
@@ -53,7 +55,9 @@ export function StockScreen({
     if (!term) return;
     // Lector de barras: el código llega completo seguido de Enter.
     // Códigos internos como "PAN-ART01" pueden tener letras: se comparan sin mayúsculas.
-    const porCodigo = productos.find((p) => p.codigoBarras.toLowerCase() === term.toLowerCase());
+    const porCodigo = productos.find(
+      (p) => p.codigoBarras.toLowerCase() === term.toLowerCase(),
+    );
     if (porCodigo) return seleccionar(porCodigo);
     if (resultados.length === 1) return seleccionar(resultados[0]);
     setAviso(
@@ -89,7 +93,9 @@ export function StockScreen({
                 >
                   <span className="min-w-0">
                     <span className="block font-medium">{p.nombre}</span>
-                    <span className="text-muted-foreground block text-xs">{p.codigoBarras}</span>
+                    <span className="text-muted-foreground block text-xs">
+                      {p.codigoBarras}
+                    </span>
                   </span>
                   <span className="shrink-0 tabular-nums">
                     {p.stockActual} {p.unidadVenta}
@@ -107,7 +113,9 @@ export function StockScreen({
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <div className="min-w-0">
                 <h2 className="text-lg font-medium">{seleccionado.nombre}</h2>
-                <p className="text-muted-foreground text-xs">{seleccionado.codigoBarras}</p>
+                <p className="text-muted-foreground text-xs">
+                  {seleccionado.codigoBarras}
+                </p>
               </div>
               <p
                 className={cn(
@@ -128,7 +136,9 @@ export function StockScreen({
               stockActual={seleccionado.stockActual}
               unidadVenta={seleccionado.unidadVenta}
               onRegistrado={(stock, mensaje) => {
-                setAviso(`${mensaje}. Stock de "${seleccionado.nombre}": ${stock}.`);
+                setAviso(
+                  `${mensaje}. Stock de "${seleccionado.nombre}": ${stock}.`,
+                );
                 router.refresh();
                 inputRef.current?.focus();
               }}
