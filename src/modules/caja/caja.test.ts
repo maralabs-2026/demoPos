@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { estadoDiferencia, totalesCierre } from "./cierre";
+import { estaVencido } from "./gastos";
 import {
   cerrarCajaSchema,
+  DESCRIPCION_GASTO_MAX,
   MOTIVO_MOVIMIENTO_MAX,
   NOTA_CIERRE_MAX,
+  registrarGastoSchema,
   registrarMovimientoSchema,
 } from "./schemas";
 
@@ -104,6 +107,61 @@ describe("registrarMovimientoSchema", () => {
           .success,
       ).toBe(false);
     }
+  });
+});
+
+describe("registrarGastoSchema", () => {
+  const gasto = {
+    descripcion: "  Alquiler  ",
+    tipo: "fijo",
+    monto: 80000,
+    vencimiento: "2026-11-10",
+    pagado: false,
+    cajaId: null,
+  };
+
+  it("acepta un gasto por pagar y recorta la descripción", () => {
+    expect(registrarGastoSchema.parse(gasto).descripcion).toBe("Alquiler");
+  });
+
+  it("acepta uno pagado con la caja o por fuera, sin vencimiento", () => {
+    const pagado = { ...gasto, pagado: true, vencimiento: null };
+    expect(registrarGastoSchema.safeParse(pagado).success).toBe(true);
+    expect(
+      registrarGastoSchema.safeParse({ ...pagado, cajaId: CAJA }).success,
+    ).toBe(true);
+  });
+
+  it("rechaza que un gasto por pagar salga de una caja", () => {
+    expect(
+      registrarGastoSchema.safeParse({ ...gasto, cajaId: CAJA }).success,
+    ).toBe(false);
+  });
+
+  it.each([
+    ["monto cero", { monto: 0 }],
+    ["monto con tres decimales", { monto: 1.234 }],
+    ["tipo desconocido", { tipo: "otro" }],
+    ["descripción vacía", { descripcion: "   " }],
+    [
+      "descripción larga",
+      { descripcion: "x".repeat(DESCRIPCION_GASTO_MAX + 1) },
+    ],
+    ["fecha inválida", { vencimiento: "10/11/2026" }],
+    ["caja inválida", { pagado: true, cajaId: "x" }],
+  ])("rechaza %s", (_, cambio) => {
+    expect(
+      registrarGastoSchema.safeParse({ ...gasto, ...cambio }).success,
+    ).toBe(false);
+  });
+});
+
+describe("estaVencido", () => {
+  it("vence después del día indicado, no ese mismo día", () => {
+    expect(estaVencido("2026-11-04", "2026-11-05")).toBe(true);
+    expect(estaVencido("2026-11-05", "2026-11-05")).toBe(false);
+    expect(estaVencido("2026-11-06", "2026-11-05")).toBe(false);
+    expect(estaVencido(null, "2026-11-05")).toBe(false);
   });
 });
 

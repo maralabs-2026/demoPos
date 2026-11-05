@@ -166,6 +166,96 @@ export async function getMovimientosCaja(
   );
 }
 
+export type Gasto = {
+  id: string;
+  descripcion: string;
+  tipo: "fijo" | "variable";
+  monto: number;
+  vencimiento: string | null;
+  estado: "por_pagar" | "pagado" | "anulado";
+  pagadoAt: string | null;
+  // Solo si salió de una caja.
+  cajaId: string | null;
+};
+
+type GastoRow = {
+  id: string;
+  descripcion: string;
+  tipo: Gasto["tipo"];
+  monto: number;
+  vencimiento: string | null;
+  estado: Gasto["estado"];
+  pagado_at: string | null;
+  caja_id: string | null;
+};
+
+const GASTOS_RESUELTOS_LIMITE = 50;
+const SELECT_GASTO =
+  "id, descripcion, tipo, monto, vencimiento, estado, pagado_at, caja_id";
+
+function aGasto(row: GastoRow): Gasto {
+  return {
+    id: row.id,
+    descripcion: row.descripcion,
+    tipo: row.tipo,
+    monto: Number(row.monto),
+    vencimiento: row.vencimiento,
+    estado: row.estado,
+    pagadoAt: row.pagado_at,
+    cajaId: row.caja_id,
+  };
+}
+
+// Todos los gastos por pagar, los que vencen antes primero, y los últimos pagados o anulados.
+export async function getGastos(): Promise<
+  ActionResult<{ porPagar: Gasto[]; resueltos: Gasto[] }>
+> {
+  const supabase = await createClient();
+  const [porPagar, resueltos] = await Promise.all([
+    supabase
+      .from("gastos")
+      .select(SELECT_GASTO)
+      .eq("estado", "por_pagar")
+      .order("vencimiento", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true })
+      .overrideTypes<GastoRow[]>(),
+    supabase
+      .from("gastos")
+      .select(SELECT_GASTO)
+      .neq("estado", "por_pagar")
+      .order("created_at", { ascending: false })
+      .limit(GASTOS_RESUELTOS_LIMITE)
+      .overrideTypes<GastoRow[]>(),
+  ]);
+
+  if (porPagar.error || resueltos.error) {
+    return fail("No se pudieron leer los gastos.");
+  }
+  return ok({
+    porPagar: porPagar.data.map(aGasto),
+    resueltos: resueltos.data.map(aGasto),
+  });
+}
+
+export type CajaParaPagar = { id: string; nombre: string };
+
+// Las cajas abiertas de las que puede salir un gasto: la propia primero.
+export async function getCajasParaPagar(): Promise<
+  ActionResult<CajaParaPagar[]>
+> {
+  const [propia, otras] = await Promise.all([
+    getCajaAbierta(),
+    getCajasAbiertasDeOtros(),
+  ]);
+  if (!propia.ok) return propia;
+  if (!otras.ok) return otras;
+
+  return ok([
+    ...(propia.data ? [{ id: propia.data.id, nombre: "Mi caja" }] : []),
+    ...otras.data.map((c) => ({ id: c.id, nombre: `Caja de ${c.titular}` })),
+  ]);
+}
+
 export type CajaCerrada = {
   id: string;
   montoInicial: number;
