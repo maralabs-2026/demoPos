@@ -30,6 +30,23 @@ const todayFormatter = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 });
 
+// Una fecha "aaaa-mm-dd" corrida n días. Se calcula en UTC para que ninguna zona horaria la mueva.
+export function sumarDias(fecha: string, dias: number): string {
+  const d = new Date(`${fecha}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
+
+// Límites de un día en la zona del comercio, para filtrar por created_at. Argentina no cambia la
+// hora: el desplazamiento es siempre -03:00.
+export function inicioDelDia(fecha: string): string {
+  return `${fecha}T00:00:00-03:00`;
+}
+
+export function finDelDia(fecha: string): string {
+  return inicioDelDia(sumarDias(fecha, 1));
+}
+
 // La fecha de hoy en la zona del comercio, como "2026-10-24".
 export function todayISO(now: Date = new Date()): string {
   return todayFormatter.format(now);

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
+import { SectionTabs } from "@/components/section-tabs";
 import { canAccess, getAuthProfile, type AppRoute } from "@/modules/auth";
-import { CajaTabs } from "@/modules/caja/components/caja-tabs";
 
 const TABS: { href: AppRoute; label: string }[] = [
   { href: "/caja", label: "Caja" },
@@ -20,7 +20,7 @@ export default async function CajaLayout({
   return (
     <>
       <div className="mx-auto max-w-3xl px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8">
-        <CajaTabs tabs={tabs} />
+        <SectionTabs label="Secciones de caja" tabs={tabs} />
       </div>
       {children}
     </>

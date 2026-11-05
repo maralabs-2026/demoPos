@@ -6,6 +6,7 @@ const ETIQUETA: Record<TipoMovimiento, string> = {
   ingreso: "Ingreso",
   venta: "Venta",
   ajuste: "Ajuste",
+  anulacion: "Anulación",
 };
 
 export function HistorialMovimientos({ movimientos }: { movimientos: Movimiento[] }) {

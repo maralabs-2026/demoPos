@@ -41,6 +41,31 @@ export async function getMediosPago(): Promise<ActionResult<MedioPago[]>> {
   return ok(data ?? []);
 }
 
+export type TicketConfig = { titulo: string; leyenda: string; pie: string };
+
+// Textos del ticket (clave ticket, 0021). Sin configuración, el ticket sale solo con los datos de la
+// venta: nunca con textos escritos en el código.
+export async function getTicketConfig(): Promise<ActionResult<TicketConfig>> {
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("configuracion")
+    .select("valor")
+    .eq("clave", "ticket")
+    .maybeSingle()
+    .overrideTypes<{ valor: Partial<TicketConfig> }>();
+
+  if (error) return fail("No se pudieron leer los datos del ticket.");
+  return ok({
+    titulo: data?.valor.titulo ?? "",
+    leyenda: data?.valor.leyenda ?? "",
+    pie: data?.valor.pie ?? "",
+  });
+}
+
 const DESCUENTO_MAX_CAJERO_DEFAULT = 10;
 
 // Tope de descuento del cajero, en % (clave descuento_max_cajero_pct, 0012). Sin la clave, 10.

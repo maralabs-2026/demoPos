@@ -108,6 +108,27 @@
   --sidebar-ring: #2f54eb;
 }
 
+/* Al imprimir sale solo el ticket: el resto de la app queda invisible. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .ticket-print,
+  .ticket-print * {
+    visibility: visible;
+  }
+  .ticket-print {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 2mm;
+    box-sizing: content-box;
+  }
+  body {
+    background: #fff;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

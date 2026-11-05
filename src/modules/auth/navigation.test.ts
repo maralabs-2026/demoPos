@@ -55,6 +55,8 @@ describe("canAccess", () => {
     expect(canAccess("cajero", "/caja/gastos")).toBe(false);
     expect(canAccess("encargado", "/caja/gastos")).toBe(true);
     expect(canAccess("dueno", "/caja/gastos")).toBe(true);
+    expect(canAccess("cajero", "/reportes/ventas")).toBe(false);
+    expect(canAccess("encargado", "/reportes/ventas")).toBe(true);
   });
 
   it("cada link de la navegación tiene su regla de acceso", () => {

@@ -3,7 +3,66 @@
 import { revalidatePath } from "next/cache";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { registrarVentaSchema, type RegistrarVentaInput } from "./schemas";
+import {
+  anularVentaSchema,
+  registrarVentaSchema,
+  type AnularVentaInput,
+  type RegistrarVentaInput,
+} from "./schemas";
+
+const PV_CAJA_CERRADA = "PV012";
+const PV_ABRIR_CAJA = "PV018";
+const PV_YA_ANULADA = "PV019";
+const PV_ANULACION_INVALIDA = "PV020";
+
+// Anula con anular_venta: marca, stock inverso y plata en una transacción. retiro es el efectivo
+// que salió de la caja de quien anula; 0 si la caja de la venta seguía abierta.
+export async function anularVenta(
+  input: AnularVentaInput,
+): Promise<ActionResult<{ retiro: number }>> {
+  const parsed = anularVentaSchema.safeParse(input);
+  if (!parsed.success) {
+    return fail(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  }
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("anular_venta", {
+    p_venta_id: parsed.data.ventaId,
+    p_motivo: parsed.data.motivo,
+  });
+
+  if (error) {
+    switch (error.code) {
+      case PG_INSUFFICIENT_PRIVILEGE:
+        return fail("No tenés permiso para anular ventas.");
+      case PV_ABRIR_CAJA:
+        return fail(
+          "La caja de esta venta ya se cerró. Abrí tu caja para devolver el efectivo y probá de nuevo.",
+        );
+      case PV_CAJA_CERRADA:
+        return fail("Tu caja se cerró recién. Abrila y probá de nuevo.");
+      case PV_YA_ANULADA:
+        return fail("Esta venta ya está anulada.");
+      case PV_ANULACION_INVALIDA:
+        return fail("No se pudo anular: revisá el motivo.");
+      default:
+        return fail("No se pudo anular la venta. Probá de nuevo.");
+    }
+  }
+
+  revalidatePath("/reportes");
+  revalidatePath("/reportes/ventas");
+  revalidatePath(`/reportes/ventas/${parsed.data.ventaId}`);
+  revalidatePath("/caja");
+  revalidatePath("/productos");
+  revalidatePath("/vender");
+  return ok({
+    retiro: Number((data as { retiro: number | null }).retiro ?? 0),
+  });
+}
 
 export type ComprobanteItem = {
   nombre: string;
