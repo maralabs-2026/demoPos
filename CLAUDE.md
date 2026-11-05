@@ -66,6 +66,7 @@ src/
 - Las promociones aplicadas se guardan en la venta (snapshot), igual que los precios: cambiar o pausar una promo no altera ventas pasadas.
 - Retiros, ingresos y gastos pagados con la caja son movimientos de esa caja. Efectivo esperado al cierre = fondo inicial + ventas en efectivo + ingresos − retiros.
 - Un retiro o ingreso no se edita ni se borra: un error se compensa con el movimiento contrario. No se limita a lo que hay en el cajón, porque eso revelaría el esperado. Dueño y encargado pueden registrarlos en la caja de otro.
+- Un gasto no se edita ni se borra: se anula. Quien lo paga elige de qué caja abierta sale o si fue por fuera; solo lo que sale de una caja genera retiro. Anularlo con la caja abierta devuelve la plata con un ingreso; con la caja cerrada, su cierre no cambia. Fijo o variable es una clasificación: no genera gastos recurrentes.
 - Una caja se cierra solo con `cerrar_caja`, con conteo por medio de pago. El conteo es a ciegas: el esperado se ve recién después de cerrar. Dueño y encargado pueden cerrar la caja de otro, y queda registrado quién la cerró. Un cierre no se corrige.
 
 **Roles**
