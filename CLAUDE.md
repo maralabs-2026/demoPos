@@ -39,6 +39,7 @@ Lo que NO se construye en esta versión: facturación electrónica ARCA, Mercado
 **Configuración en datos, no en código**
 - Medios de pago, categorías, roles, datos del ticket, moneda y formato de precios viven en tablas de configuración por comercio.
 - Prohibido hardcodear nombres de medios de pago, rubros o textos del ticket.
+- Un medio de pago no se borra: se desactiva y deja de ofrecerse al cobrar. Siempre queda un efectivo activo, y el tipo de un medio con pagos no cambia. Una categoría con productos o promociones no se elimina. Los nombres no se repiten por comercio, sin importar mayúsculas.
 
 **Módulos separados**
 ```
