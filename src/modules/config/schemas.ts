@@ -1,6 +1,9 @@
 import { z } from "zod";
 
 export const NOMBRE_CONFIG_MAX = 60;
+// Cada medio, activo o no, puede aparecer en el conteo del cierre, que acepta hasta 50
+// (CONTEOS_CIERRE_MAX en caja/schemas.ts). Si se sube uno, hay que subir el otro.
+export const MEDIOS_PAGO_MAX = 50;
 export const TEXTO_TICKET_MAX = 120;
 
 const nombre = z

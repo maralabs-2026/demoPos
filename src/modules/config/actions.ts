@@ -7,6 +7,7 @@ import { getAuthProfile } from "@/modules/auth";
 import {
   crearCategoriaSchema,
   crearMedioPagoSchema,
+  MEDIOS_PAGO_MAX,
   renombrarSchema,
   ticketSchema,
   type CrearCategoriaInput,
@@ -72,6 +73,14 @@ export async function crearMedioPago(
   if (!profile) return fail("Tu sesión venció. Volvé a ingresar.");
 
   const supabase = await createClient();
+  // Tope de medios: con más, el cierre de caja no los aceptaría a todos.
+  const { count } = await supabase
+    .from("medios_pago")
+    .select("id", { count: "exact", head: true });
+  if ((count ?? 0) >= MEDIOS_PAGO_MAX) {
+    return fail(`Llegaste al máximo de ${MEDIOS_PAGO_MAX} medios de pago.`);
+  }
+
   const { data: ultimo } = await supabase
     .from("medios_pago")
     .select("orden")

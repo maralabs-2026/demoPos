@@ -13,8 +13,8 @@ export const abrirCajaSchema = z.object({
 export type AbrirCajaInput = z.infer<typeof abrirCajaSchema>;
 
 export const NOTA_CIERRE_MAX = 300;
-// Se manda un conteo por medio de pago del comercio. Si algún día se permiten más medios que
-// este tope, la caja no se podría cerrar: revisarlo junto con el ABM de medios de pago.
+// Se manda un conteo por medio de pago del comercio. La configuración no deja crear más de 50
+// medios (MEDIOS_PAGO_MAX en config/schemas.ts): si se sube uno, hay que subir el otro.
 export const CONTEOS_CIERRE_MAX = 50;
 
 export const cerrarCajaSchema = z.object({
