@@ -2,7 +2,7 @@ import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { movimientosProductoSchema } from "./schemas";
 
-export type TipoMovimiento = "ingreso" | "venta" | "ajuste";
+export type TipoMovimiento = "ingreso" | "venta" | "ajuste" | "anulacion";
 
 export type Movimiento = {
   id: string;
