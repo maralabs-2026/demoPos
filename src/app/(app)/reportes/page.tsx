@@ -8,8 +8,10 @@ import { formatDate, sumarDias, todayISO } from "@/lib/date";
 import { requireRol } from "@/modules/auth";
 import {
   filtrosDesdeParams,
+  gananciaNeta,
   getCajeros,
   getReporteVentas,
+  sinCostosCargados,
   type Agrupacion,
 } from "@/modules/reportes";
 
@@ -49,12 +51,8 @@ export default async function ReportesPage({
     getCajeros(),
   ]);
 
-  // Ningún ítem con costo: la ganancia no es $ 0, es desconocida (sección 3 de CLAUDE.md).
-  const sinCostos =
-    reporte.ok &&
-    reporte.data.resumen.sinCosto > 0 &&
-    reporte.data.resumen.ganancia === 0 &&
-    reporte.data.resumen.sinCosto >= reporte.data.resumen.total;
+  const sinCostos = reporte.ok && sinCostosCargados(reporte.data.resumen);
+  const neta = reporte.ok ? gananciaNeta(reporte.data.resumen) : null;
 
   const consulta = new URLSearchParams({
     desde: filtros.desde,
@@ -161,7 +159,7 @@ export default async function ReportesPage({
         <>
           <section
             aria-label="Resumen"
-            className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+            className="grid grid-cols-2 gap-3 lg:grid-cols-3"
           >
             <Dato
               titulo="Vendido"
@@ -176,6 +174,19 @@ export default async function ReportesPage({
                   : formatCurrency(reporte.data.resumen.ganancia)
               }
             />
+            {/* Los gastos son del comercio: no se reparten por cajero. */}
+            {!filtros.usuarioId && (
+              <>
+                <Dato
+                  titulo="Gastos pagados"
+                  valor={formatCurrency(reporte.data.resumen.gastosPagados)}
+                />
+                <Dato
+                  titulo="Ganancia neta"
+                  valor={neta === null ? "Sin costos" : formatCurrency(neta)}
+                />
+              </>
+            )}
             <Dato
               titulo="Descuentos"
               valor={formatCurrency(reporte.data.resumen.descuentos)}
