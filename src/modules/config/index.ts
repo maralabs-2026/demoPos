@@ -3,5 +3,6 @@ export {
   getComercioName,
   getDescuentoMaxCajeroPct,
   getMediosPago,
+  getTicketConfig,
 } from "./queries";
-export type { MedioPago } from "./queries";
+export type { MedioPago, TicketConfig } from "./queries";

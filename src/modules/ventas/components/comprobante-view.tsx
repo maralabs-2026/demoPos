@@ -3,12 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardEyebrow } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
 import type { Comprobante } from "../actions";
+import type { TicketTextos } from "../ticket";
+import { TicketControles } from "./ticket-controles";
 
 export function ComprobanteView({
   comprobante,
+  textos,
   onNuevaVenta,
 }: {
   comprobante: Comprobante;
+  textos: TicketTextos;
   onNuevaVenta: () => void;
 }) {
   const fecha = new Date(comprobante.fecha).toLocaleString("es-AR", {
@@ -84,6 +88,8 @@ export function ComprobanteView({
           </span>
         </div>
       </div>
+
+      <TicketControles venta={comprobante} textos={textos} />
 
       <Button autoFocus className="w-full" size="lg" onClick={onNuevaVenta}>
         Nueva venta

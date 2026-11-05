@@ -41,6 +41,7 @@ import {
   type Combo,
   type Promo,
 } from "@/modules/promociones";
+import type { TicketTextos } from "../ticket";
 import { ComprobanteView } from "./comprobante-view";
 
 type CartItem = {
@@ -135,7 +136,9 @@ export function VentaScreen({
   promos,
   combos,
   horaServidorMs,
+  ticketTextos,
 }: {
+  ticketTextos: TicketTextos;
   cajaId: string;
   // 100 para dueño y encargado; el tope de configuración para el cajero.
   descuentoMaxPct: number;
@@ -234,7 +237,10 @@ export function VentaScreen({
               ahora,
             )
           : null;
-      const nombres = [...(combo?.nombres ?? []), ...(promo ? [promo.nombre] : [])];
+      const nombres = [
+        ...(combo?.nombres ?? []),
+        ...(promo ? [promo.nombre] : []),
+      ];
       return [
         i.productoId,
         {
@@ -565,6 +571,7 @@ export function VentaScreen({
     return (
       <ComprobanteView
         comprobante={comprobante}
+        textos={ticketTextos}
         onNuevaVenta={() => setComprobante(null)}
       />
     );
@@ -635,7 +642,8 @@ export function VentaScreen({
                 }}
                 className={cn(
                   "relative flex min-w-0 flex-col gap-1.5 rounded-2xl border border-border bg-card p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-colors hover:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
-                  enTicket > 0 && "border-primary ring-1 ring-primary hover:border-primary",
+                  enTicket > 0 &&
+                    "border-primary ring-1 ring-primary hover:border-primary",
                   sinStock && "cursor-not-allowed opacity-55",
                 )}
               >
@@ -728,7 +736,9 @@ export function VentaScreen({
                 panel === "cobro" && "hidden lg:inline",
               )}
             >
-              {cantidadItems === 1 ? "1 artículo" : `${cantidadItems} artículos`}
+              {cantidadItems === 1
+                ? "1 artículo"
+                : `${cantidadItems} artículos`}
             </span>
             {panel && (
               <Button
@@ -813,7 +823,10 @@ export function VentaScreen({
                   </div>
                   {beneficio?.nombre && (
                     <p className="flex items-start gap-1.5 self-start rounded-md bg-success-soft px-2 py-1 text-xs leading-4 font-semibold text-success-text">
-                      <Tag aria-hidden="true" className="mt-0.5 size-3 shrink-0" />
+                      <Tag
+                        aria-hidden="true"
+                        className="mt-0.5 size-3 shrink-0"
+                      />
                       <span className="min-w-0 break-words">
                         Promo: {beneficio.nombre}
                       </span>
@@ -877,202 +890,203 @@ export function VentaScreen({
             panel === "carrito" && "hidden lg:flex",
           )}
         >
-        {pagosCombinados === null ? (
-          <>
-            <div
-              role="group"
-              aria-labelledby="medio-pago-label"
-              className="flex flex-col gap-1.5"
-            >
-              <p id="medio-pago-label" className="text-sm font-semibold">
-                Medio de pago
-              </p>
-              <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 lg:gap-1.5">
-                {mediosPago.map((medio) => {
-                  const Icono = ICONO_MEDIO[medio.tipo];
-                  return (
-                    <button
-                      key={medio.id}
-                      type="button"
-                      aria-pressed={medio.id === medioPagoId}
-                      onClick={() => setMedioPagoId(medio.id)}
+          {pagosCombinados === null ? (
+            <>
+              <div
+                role="group"
+                aria-labelledby="medio-pago-label"
+                className="flex flex-col gap-1.5"
+              >
+                <p id="medio-pago-label" className="text-sm font-semibold">
+                  Medio de pago
+                </p>
+                <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 lg:gap-1.5">
+                  {mediosPago.map((medio) => {
+                    const Icono = ICONO_MEDIO[medio.tipo];
+                    return (
+                      <button
+                        key={medio.id}
+                        type="button"
+                        aria-pressed={medio.id === medioPagoId}
+                        onClick={() => setMedioPagoId(medio.id)}
+                        className={cn(
+                          "flex h-13 items-center gap-2 rounded-xl border px-3 text-left text-sm leading-tight font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none lg:h-9 lg:justify-center lg:rounded-[10px] lg:px-1 lg:text-center lg:text-xs",
+                          medio.id === medioPagoId
+                            ? "border-primary bg-accent text-primary"
+                            : "border-input bg-card hover:bg-muted",
+                        )}
+                      >
+                        <Icono
+                          aria-hidden="true"
+                          className="size-5 shrink-0 lg:hidden"
+                        />
+                        {medio.nombre}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {medioSeleccionado?.tipo === "efectivo" && (
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    className="text-sm font-semibold"
+                    htmlFor="monto-recibido"
+                  >
+                    Monto recibido
+                  </label>
+                  <MoneyInput
+                    id="monto-recibido"
+                    placeholder="0,00"
+                    value={montoRecibido}
+                    onValueChange={setMontoRecibido}
+                  />
+                  <QuickAmounts total={total} onSelect={setMontoRecibido} />
+                  {vuelto !== null && (
+                    <div
                       className={cn(
-                        "flex h-13 items-center gap-2 rounded-xl border px-3 text-left text-sm leading-tight font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none lg:h-9 lg:justify-center lg:rounded-[10px] lg:px-1 lg:text-center lg:text-xs",
-                        medio.id === medioPagoId
-                          ? "border-primary bg-accent text-primary"
-                          : "border-input bg-card hover:bg-muted",
+                        "flex items-center justify-between rounded-lg px-3 py-1.5 text-sm tabular-nums",
+                        vuelto < 0
+                          ? "bg-destructive-soft text-destructive"
+                          : "bg-success-soft text-success-text",
                       )}
                     >
-                      <Icono
-                        aria-hidden="true"
-                        className="size-5 shrink-0 lg:hidden"
-                      />
-                      {medio.nombre}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                      <span>{vuelto < 0 ? "Falta" : "Vuelto"}</span>
+                      <strong className="text-base">
+                        {formatCurrency(Math.abs(vuelto))}
+                      </strong>
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {medioSeleccionado?.tipo === "efectivo" && (
-              <div className="flex flex-col gap-1.5">
-                <label
-                  className="text-sm font-semibold"
-                  htmlFor="monto-recibido"
+              {mediosPago.length > 1 && total > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="self-start"
+                  onClick={dividirPago}
                 >
-                  Monto recibido
-                </label>
-                <MoneyInput
-                  id="monto-recibido"
-                  placeholder="0,00"
-                  value={montoRecibido}
-                  onValueChange={setMontoRecibido}
-                />
-                <QuickAmounts total={total} onSelect={setMontoRecibido} />
-                {vuelto !== null && (
-                  <div
-                    className={cn(
-                      "flex items-center justify-between rounded-lg px-3 py-1.5 text-sm tabular-nums",
-                      vuelto < 0
-                        ? "bg-destructive-soft text-destructive"
-                        : "bg-success-soft text-success-text",
-                    )}
-                  >
-                    <span>{vuelto < 0 ? "Falta" : "Vuelto"}</span>
-                    <strong className="text-base">
-                      {formatCurrency(Math.abs(vuelto))}
-                    </strong>
-                  </div>
-                )}
+                  <Split data-icon="inline-start" />
+                  Dividí el pago entre varios medios
+                </Button>
+              )}
+            </>
+          ) : (
+            <div
+              role="group"
+              aria-labelledby="pago-combinado-label"
+              className="flex flex-col gap-3"
+            >
+              <div className="flex items-baseline justify-between">
+                <p id="pago-combinado-label" className="text-sm font-semibold">
+                  Pago combinado
+                </p>
+                <span className="text-xs text-muted-foreground">
+                  El efectivo se cobra justo
+                </span>
               </div>
-            )}
-
-            {mediosPago.length > 1 && total > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="self-start"
-                onClick={dividirPago}
-              >
-                <Split data-icon="inline-start" />
-                Dividí el pago entre varios medios
-              </Button>
-            )}
-          </>
-        ) : (
-          <div
-            role="group"
-            aria-labelledby="pago-combinado-label"
-            className="flex flex-col gap-3"
-          >
-            <div className="flex items-baseline justify-between">
-              <p id="pago-combinado-label" className="text-sm font-semibold">
-                Pago combinado
-              </p>
-              <span className="text-xs text-muted-foreground">
-                El efectivo se cobra justo
-              </span>
-            </div>
-            {pagosCombinados.map((linea, index) => {
-              const restante = restantePorAsignar(total, pagosCombinados);
-              return (
-                <div key={linea.key} className="flex items-center gap-2">
-                  <select
-                    aria-label={`Medio de pago ${index + 1}`}
-                    value={linea.medioPagoId}
-                    onChange={(e) =>
-                      actualizarLineaPago(linea.key, {
-                        medioPagoId: e.target.value,
-                      })
-                    }
-                    className="h-10 w-32 shrink-0 rounded-lg border border-input bg-card px-2 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                  >
-                    {mediosPago.map((medio) => (
-                      <option key={medio.id} value={medio.id}>
-                        {medio.nombre}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="min-w-0 flex-1">
-                    <MoneyInput
-                      aria-label={`Monto del medio ${index + 1}`}
-                      placeholder={
-                        restante > 0 && linea.monto === null
-                          ? formatCurrency(restante).replace("$ ", "")
-                          : "0,00"
-                      }
-                      value={linea.monto}
-                      onValueChange={(monto) =>
-                        actualizarLineaPago(linea.key, { monto })
-                      }
-                    />
-                  </div>
-                  {restante > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      aria-label={`Completá el medio ${index + 1} con lo que falta`}
-                      onClick={() =>
+              {pagosCombinados.map((linea, index) => {
+                const restante = restantePorAsignar(total, pagosCombinados);
+                return (
+                  <div key={linea.key} className="flex items-center gap-2">
+                    <select
+                      aria-label={`Medio de pago ${index + 1}`}
+                      value={linea.medioPagoId}
+                      onChange={(e) =>
                         actualizarLineaPago(linea.key, {
-                          monto:
-                            Math.round(((linea.monto ?? 0) + restante) * 100) /
-                            100,
+                          medioPagoId: e.target.value,
                         })
                       }
+                      className="h-10 w-32 shrink-0 rounded-lg border border-input bg-card px-2 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     >
-                      Resto
+                      {mediosPago.map((medio) => (
+                        <option key={medio.id} value={medio.id}>
+                          {medio.nombre}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="min-w-0 flex-1">
+                      <MoneyInput
+                        aria-label={`Monto del medio ${index + 1}`}
+                        placeholder={
+                          restante > 0 && linea.monto === null
+                            ? formatCurrency(restante).replace("$ ", "")
+                            : "0,00"
+                        }
+                        value={linea.monto}
+                        onValueChange={(monto) =>
+                          actualizarLineaPago(linea.key, { monto })
+                        }
+                      />
+                    </div>
+                    {restante > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        aria-label={`Completá el medio ${index + 1} con lo que falta`}
+                        onClick={() =>
+                          actualizarLineaPago(linea.key, {
+                            monto:
+                              Math.round(
+                                ((linea.monto ?? 0) + restante) * 100,
+                              ) / 100,
+                          })
+                        }
+                      >
+                        Resto
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Quitar el medio ${index + 1}`}
+                      onClick={() => quitarLineaPago(linea.key)}
+                    >
+                      <X />
                     </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Quitar el medio ${index + 1}`}
-                    onClick={() => quitarLineaPago(linea.key)}
+                  </div>
+                );
+              })}
+              {(() => {
+                const restante = restantePorAsignar(total, pagosCombinados);
+                return (
+                  <div
+                    className={cn(
+                      "flex items-center justify-between rounded-lg px-3.5 py-2.5 text-sm tabular-nums",
+                      restante === 0
+                        ? "bg-success-soft text-success-text"
+                        : "bg-destructive-soft text-destructive",
+                    )}
                   >
-                    <X />
-                  </Button>
-                </div>
-              );
-            })}
-            {(() => {
-              const restante = restantePorAsignar(total, pagosCombinados);
-              return (
-                <div
-                  className={cn(
-                    "flex items-center justify-between rounded-lg px-3.5 py-2.5 text-sm tabular-nums",
-                    restante === 0
-                      ? "bg-success-soft text-success-text"
-                      : "bg-destructive-soft text-destructive",
-                  )}
+                    <span>
+                      {restante === 0
+                        ? "Cubre el total"
+                        : restante > 0
+                          ? "Falta"
+                          : "Sobra"}
+                    </span>
+                    {restante !== 0 && (
+                      <strong className="text-base">
+                        {formatCurrency(Math.abs(restante))}
+                      </strong>
+                    )}
+                  </div>
+                );
+              })()}
+              {pagosCombinados.length < mediosPago.length && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="self-start"
+                  onClick={agregarLineaPago}
                 >
-                  <span>
-                    {restante === 0
-                      ? "Cubre el total"
-                      : restante > 0
-                        ? "Falta"
-                        : "Sobra"}
-                  </span>
-                  {restante !== 0 && (
-                    <strong className="text-base">
-                      {formatCurrency(Math.abs(restante))}
-                    </strong>
-                  )}
-                </div>
-              );
-            })()}
-            {pagosCombinados.length < mediosPago.length && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="self-start"
-                onClick={agregarLineaPago}
-              >
-                <Plus data-icon="inline-start" />
-                Agregá otro medio
-              </Button>
-            )}
-          </div>
-        )}
+                  <Plus data-icon="inline-start" />
+                  Agregá otro medio
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {cart.length > 0 && (

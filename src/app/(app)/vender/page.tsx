@@ -1,7 +1,11 @@
 import { getAuthProfile } from "@/modules/auth";
 import { getCajaAbierta } from "@/modules/caja";
 import { AbrirCaja } from "@/modules/caja/components/abrir-caja";
-import { getDescuentoMaxCajeroPct, getMediosPago } from "@/modules/config";
+import {
+  getDescuentoMaxCajeroPct,
+  getMediosPago,
+  getTicketConfig,
+} from "@/modules/config";
 import { getCombos, getPromociones } from "@/modules/promociones/queries";
 import { getProductos } from "@/modules/productos";
 import { VentaScreen } from "@/modules/ventas/components/venta-screen";
@@ -17,6 +21,7 @@ export default async function VenderPage() {
     topeResult,
     promosResult,
     combosResult,
+    ticketResult,
   ] = await Promise.all([
     getAuthProfile(),
     getCajaAbierta(),
@@ -25,6 +30,7 @@ export default async function VenderPage() {
     getDescuentoMaxCajeroPct(),
     getPromociones(),
     getCombos(),
+    getTicketConfig(),
   ]);
   // Dueño y encargado sin tope; el cajero, hasta lo que diga la configuración.
   const descuentoMaxPct =
@@ -75,6 +81,12 @@ export default async function VenderPage() {
         promos={promosResult.data}
         combos={combosResult.data}
         horaServidorMs={Date.now()}
+        ticketTextos={
+          // Sin los textos, el ticket igual se imprime con los datos de la venta: no frena el cobro.
+          ticketResult.ok
+            ? ticketResult.data
+            : { titulo: "", leyenda: "", pie: "" }
+        }
       />
     </main>
   );
