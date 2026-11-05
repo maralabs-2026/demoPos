@@ -12,6 +12,7 @@ import {
 import { toast } from "@/components/ui/toaster";
 import { formatCurrency } from "@/lib/currency";
 import { pagarGasto } from "../actions";
+import { avisoRetiro } from "../gastos";
 import type { CajaParaPagar, Gasto } from "../queries";
 import { FormaDePago, POR_FUERA } from "./forma-de-pago";
 
@@ -47,7 +48,11 @@ export function PagarGastoDialog({
         setError(result.error);
         return;
       }
-      toast.success("Gasto pagado", gasto.descripcion);
+      const caja = cajas.find((c) => c.id === origen);
+      toast.success(
+        "Gasto pagado",
+        caja ? avisoRetiro(caja.nombre) : gasto.descripcion,
+      );
       onDone();
       router.refresh();
     });

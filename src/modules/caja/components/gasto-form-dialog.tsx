@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
 import { toast } from "@/components/ui/toaster";
 import { registrarGasto } from "../actions";
+import { avisoRetiro } from "../gastos";
 import type { CajaParaPagar } from "../queries";
 import { DESCRIPCION_GASTO_MAX, registrarGastoSchema } from "../schemas";
 import { FormaDePago, POR_FUERA } from "./forma-de-pago";
@@ -94,7 +95,11 @@ export function GastoFormDialog({
         setError(result.error);
         return;
       }
-      toast.success("Gasto cargado", parsed.data.descripcion);
+      const caja = cajas.find((c) => c.id === parsed.data.cajaId);
+      toast.success(
+        "Gasto cargado",
+        caja ? avisoRetiro(caja.nombre) : parsed.data.descripcion,
+      );
       onDone();
       router.refresh();
     });
