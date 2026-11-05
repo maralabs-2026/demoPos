@@ -11,7 +11,7 @@ function shape(rol: "dueno" | "encargado" | "cajero"): string[] {
 }
 
 describe("getNavLinks", () => {
-  it("dueño ve los 8 accesos", () => {
+  it("dueño ve los 9 accesos", () => {
     expect(shape("dueno")).toEqual([
       "/inicio|Inicio",
       "/vender|Vender",
@@ -19,6 +19,7 @@ describe("getNavLinks", () => {
       "/productos|Productos",
       "/stock|Stock",
       "/reportes|Reportes",
+      "/usuarios|Usuarios",
       "/config|Config",
       "/perfil|Mi perfil",
     ]);
@@ -32,6 +33,7 @@ describe("getNavLinks", () => {
       "/productos|Productos",
       "/stock|Stock",
       "/reportes|Reportes",
+      "/usuarios|Usuarios",
       "/perfil|Mi perfil",
     ]);
   });
@@ -61,12 +63,14 @@ describe("getMobileNav", () => {
     expect(hrefs(dueno.mas)).toEqual([
       "/stock",
       "/reportes",
+      "/usuarios",
       "/config",
       "/perfil",
     ]);
     expect(hrefs(getMobileNav("encargado").mas)).toEqual([
       "/stock",
       "/reportes",
+      "/usuarios",
       "/perfil",
     ]);
   });
@@ -85,6 +89,8 @@ describe("getMobileNav", () => {
 
 describe("canAccess", () => {
   it("aplica ROUTE_ROLES por ruta y rol", () => {
+    expect(canAccess("cajero", "/usuarios")).toBe(false);
+    expect(canAccess("encargado", "/usuarios")).toBe(true);
     expect(canAccess("cajero", "/inicio")).toBe(false);
     expect(canAccess("encargado", "/inicio")).toBe(true);
     expect(canAccess("cajero", "/stock/auditoria")).toBe(false);

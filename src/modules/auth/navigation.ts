@@ -6,6 +6,7 @@ import {
   Settings,
   Store,
   User,
+  Users,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -35,6 +36,11 @@ const REPORTES: NavLink = {
   label: "Reportes",
   icon: ChartColumn,
 };
+const USUARIOS: NavLink = {
+  href: "/usuarios",
+  label: "Usuarios",
+  icon: Users,
+};
 const CONFIG: NavLink = { href: "/config", label: "Config", icon: Settings };
 const MI_PERFIL: NavLink = { href: "/perfil", label: "Mi perfil", icon: User };
 
@@ -58,6 +64,7 @@ export const ROUTE_ROLES = {
   "/stock/auditoria": ["dueno", "encargado"],
   "/reportes": ["dueno", "encargado"],
   "/reportes/ventas": ["dueno", "encargado"],
+  "/usuarios": ["dueno", "encargado"],
   "/config": ["dueno"],
   "/perfil": TODOS,
 } as const satisfies Record<string, readonly Rol[]>;
@@ -75,6 +82,7 @@ const LINKS: readonly NavLink[] = [
   PRODUCTOS,
   STOCK,
   REPORTES,
+  USUARIOS,
   CONFIG,
   MI_PERFIL,
 ];
