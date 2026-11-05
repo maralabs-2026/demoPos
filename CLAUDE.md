@@ -62,7 +62,7 @@ src/
 - El stock se calcula como suma de movimientos, no como un campo que se sobreescribe. El campo `stock_actual` en productos es una caché que se actualiza por trigger.
 - Los precios se guardan en la venta al momento de vender (snapshot). Cambiar el precio de un producto no altera ventas pasadas.
 - Montos en `numeric(12,2)`, nunca `float`.
-- Una venta nunca se borra. Anularla la marca como anulada y, en la misma transacción, genera los movimientos de stock inversos y el egreso en la caja abierta.
+- Una venta nunca se borra. Anularla la marca como anulada y, en la misma transacción, genera los movimientos de stock inversos y resuelve la plata: si su caja sigue abierta no hace falta movimiento, porque la venta anulada deja de sumar en el esperado; si ya se cerró, el efectivo sale con un retiro de la caja abierta de quien anula (sin caja abierta no se puede), los otros medios se devuelven por fuera y el cierre pasado no cambia.
 - Las promociones aplicadas se guardan en la venta (snapshot), igual que los precios: cambiar o pausar una promo no altera ventas pasadas.
 - Retiros, ingresos y gastos pagados con la caja son movimientos de esa caja. Efectivo esperado al cierre = fondo inicial + ventas en efectivo + ingresos − retiros.
 - Un retiro o ingreso no se edita ni se borra: un error se compensa con el movimiento contrario. No se limita a lo que hay en el cajón, porque eso revelaría el esperado. Dueño y encargado pueden registrarlos en la caja de otro.
