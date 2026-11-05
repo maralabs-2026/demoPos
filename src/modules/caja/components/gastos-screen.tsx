@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +29,7 @@ function detalle(gasto: Gasto): string {
   }
   if (gasto.pagadoAt) {
     partes.push(`Pagado el ${formatDateTime(gasto.pagadoAt)}`);
-    partes.push(gasto.cajaId ? "con la caja" : "por fuera de la caja");
+    if (!gasto.cajaId) partes.push("por fuera de la caja");
   }
   return partes.join(" · ");
 }
@@ -69,11 +70,21 @@ function GastoFila({
           {formatCurrency(gasto.monto)}
         </p>
       </div>
-      {!anulado && (
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={() => onAnular(gasto)}>
-            Anulá
-          </Button>
+      {(!anulado || gasto.cajaHref) && (
+        <div className="flex items-center justify-end gap-2">
+          {gasto.cajaHref && (
+            <Link
+              href={gasto.cajaHref}
+              className="mr-auto rounded-md py-1.5 text-sm font-semibold text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            >
+              Ver caja
+            </Link>
+          )}
+          {!anulado && (
+            <Button variant="ghost" size="sm" onClick={() => onAnular(gasto)}>
+              Anulá
+            </Button>
+          )}
           {gasto.estado === "por_pagar" && (
             <Button variant="outline" size="sm" onClick={() => onPagar(gasto)}>
               Pagá
