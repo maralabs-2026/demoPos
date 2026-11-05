@@ -19,6 +19,7 @@ export type { MedioPago, MedioPagoConfig, TicketConfig } from "./queries";
 export {
   crearCategoriaSchema,
   crearMedioPagoSchema,
+  MEDIOS_PAGO_MAX,
   NOMBRE_CONFIG_MAX,
   renombrarSchema,
   TEXTO_TICKET_MAX,
