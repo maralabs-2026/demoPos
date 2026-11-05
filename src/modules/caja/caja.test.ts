@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { estadoDiferencia, totalesCierre } from "./cierre";
-import { cerrarCajaSchema, NOTA_CIERRE_MAX } from "./schemas";
+import {
+  cerrarCajaSchema,
+  MOTIVO_MOVIMIENTO_MAX,
+  NOTA_CIERRE_MAX,
+  registrarMovimientoSchema,
+} from "./schemas";
 
 const CAJA = "7d3f9a52-1c64-4b8e-9f21-3a5c7e9d1b20";
 const MEDIO = "2b8e4c61-9d37-4f15-a8c2-6e1f3d5b7a90";
@@ -55,6 +60,50 @@ describe("cerrarCajaSchema", () => {
         nota: "x".repeat(NOTA_CIERRE_MAX + 1),
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("registrarMovimientoSchema", () => {
+  const movimiento = {
+    cajaId: CAJA,
+    tipo: "retiro",
+    monto: 1500.5,
+    motivo: "  Pago al proveedor  ",
+  };
+
+  it("acepta retiros e ingresos y recorta el motivo", () => {
+    expect(registrarMovimientoSchema.parse(movimiento).motivo).toBe(
+      "Pago al proveedor",
+    );
+    expect(
+      registrarMovimientoSchema.safeParse({ ...movimiento, tipo: "ingreso" })
+        .success,
+    ).toBe(true);
+  });
+
+  it.each([
+    ["cero", 0],
+    ["negativo", -1],
+    ["con más de dos decimales", 10.123],
+    ["demasiado alto", 10_000_000_000],
+    ["infinito", Number.POSITIVE_INFINITY],
+  ])("rechaza un monto %s", (_, monto) => {
+    expect(
+      registrarMovimientoSchema.safeParse({ ...movimiento, monto }).success,
+    ).toBe(false);
+  });
+
+  it("rechaza un tipo desconocido y un motivo vacío o demasiado largo", () => {
+    for (const cambio of [
+      { tipo: "gasto" },
+      { motivo: "   " },
+      { motivo: "x".repeat(MOTIVO_MOVIMIENTO_MAX + 1) },
+    ]) {
+      expect(
+        registrarMovimientoSchema.safeParse({ ...movimiento, ...cambio })
+          .success,
+      ).toBe(false);
+    }
   });
 });
 

@@ -60,6 +60,26 @@ test("cierre: compara lo contado con lo esperado, sin mostrarlo antes", async ({
   // A ciegas: el formulario no muestra lo esperado.
   await expect(page.getByText("Esperado")).toHaveCount(0);
 
+  // Sin motivo no deja registrar el retiro.
+  await page.getByLabel("Monto", { exact: true }).fill("1000");
+  await page.getByRole("button", { name: "Registrá el retiro" }).click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Escribí el motivo" }),
+  ).toBeVisible();
+
+  await page.getByLabel("Motivo").fill("Pago al proveedor");
+  await page.getByRole("button", { name: "Registrá el retiro" }).click();
+  const movimientos = page.getByRole("list", { name: "Retiros e ingresos" });
+  await expect(movimientos).toContainText("Pago al proveedor");
+  await expect(movimientos).toContainText("− $ 1.000,00");
+
+  await page.getByRole("button", { name: "Ingreso", exact: true }).click();
+  await page.getByLabel("Monto", { exact: true }).fill("200");
+  await page.getByLabel("Motivo").fill("Cambio del banco");
+  await page.getByRole("button", { name: "Registrá el ingreso" }).click();
+  await expect(movimientos).toContainText("+ $ 200,00");
+  await expect(page.getByText("Esperado")).toHaveCount(0);
+
   // Sin completar todos los medios no deja seguir.
   await page.getByRole("button", { name: "Cerrá la caja" }).click();
   await expect(
@@ -69,8 +89,8 @@ test("cierre: compara lo contado con lo esperado, sin mostrarlo antes", async ({
   for (const campo of await page.getByPlaceholder("0,00").all()) {
     await campo.fill("0");
   }
-  // Efectivo esperado: 1000 + 2500 + 2500. Se cuentan $ 100 menos.
-  await page.getByLabel("Efectivo").fill("5900");
+  // Efectivo esperado: 1000 + 2500 + 2500 + 200 - 1000. Se cuentan $ 100 menos.
+  await page.getByLabel("Efectivo").fill("5100");
   await page.getByLabel("Débito").fill("2500");
   await page.getByLabel("Nota (opcional)").fill("Faltó cambio");
   await page.getByRole("button", { name: "Cerrá la caja" }).click();
@@ -80,9 +100,12 @@ test("cierre: compara lo contado con lo esperado, sin mostrarlo antes", async ({
     { timeout: 20_000 },
   );
   const efectivo = page.getByRole("listitem").filter({ hasText: "Efectivo" });
-  await expect(efectivo).toContainText("Esperado $ 6.000,00");
-  await expect(efectivo).toContainText("Contado $ 5.900,00");
+  await expect(efectivo).toContainText("Esperado $ 5.200,00");
+  await expect(efectivo).toContainText("Contado $ 5.100,00");
   await expect(efectivo).toContainText("Falta $ 100,00");
+  await expect(
+    page.getByRole("list", { name: "Retiros e ingresos" }),
+  ).toContainText("Pago al proveedor");
   const debito = page.getByRole("listitem").filter({ hasText: "Débito" });
   await expect(debito).toContainText("Esperado $ 2.500,00");
   await expect(debito).toContainText("Cuadra");

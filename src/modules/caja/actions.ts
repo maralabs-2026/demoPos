@@ -8,14 +8,55 @@ import { getCajaAbierta, type CajaAbierta } from "./queries";
 import {
   abrirCajaSchema,
   cerrarCajaSchema,
+  registrarMovimientoSchema,
   type AbrirCajaInput,
   type CerrarCajaInput,
+  type RegistrarMovimientoInput,
 } from "./schemas";
 
 const PG_UNIQUE_VIOLATION = "23505"; // cajas_una_abierta_por_usuario_idx
 const PV_CAJA_INVALIDA = "PV002";
 const PV_CAJA_CERRADA = "PV012";
 const PV_CONTEO_INVALIDO = "PV014";
+const PV_MOVIMIENTO_INVALIDO = "PV015";
+
+// Retiro o ingreso de efectivo durante el turno. Entra en el esperado del cierre.
+export async function registrarMovimiento(
+  input: RegistrarMovimientoInput,
+): Promise<ActionResult<null>> {
+  const parsed = registrarMovimientoSchema.safeParse(input);
+  if (!parsed.success) {
+    return fail(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  }
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("registrar_movimiento_caja", {
+    p_caja_id: parsed.data.cajaId,
+    p_tipo: parsed.data.tipo,
+    p_monto: parsed.data.monto,
+    p_motivo: parsed.data.motivo,
+  });
+
+  if (error) {
+    switch (error.code) {
+      case PV_CAJA_INVALIDA:
+        return fail("Esta caja no existe o no podés operar sobre ella.");
+      case PV_CAJA_CERRADA:
+        return fail("Esta caja ya está cerrada.");
+      case PV_MOVIMIENTO_INVALIDO:
+        return fail("El movimiento no es válido. Revisá el monto y el motivo.");
+      default:
+        return fail("No se pudo registrar el movimiento. Probá de nuevo.");
+    }
+  }
+
+  revalidatePath("/caja");
+  revalidatePath(`/caja/cerrar/${parsed.data.cajaId}`);
+  return ok(null);
+}
 
 // Cierra con el conteo por medio de pago: cerrar_caja calcula el esperado y la diferencia en la
 // misma transacción. Devuelve la caja para mostrar el resultado en su detalle.
