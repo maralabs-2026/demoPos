@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { History, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { canAccess, requireRol } from "@/modules/auth";
+import { requireRol } from "@/modules/auth";
 import {
   getCajaAbierta,
   getCajasAbiertasDeOtros,
@@ -16,7 +15,7 @@ import { formatDateTime } from "@/lib/date";
 export const dynamic = "force-dynamic";
 
 export default async function CajaPage() {
-  const profile = await requireRol("/caja");
+  await requireRol("/caja");
 
   const [cajaResult, otrasResult] = await Promise.all([
     getCajaAbierta(),
@@ -42,31 +41,7 @@ export default async function CajaPage() {
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4 sm:p-6 lg:p-8">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-3xl">Caja</h1>
-        <div className="flex flex-wrap justify-end gap-2">
-          {canAccess(profile.rol, "/caja/gastos") && (
-            <Button
-              variant="outline"
-              size="sm"
-              nativeButton={false}
-              render={<Link href="/caja/gastos" />}
-            >
-              <Receipt data-icon="inline-start" />
-              Gastos
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href="/caja/historial" />}
-          >
-            <History data-icon="inline-start" />
-            Historial
-          </Button>
-        </div>
-      </div>
+      <h1 className="text-3xl">Caja</h1>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
