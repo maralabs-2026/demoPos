@@ -72,8 +72,10 @@ src/
 
 **Roles**
 - `dueno`: todo.
-- `encargado`: todo menos configuración y eliminar usuarios.
+- `encargado`: todo menos configuración. De los usuarios, solo administra cajeros.
 - `cajero`: vender, ver productos, abrir/cerrar su caja y registrar retiros e ingresos de su caja con motivo. No ve costos, márgenes ni reportes, ni anula ventas, carga gastos o audita stock.
+
+Los roles son fijos: no hay permisos por usuario. Nadie se modifica a sí mismo, así un comercio nunca se queda sin dueño activo. Un usuario no se borra: se desactiva, y pierde el acceso y el ingreso.
 
 **Costos**
 - El costo no es una columna de `productos`: vive en la tabla `productos_costos` (`comercio_id not null`, montos `numeric(12,2)`), porque la RLS no filtra por columna.
