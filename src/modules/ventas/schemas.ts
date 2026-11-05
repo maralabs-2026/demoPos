@@ -1,5 +1,20 @@
 import { z } from "zod";
 
+export const MOTIVO_ANULACION_MAX = 180;
+
+export const anularVentaSchema = z.object({
+  ventaId: z.uuid({ error: "La venta no es válida" }),
+  motivo: z
+    .string({ error: "Escribí el motivo" })
+    .trim()
+    .min(1, { error: "Escribí el motivo" })
+    .max(MOTIVO_ANULACION_MAX, {
+      error: `El motivo puede tener hasta ${MOTIVO_ANULACION_MAX} caracteres`,
+    }),
+});
+
+export type AnularVentaInput = z.infer<typeof anularVentaSchema>;
+
 const porcentajeSchema = z
   .number()
   .finite()
