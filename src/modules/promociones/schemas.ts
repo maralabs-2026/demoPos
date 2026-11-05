@@ -10,6 +10,15 @@ const entero = (min: number, mensaje: string) =>
     .int({ error: mensaje })
     .min(min, { error: mensaje });
 
+// Una semana tiene 7 días, y la pantalla no los repite.
+export const DIAS_MAX = 7;
+export const ITEMS_COMBO_MAX = 20;
+
+const dias = z
+  .array(z.number().int().min(0).max(6))
+  .min(1, { error: "Elegí al menos un día" })
+  .max(DIAS_MAX, { error: `Elegí hasta ${DIAS_MAX} días` });
+
 export const promocionSchema = z
   .object({
     nombre: z
@@ -37,9 +46,7 @@ export const promocionSchema = z
       .gt(0, { error: "El porcentaje tiene que ser mayor a 0" })
       .max(100, { error: "El porcentaje no puede pasar del 100 %" })
       .nullable(),
-    dias: z
-      .array(z.number().int().min(0).max(6))
-      .min(1, { error: "Elegí al menos un día" }),
+    dias,
     desde: hora,
     hasta: hora,
   })
@@ -106,9 +113,7 @@ export const comboSchema = z
     precio: z
       .number({ error: "Escribí el precio del combo" })
       .positive({ error: "El precio del combo tiene que ser mayor a cero" }),
-    dias: z
-      .array(z.number().int().min(0).max(6))
-      .min(1, { error: "Elegí al menos un día" }),
+    dias,
     desde: hora,
     hasta: hora,
     items: z
@@ -118,7 +123,10 @@ export const comboSchema = z
           cantidad: entero(1, "La cantidad tiene que ser al menos 1"),
         }),
       )
-      .min(2, { error: "Un combo necesita al menos dos productos" }),
+      .min(2, { error: "Un combo necesita al menos dos productos" })
+      .max(ITEMS_COMBO_MAX, {
+        error: `Un combo puede tener hasta ${ITEMS_COMBO_MAX} productos`,
+      }),
   })
   .superRefine((c, ctx) => {
     const ids = c.items.map((i) => i.productoId);

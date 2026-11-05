@@ -13,6 +13,9 @@ export const abrirCajaSchema = z.object({
 export type AbrirCajaInput = z.infer<typeof abrirCajaSchema>;
 
 export const NOTA_CIERRE_MAX = 300;
+// Se manda un conteo por medio de pago del comercio. Si algún día se permiten más medios que
+// este tope, la caja no se podría cerrar: revisarlo junto con el ABM de medios de pago.
+export const CONTEOS_CIERRE_MAX = 50;
 
 export const cerrarCajaSchema = z.object({
   cajaId: z.uuid({ error: "La caja no es válida" }),
@@ -28,7 +31,10 @@ export const cerrarCajaSchema = z.object({
           .multipleOf(0.01, { error: "Usá hasta dos decimales" }),
       }),
     )
-    .min(1, { error: "Falta el conteo" }),
+    .min(1, { error: "Falta el conteo" })
+    .max(CONTEOS_CIERRE_MAX, {
+      error: `El cierre puede tener hasta ${CONTEOS_CIERRE_MAX} medios de pago`,
+    }),
   nota: z
     .string()
     .trim()

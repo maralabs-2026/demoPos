@@ -3,6 +3,7 @@ import { estadoDiferencia, totalesCierre } from "./cierre";
 import { estaVencido, hrefDeCaja } from "./gastos";
 import {
   cerrarCajaSchema,
+  CONTEOS_CIERRE_MAX,
   DESCRIPCION_GASTO_MAX,
   MOTIVO_MOVIMIENTO_MAX,
   NOTA_CIERRE_MAX,
@@ -51,6 +52,23 @@ describe("cerrarCajaSchema", () => {
     expect(cerrarCajaSchema.safeParse({ ...valido, cajaId: "x" }).success).toBe(
       false,
     );
+  });
+
+  it("acepta hasta el tope de conteos y rechaza uno más", () => {
+    const conteos = (largo: number) =>
+      Array.from({ length: largo }, () => valido.conteos[0]);
+    expect(
+      cerrarCajaSchema.safeParse({
+        ...valido,
+        conteos: conteos(CONTEOS_CIERRE_MAX),
+      }).success,
+    ).toBe(true);
+    expect(
+      cerrarCajaSchema.safeParse({
+        ...valido,
+        conteos: conteos(CONTEOS_CIERRE_MAX + 1),
+      }).error?.issues[0]?.message,
+    ).toBe("El cierre puede tener hasta 50 medios de pago");
   });
 
   it("recorta la nota y limita su largo", () => {
