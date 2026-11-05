@@ -1,5 +1,6 @@
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import type { Tables } from "@/lib/supabase/types";
 import {
   buscarProductosSchema,
   FOTOS_BUCKET,
@@ -21,18 +22,20 @@ export type Producto = {
   fotoUrl: string | null;
 };
 
-// TODO(demo): tipos escritos a mano porque todavía no se corrió `supabase gen types`.
-// El esquema se estabiliza en Fase 1; ahí se generan los tipos reales.
-type ProductoRow = {
-  id: string;
-  nombre: string;
-  codigo_barras: string;
-  precio: number;
-  stock_actual: number;
-  stock_minimo: number;
-  unidad_venta: string;
-  categoria_id: string | null;
-  foto_path: string | null;
+// Columnas de la tabla según los tipos generados. Las relaciones se declaran aparte porque el select
+// cambia según el rol (con o sin costos) y la CLI no puede inferirlo.
+type ProductoRow = Pick<
+  Tables<"productos">,
+  | "id"
+  | "nombre"
+  | "codigo_barras"
+  | "precio"
+  | "stock_actual"
+  | "stock_minimo"
+  | "unidad_venta"
+  | "categoria_id"
+  | "foto_path"
+> & {
   categorias: { nombre: string } | null;
   // PostgREST puede devolver la relación 1 a 1 como objeto o como arreglo.
   productos_costos?: { costo: number } | { costo: number }[] | null;

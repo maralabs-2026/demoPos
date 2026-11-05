@@ -41,6 +41,28 @@ export async function getMediosPago(): Promise<ActionResult<MedioPago[]>> {
   return ok(data ?? []);
 }
 
+export type MedioPagoConfig = MedioPago & { activo: boolean };
+
+// Todos los medios, también los inactivos, para administrarlos. getMediosPago trae solo los activos.
+export async function getMediosPagoConfig(): Promise<
+  ActionResult<MedioPagoConfig[]>
+> {
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("medios_pago")
+    .select("id, nombre, tipo, activo")
+    .order("activo", { ascending: false })
+    .order("orden", { ascending: true })
+    .overrideTypes<MedioPagoConfig[]>();
+
+  if (error) return fail("No se pudieron leer los medios de pago.");
+  return ok(data);
+}
+
 export type TicketConfig = { titulo: string; leyenda: string; pie: string };
 
 // Textos del ticket (clave ticket, 0021). Sin configuración, el ticket sale solo con los datos de la

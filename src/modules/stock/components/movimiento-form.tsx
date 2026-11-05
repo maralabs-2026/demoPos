@@ -55,7 +55,11 @@ export function MovimientoForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div role="tablist" aria-label="Tipo de movimiento" className="flex gap-2">
+      <div
+        role="tablist"
+        aria-label="Tipo de movimiento"
+        className="flex gap-2"
+      >
         {(["ingreso", "ajuste"] as const).map((m) => (
           <Button
             key={m}
@@ -118,7 +122,9 @@ export function MovimientoForm({
             required={modo === "ajuste"}
             maxLength={200}
             placeholder={
-              modo === "ingreso" ? "Ej.: remito 0001-1234" : "Ej.: vencido, roto, conteo"
+              modo === "ingreso"
+                ? "Ej.: remito 0001-1234"
+                : "Ej.: vencido, roto, conteo"
             }
             value={motivo}
             onChange={(e) => setMotivo(e.target.value)}
@@ -129,7 +135,9 @@ export function MovimientoForm({
       <p
         className={cn(
           "text-sm tabular-nums",
-          quedaria !== null && quedaria < 0 ? "text-destructive" : "text-muted-foreground",
+          quedaria !== null && quedaria < 0
+            ? "text-destructive"
+            : "text-muted-foreground",
         )}
       >
         {quedaria === null
@@ -148,7 +156,9 @@ export function MovimientoForm({
       <Button
         type="submit"
         size="lg"
-        disabled={isPending || !cantidadValida || (quedaria !== null && quedaria < 0)}
+        disabled={
+          isPending || !cantidadValida || (quedaria !== null && quedaria < 0)
+        }
       >
         {isPending
           ? "Guardando…"

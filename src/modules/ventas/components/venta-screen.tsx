@@ -122,7 +122,7 @@ function StockChip({ producto }: { producto: Producto }) {
 
 function KeyHint({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="hidden h-5 min-w-5 items-center justify-center rounded-md border border-current/30 px-1 font-mono text-[11px] font-semibold opacity-85 lg:inline-flex">
+    <kbd className="hidden h-5 min-w-5 items-center justify-center rounded-md border border-current/30 px-1 font-mono text-[11px] font-semibold lg:inline-flex">
       {children}
     </kbd>
   );

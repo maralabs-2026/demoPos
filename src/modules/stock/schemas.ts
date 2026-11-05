@@ -38,6 +38,28 @@ export type IngresoInput = z.input<typeof ingresoSchema>;
 export type AjusteInput = z.input<typeof ajusteSchema>;
 
 // Cantidad con signo tal como se guarda en movimientos_stock.
-export function cantidadConSigno(ajuste: z.output<typeof ajusteSchema>): number {
+export function cantidadConSigno(
+  ajuste: z.output<typeof ajusteSchema>,
+): number {
   return ajuste.sentido === "restar" ? -ajuste.cantidad : ajuste.cantidad;
 }
+
+export const auditoriaSchema = z.object({
+  // null: los productos sin categoría.
+  categoriaId: z.string().uuid().nullable(),
+  conteos: z
+    .array(
+      z.object({
+        productoId: z.string().uuid(),
+        contado: z
+          .number({ error: "Escribí cuánto contaste" })
+          .int("Contá unidades enteras")
+          .min(0, "Lo contado no puede ser negativo")
+          .max(1_000_000, "La cantidad es demasiado grande"),
+      }),
+    )
+    .min(1, "Contá al menos un producto")
+    .max(5000, "Son demasiados productos para una auditoría"),
+});
+
+export type AuditoriaInput = z.input<typeof auditoriaSchema>;

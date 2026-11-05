@@ -1,7 +1,9 @@
 import { cache } from "react";
+import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import {
   buildSessionProfile,
+  type Rol,
   type SessionProfile,
   type PerfilData,
 } from "./session";
@@ -26,6 +28,8 @@ export const getAuthProfile = cache(
       .from("perfiles")
       .select("rol, comercio_id, nombre, comercios(nombre)")
       .eq("id", user.id)
+      // Un usuario desactivado no tiene sesión, aunque su token siga vigente.
+      .eq("activo", true)
       .maybeSingle()
       .overrideTypes<PerfilRow>();
 
@@ -40,3 +44,42 @@ export const getAuthProfile = cache(
     );
   },
 );
+
+export type Usuario = {
+  id: string;
+  nombre: string;
+  rol: Rol;
+  activo: boolean;
+  email: string;
+  contrasenaTemporal: boolean;
+  // Si quien mira lo puede modificar: el dueño a todos menos a sí mismo; el encargado, a los cajeros.
+  administrable: boolean;
+};
+
+type UsuarioRow = {
+  id: string;
+  nombre: string;
+  rol: Rol;
+  activo: boolean;
+  email: string;
+  contrasena_temporal: boolean;
+  administrable: boolean;
+};
+
+export async function getUsuarios(): Promise<ActionResult<Usuario[]>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("listar_usuarios");
+  if (error) return fail("No se pudieron leer los usuarios.");
+
+  return ok(
+    (data as UsuarioRow[]).map((u) => ({
+      id: u.id,
+      nombre: u.nombre,
+      rol: u.rol,
+      activo: u.activo,
+      email: u.email,
+      contrasenaTemporal: u.contrasena_temporal,
+      administrable: u.administrable,
+    })),
+  );
+}

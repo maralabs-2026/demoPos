@@ -1,7 +1,9 @@
 // Public API of the stock module. Other modules import only from here.
-export { registrarAjuste, registrarIngreso } from "./actions";
-export type { MovimientoRegistrado } from "./actions";
-export { getMovimientos } from "./queries";
-export type { Movimiento, TipoMovimiento } from "./queries";
-export { ajusteSchema, ingresoSchema } from "./schemas";
-export type { AjusteInput, IngresoInput } from "./schemas";
+export { aplicarAuditoria, registrarAjuste, registrarIngreso } from "./actions";
+export type { LineaAuditoria, MovimientoRegistrado } from "./actions";
+export { getMovimientos, getProductosAContar } from "./queries";
+export type { Movimiento, ProductoAContar, TipoMovimiento } from "./queries";
+export { ajusteSchema, auditoriaSchema, ingresoSchema } from "./schemas";
+export type { AjusteInput, AuditoriaInput, IngresoInput } from "./schemas";
+export { reposicionComoTexto, sugerirReposicion } from "./reposicion";
+export type { LineaReposicion } from "./reposicion";

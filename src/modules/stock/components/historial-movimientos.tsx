@@ -9,7 +9,11 @@ const ETIQUETA: Record<TipoMovimiento, string> = {
   anulacion: "Anulación",
 };
 
-export function HistorialMovimientos({ movimientos }: { movimientos: Movimiento[] }) {
+export function HistorialMovimientos({
+  movimientos,
+}: {
+  movimientos: Movimiento[];
+}) {
   if (movimientos.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
@@ -21,7 +25,10 @@ export function HistorialMovimientos({ movimientos }: { movimientos: Movimiento[
   return (
     <ul className="divide-y rounded-md border">
       {movimientos.map((m) => (
-        <li key={m.id} className="flex items-start justify-between gap-3 p-3 text-sm">
+        <li
+          key={m.id}
+          className="flex items-start justify-between gap-3 p-3 text-sm"
+        >
           <div className="min-w-0 space-y-0.5">
             <div className="font-medium">{ETIQUETA[m.tipo]}</div>
             {m.motivo && <div className="break-words">{m.motivo}</div>}
@@ -33,7 +40,9 @@ export function HistorialMovimientos({ movimientos }: { movimientos: Movimiento[
           <span
             className={cn(
               "shrink-0 font-semibold tabular-nums",
-              m.cantidad > 0 ? "text-emerald-700 dark:text-emerald-400" : "text-destructive",
+              m.cantidad > 0
+                ? "text-emerald-700 dark:text-emerald-400"
+                : "text-destructive",
             )}
           >
             {m.cantidad > 0 ? `+${m.cantidad}` : m.cantidad}

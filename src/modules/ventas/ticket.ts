@@ -38,6 +38,4 @@ export function ticketComoTexto(
     .trim();
 }
 
-export function enlaceWhatsApp(texto: string): string {
-  return `https://wa.me/?text=${encodeURIComponent(texto)}`;
-}
+export { enlaceWhatsApp } from "@/lib/whatsapp";

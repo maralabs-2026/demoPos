@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_NEXT, getNextRoute } from "./next-route";
 
 describe("getNextRoute", () => {
-  it("defaults to /vender when next is missing", () => {
+  it("defaults to the home route when next is missing", () => {
     expect(getNextRoute(undefined)).toBe(DEFAULT_NEXT);
   });
 
-  it("defaults to /vender when next is empty", () => {
+  it("defaults to the home route when next is empty", () => {
     expect(getNextRoute("")).toBe(DEFAULT_NEXT);
   });
 

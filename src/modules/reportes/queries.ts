@@ -12,6 +12,7 @@ export type ReporteVentas = {
     totalAnulado: number;
     ganancia: number;
     sinCosto: number;
+    gastosPagados: number;
   };
   periodos: {
     periodo: string;
@@ -43,6 +44,7 @@ type ReporteRow = {
     total_anulado: number;
     ganancia: number;
     sin_costo: number;
+    gastos_pagados: number;
   };
   periodos: {
     periodo: string;
@@ -87,6 +89,7 @@ export async function getReporteVentas(
       totalAnulado: Number(r.resumen.total_anulado),
       ganancia: Number(r.resumen.ganancia),
       sinCosto: Number(r.resumen.sin_costo),
+      gastosPagados: Number(r.resumen.gastos_pagados),
     },
     periodos: r.periodos.map((p) => ({
       periodo: p.periodo,

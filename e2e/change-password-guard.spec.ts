@@ -57,6 +57,7 @@ test.describe("Guard de contraseña temporal con autenticación real", () => {
     const password = passwordDe("E2E_DUENO_PASSWORD");
     await login(page, DUENO_EMAIL, password);
 
+    await page.goto("/vender");
     await expect(page).toHaveURL(/\/vender/);
     await page.goto("/productos");
     await expect(page).toHaveURL(/\/productos/);

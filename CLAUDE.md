@@ -39,6 +39,7 @@ Lo que NO se construye en esta versión: facturación electrónica ARCA, Mercado
 **Configuración en datos, no en código**
 - Medios de pago, categorías, roles, datos del ticket, moneda y formato de precios viven en tablas de configuración por comercio.
 - Prohibido hardcodear nombres de medios de pago, rubros o textos del ticket.
+- Un medio de pago no se borra: se desactiva y deja de ofrecerse al cobrar. Siempre queda un efectivo activo, y el tipo de un medio con pagos no cambia. Una categoría con productos o promociones no se elimina. Los nombres no se repiten por comercio, sin importar mayúsculas.
 
 **Módulos separados**
 ```
@@ -67,12 +68,15 @@ src/
 - Retiros, ingresos y gastos pagados con la caja son movimientos de esa caja. Efectivo esperado al cierre = fondo inicial + ventas en efectivo + ingresos − retiros.
 - Un retiro o ingreso no se edita ni se borra: un error se compensa con el movimiento contrario. No se limita a lo que hay en el cajón, porque eso revelaría el esperado. Dueño y encargado pueden registrarlos en la caja de otro.
 - Un gasto no se edita ni se borra: se anula. Quien lo paga elige de qué caja abierta sale o si fue por fuera; solo lo que sale de una caja genera retiro. Anularlo con la caja abierta devuelve la plata con un ingreso; con la caja cerrada, su cierre no cambia. Fijo o variable es una clasificación: no genera gastos recurrentes.
+- El inicio muestra el efectivo de las cajas abiertas: el dueño ve todas; el encargado, las de los demás y no la suya, porque la cuenta a ciegas.
 - Una caja se cierra solo con `cerrar_caja`, con conteo por medio de pago. El conteo es a ciegas: el esperado se ve recién después de cerrar. Dueño y encargado pueden cerrar la caja de otro, y queda registrado quién la cerró. Un cierre no se corrige.
 
 **Roles**
 - `dueno`: todo.
-- `encargado`: todo menos configuración y eliminar usuarios.
+- `encargado`: todo menos configuración. De los usuarios, solo administra cajeros.
 - `cajero`: vender, ver productos, abrir/cerrar su caja y registrar retiros e ingresos de su caja con motivo. No ve costos, márgenes ni reportes, ni anula ventas, carga gastos o audita stock.
+
+Los roles son fijos: no hay permisos por usuario. Nadie se modifica a sí mismo, así un comercio nunca se queda sin dueño activo. Un usuario no se borra: se desactiva, y pierde el acceso y el ingreso.
 
 **Costos**
 - El costo no es una columna de `productos`: vive en la tabla `productos_costos` (`comercio_id not null`, montos `numeric(12,2)`), porque la RLS no filtra por columna.

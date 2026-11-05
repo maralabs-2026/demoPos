@@ -1,5 +1,6 @@
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import type { Tables } from "@/lib/supabase/types";
 import { movimientosProductoSchema } from "./schemas";
 
 export type TipoMovimiento = "ingreso" | "venta" | "ajuste" | "anulacion";
@@ -13,13 +14,12 @@ export type Movimiento = {
   createdAt: string;
 };
 
-// TODO(demo): tipos escritos a mano porque todavía no se corrió `supabase gen types`.
-type MovimientoRow = {
-  id: string;
+// Columnas según los tipos generados. El tipo es text con un check en la base, así que se acota acá.
+type MovimientoRow = Pick<
+  Tables<"movimientos_stock">,
+  "id" | "cantidad" | "motivo" | "created_at"
+> & {
   tipo: TipoMovimiento;
-  cantidad: number;
-  motivo: string | null;
-  created_at: string;
   perfiles: { nombre: string } | null;
 };
 
@@ -54,6 +54,38 @@ export async function getMovimientos(
       motivo: row.motivo,
       usuarioNombre: row.perfiles?.nombre ?? null,
       createdAt: row.created_at,
+    })),
+  );
+}
+
+export type ProductoAContar = {
+  id: string;
+  nombre: string;
+  codigoBarras: string;
+};
+
+// Lo que se audita, sin stock: el conteo es a ciegas. categoriaId null: los productos sin categoría.
+export async function getProductosAContar(
+  categoriaId: string | null,
+): Promise<ActionResult<ProductoAContar[]>> {
+  const supabase = await createClient();
+  const consulta = supabase
+    .from("productos")
+    .select("id, nombre, codigo_barras");
+  const { data, error } = await (
+    categoriaId
+      ? consulta.eq("categoria_id", categoriaId)
+      : consulta.is("categoria_id", null)
+  )
+    .order("nombre")
+    .overrideTypes<{ id: string; nombre: string; codigo_barras: string }[]>();
+
+  if (error) return fail("No se pudieron leer los productos.");
+  return ok(
+    data.map((p) => ({
+      id: p.id,
+      nombre: p.nombre,
+      codigoBarras: p.codigo_barras,
     })),
   );
 }

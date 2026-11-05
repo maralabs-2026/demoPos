@@ -15,8 +15,8 @@ revoke all on all tables in schema public from anon, authenticated;
 alter default privileges for role postgres in schema public
   revoke all on tables from anon, authenticated;
 
--- TODO(demo): lectura anónima para /vender y /productos sin login. Se elimina en Fase 2
--- (junto con las políticas demo_anon_read_*) cuando exista autenticación.
+-- Demo: lectura anónima para /vender y /productos sin login. Resuelto en Fase 2: 0008 revoca
+-- este permiso junto con las políticas demo_anon_read_*.
 grant select on public.comercios, public.categorias, public.productos, public.medios_pago to anon;
 
 -- La demo escribía stock con un UPDATE anónimo; lo reemplaza la función registrar_venta (0007).
