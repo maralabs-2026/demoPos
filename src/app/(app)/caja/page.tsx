@@ -7,8 +7,10 @@ import {
   getCajaAbierta,
   getCajasAbiertasDeOtros,
   getMediosAContar,
+  getMovimientosCaja,
 } from "@/modules/caja";
 import { CerrarCajaForm } from "@/modules/caja/components/cerrar-caja-form";
+import { MovimientosCaja } from "@/modules/caja/components/movimientos-caja";
 import { formatDateTime } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
@@ -20,10 +22,13 @@ export default async function CajaPage() {
     getCajaAbierta(),
     getCajasAbiertasDeOtros(),
   ]);
-  const mediosResult =
+  const [mediosResult, movimientosResult] =
     cajaResult.ok && cajaResult.data
-      ? await getMediosAContar(cajaResult.data.id)
-      : null;
+      ? await Promise.all([
+          getMediosAContar(cajaResult.data.id),
+          getMovimientosCaja(cajaResult.data.id),
+        ])
+      : [null, null];
 
   const error = !cajaResult.ok
     ? cajaResult.error
@@ -31,7 +36,9 @@ export default async function CajaPage() {
       ? otrasResult.error
       : mediosResult && !mediosResult.ok
         ? mediosResult.error
-        : null;
+        : movimientosResult && !movimientosResult.ok
+          ? movimientosResult.error
+          : null;
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4 sm:p-6 lg:p-8">
@@ -49,6 +56,13 @@ export default async function CajaPage() {
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {cajaResult.ok && cajaResult.data && movimientosResult?.ok && (
+        <MovimientosCaja
+          cajaId={cajaResult.data.id}
+          movimientos={movimientosResult.data}
+        />
+      )}
 
       {cajaResult.ok && cajaResult.data && mediosResult?.ok && (
         <CerrarCajaForm
@@ -100,7 +114,7 @@ export default async function CajaPage() {
                     nativeButton={false}
                     render={<Link href={`/caja/cerrar/${caja.id}`} />}
                   >
-                    Cerrala
+                    Operá esta caja
                   </Button>
                 </Card>
               </li>

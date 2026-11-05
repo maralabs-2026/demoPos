@@ -3,8 +3,13 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardEyebrow } from "@/components/ui/card";
 import { requireRol } from "@/modules/auth";
-import { getCajaCerrada, totalesCierre } from "@/modules/caja";
+import {
+  getCajaCerrada,
+  getMovimientosCaja,
+  totalesCierre,
+} from "@/modules/caja";
 import { DiferenciaBadge } from "@/modules/caja/components/diferencia-badge";
+import { MovimientosLista } from "@/modules/caja/components/movimientos-lista";
 import { formatCurrency } from "@/lib/currency";
 import { formatDateTime } from "@/lib/date";
 
@@ -22,7 +27,10 @@ export default async function CierreCajaPage({
   const { id } = await params;
   if (!UUID.test(id)) notFound();
 
-  const result = await getCajaCerrada(id);
+  const [result, movimientos] = await Promise.all([
+    getCajaCerrada(id),
+    getMovimientosCaja(id),
+  ]);
   if (result.ok && !result.data) notFound();
   if (!result.ok || !result.data) {
     return (
@@ -96,6 +104,16 @@ export default async function CierreCajaPage({
               <span>Contado</span>
               <span>{formatCurrency(totales.contado)}</span>
             </div>
+          </div>
+        )}
+
+        {!movimientos.ok && (
+          <p className="text-sm text-destructive">{movimientos.error}</p>
+        )}
+        {movimientos.ok && movimientos.data.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <CardEyebrow>Retiros e ingresos</CardEyebrow>
+            <MovimientosLista movimientos={movimientos.data} />
           </div>
         )}
 
