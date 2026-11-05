@@ -62,3 +62,45 @@ export const registrarMovimientoSchema = z.object({
 export type RegistrarMovimientoInput = z.infer<
   typeof registrarMovimientoSchema
 >;
+
+export const DESCRIPCION_GASTO_MAX = 150;
+
+const FECHA = /^\d{4}-\d{2}-\d{2}$/;
+
+// cajaId null: pagado por fuera de la caja. Solo un gasto ya pagado puede salir de una caja.
+export const registrarGastoSchema = z
+  .object({
+    descripcion: z
+      .string({ error: "Escribí qué se pagó" })
+      .trim()
+      .min(1, { error: "Escribí qué se pagó" })
+      .max(DESCRIPCION_GASTO_MAX, {
+        error: `La descripción puede tener hasta ${DESCRIPCION_GASTO_MAX} caracteres`,
+      }),
+    tipo: z.enum(["fijo", "variable"], { error: "Elegí fijo o variable" }),
+    monto: z
+      .number({ error: "Escribí el monto" })
+      .finite({ error: "Escribí el monto" })
+      .positive({ error: "El monto tiene que ser mayor a cero" })
+      .max(MONTO_MAX, { error: "El monto es demasiado alto" })
+      .multipleOf(0.01, { error: "Usá hasta dos decimales" }),
+    vencimiento: z
+      .string()
+      .regex(FECHA, { error: "La fecha no es válida" })
+      .nullable(),
+    pagado: z.boolean(),
+    cajaId: z.uuid({ error: "La caja no es válida" }).nullable(),
+  })
+  .refine((gasto) => gasto.pagado || gasto.cajaId === null, {
+    error: "Un gasto por pagar no sale de una caja",
+    path: ["cajaId"],
+  });
+
+export type RegistrarGastoInput = z.infer<typeof registrarGastoSchema>;
+
+export const pagarGastoSchema = z.object({
+  gastoId: z.uuid({ error: "El gasto no es válido" }),
+  cajaId: z.uuid({ error: "La caja no es válida" }).nullable(),
+});
+
+export type PagarGastoInput = z.infer<typeof pagarGastoSchema>;
