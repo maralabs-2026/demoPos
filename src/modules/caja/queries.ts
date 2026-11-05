@@ -119,6 +119,53 @@ export async function getCajasAbiertasDeOtros(): Promise<
   );
 }
 
+export type MovimientoCaja = {
+  id: string;
+  tipo: "retiro" | "ingreso";
+  monto: number;
+  motivo: string;
+  createdAt: string;
+  // El cajero no puede leer el perfil de otro: si lo cargó el dueño, llega sin nombre.
+  autor: string;
+};
+
+type MovimientoRow = {
+  id: string;
+  tipo: "retiro" | "ingreso";
+  monto: number;
+  motivo: string;
+  created_at: string;
+  autor: Persona;
+};
+
+// Los retiros e ingresos de una caja, del más nuevo al más viejo. Muestran solo lo cargado, nunca
+// el esperado: el conteo sigue siendo a ciegas.
+export async function getMovimientosCaja(
+  cajaId: string,
+): Promise<ActionResult<MovimientoCaja[]>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("caja_movimientos")
+    .select(
+      "id, tipo, monto, motivo, created_at, autor:perfiles!caja_movimientos_usuario_id_comercio_id_fkey(nombre)",
+    )
+    .eq("caja_id", cajaId)
+    .order("created_at", { ascending: false })
+    .overrideTypes<MovimientoRow[]>();
+
+  if (error) return fail("No se pudieron leer los retiros e ingresos.");
+  return ok(
+    data.map((m) => ({
+      id: m.id,
+      tipo: m.tipo,
+      monto: Number(m.monto),
+      motivo: m.motivo,
+      createdAt: m.created_at,
+      autor: m.autor?.nombre ?? "Otro usuario",
+    })),
+  );
+}
+
 export type CajaCerrada = {
   id: string;
   montoInicial: number;
