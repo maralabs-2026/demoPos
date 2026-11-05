@@ -1,13 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { canAccess, getNavLinks, ROUTE_ROLES } from "./navigation";
+import {
+  canAccess,
+  getMobileNav,
+  getNavLinks,
+  ROUTE_ROLES,
+} from "./navigation";
 
 function shape(rol: "dueno" | "encargado" | "cajero"): string[] {
   return getNavLinks(rol).map((link) => `${link.href}|${link.label}`);
 }
 
 describe("getNavLinks", () => {
-  it("dueño ve los 7 accesos", () => {
+  it("dueño ve los 8 accesos", () => {
     expect(shape("dueno")).toEqual([
+      "/inicio|Inicio",
       "/vender|Vender",
       "/caja|Caja",
       "/productos|Productos",
@@ -20,6 +26,7 @@ describe("getNavLinks", () => {
 
   it("encargado ve Stock y Reportes pero no Config", () => {
     expect(shape("encargado")).toEqual([
+      "/inicio|Inicio",
       "/vender|Vender",
       "/caja|Caja",
       "/productos|Productos",
@@ -39,8 +46,49 @@ describe("getNavLinks", () => {
   });
 });
 
+describe("getMobileNav", () => {
+  const hrefs = (links: readonly { href: string }[]) =>
+    links.map((l) => l.href);
+
+  it("al dueño y al encargado les deja cuatro accesos y el resto en Más", () => {
+    const dueno = getMobileNav("dueno");
+    expect(hrefs(dueno.barra)).toEqual([
+      "/inicio",
+      "/vender",
+      "/caja",
+      "/productos",
+    ]);
+    expect(hrefs(dueno.mas)).toEqual([
+      "/stock",
+      "/reportes",
+      "/config",
+      "/perfil",
+    ]);
+    expect(hrefs(getMobileNav("encargado").mas)).toEqual([
+      "/stock",
+      "/reportes",
+      "/perfil",
+    ]);
+  });
+
+  it("al cajero le entran todos, sin Más", () => {
+    const cajero = getMobileNav("cajero");
+    expect(hrefs(cajero.barra)).toEqual([
+      "/vender",
+      "/caja",
+      "/productos",
+      "/perfil",
+    ]);
+    expect(cajero.mas).toEqual([]);
+  });
+});
+
 describe("canAccess", () => {
   it("aplica ROUTE_ROLES por ruta y rol", () => {
+    expect(canAccess("cajero", "/inicio")).toBe(false);
+    expect(canAccess("encargado", "/inicio")).toBe(true);
+    expect(canAccess("cajero", "/stock/auditoria")).toBe(false);
+    expect(canAccess("cajero", "/stock/reposicion")).toBe(false);
     expect(canAccess("cajero", "/reportes")).toBe(false);
     expect(canAccess("cajero", "/config")).toBe(false);
     expect(canAccess("cajero", "/stock")).toBe(false);

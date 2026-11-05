@@ -1,12 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Menu } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 // Imports por archivo y no por el barrel: el index arrastra queries.ts (next/headers) al cliente.
 import { splitBrandName } from "@/modules/auth/brand";
-import { getNavLinks, type NavLink } from "@/modules/auth/navigation";
+import {
+  getMobileNav,
+  getNavLinks,
+  type NavLink,
+} from "@/modules/auth/navigation";
 import { ROL_LABELS, rolBadgeVariant } from "@/modules/auth/roles";
 import type { Rol, SessionProfile } from "@/modules/auth/session";
 
@@ -66,9 +78,13 @@ export function Navigation({ profile }: { profile: SessionProfile }) {
   const comercioNombre = profile.comercio;
 
   const links = getNavLinks(rol);
+  const { barra, mas } = getMobileNav(rol);
+  const [masAbierto, setMasAbierto] = useState(false);
   const activeHref = links.find(
     (link) => pathname === link.href || pathname.startsWith(`${link.href}/`),
   )?.href;
+
+  const masActivo = mas.some((link) => link.href === activeHref);
 
   return (
     <>
@@ -104,9 +120,9 @@ export function Navigation({ profile }: { profile: SessionProfile }) {
       {/* Celular y tablet: navegación inferior */}
       <nav
         aria-label="Principal"
-        className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(4rem+env(safe-area-inset-bottom))] items-center border-t border-border bg-card px-2 pb-[env(safe-area-inset-bottom)] lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(4rem+env(safe-area-inset-bottom))] items-center border-t border-border bg-card px-2 pb-[env(safe-area-inset-bottom)] lg:hidden print:hidden"
       >
-        {links.map((link) => {
+        {barra.map((link) => {
           const active = activeHref === link.href;
           const Icon = link.icon;
           return (
@@ -137,7 +153,48 @@ export function Navigation({ profile }: { profile: SessionProfile }) {
             </Link>
           );
         })}
+        {mas.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setMasAbierto(true)}
+            className="flex flex-1 flex-col items-center justify-center gap-1 py-1"
+          >
+            <span
+              className={cn(
+                "grid h-7 w-12 place-items-center rounded-full transition-colors",
+                masActivo ? "bg-accent text-primary" : "text-muted-foreground",
+              )}
+            >
+              <Menu size={19} aria-hidden="true" />
+            </span>
+            <span
+              className={cn(
+                "text-[10px] leading-none",
+                masActivo
+                  ? "font-bold text-primary"
+                  : "font-medium text-muted-foreground",
+              )}
+            >
+              Más
+            </span>
+          </button>
+        )}
       </nav>
+
+      <Dialog open={masAbierto} onOpenChange={setMasAbierto}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Más opciones</DialogTitle>
+          </DialogHeader>
+          <nav aria-label="Más opciones" className="flex flex-col gap-1">
+            {mas.map((link) => (
+              <span key={link.href} onClick={() => setMasAbierto(false)}>
+                <SidebarLink link={link} active={activeHref === link.href} />
+              </span>
+            ))}
+          </nav>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
