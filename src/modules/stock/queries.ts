@@ -57,3 +57,35 @@ export async function getMovimientos(
     })),
   );
 }
+
+export type ProductoAContar = {
+  id: string;
+  nombre: string;
+  codigoBarras: string;
+};
+
+// Lo que se audita, sin stock: el conteo es a ciegas. categoriaId null: los productos sin categoría.
+export async function getProductosAContar(
+  categoriaId: string | null,
+): Promise<ActionResult<ProductoAContar[]>> {
+  const supabase = await createClient();
+  const consulta = supabase
+    .from("productos")
+    .select("id, nombre, codigo_barras");
+  const { data, error } = await (
+    categoriaId
+      ? consulta.eq("categoria_id", categoriaId)
+      : consulta.is("categoria_id", null)
+  )
+    .order("nombre")
+    .overrideTypes<{ id: string; nombre: string; codigo_barras: string }[]>();
+
+  if (error) return fail("No se pudieron leer los productos.");
+  return ok(
+    data.map((p) => ({
+      id: p.id,
+      nombre: p.nombre,
+      codigoBarras: p.codigo_barras,
+    })),
+  );
+}
