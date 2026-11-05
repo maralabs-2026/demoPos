@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { estadoDiferencia, totalesCierre } from "./cierre";
-import { estaVencido } from "./gastos";
+import { estaVencido, hrefDeCaja } from "./gastos";
 import {
   cerrarCajaSchema,
   DESCRIPCION_GASTO_MAX,
@@ -162,6 +162,24 @@ describe("estaVencido", () => {
     expect(estaVencido("2026-11-05", "2026-11-05")).toBe(false);
     expect(estaVencido("2026-11-06", "2026-11-05")).toBe(false);
     expect(estaVencido(null, "2026-11-05")).toBe(false);
+  });
+});
+
+describe("hrefDeCaja", () => {
+  const YO = "yo";
+
+  it("lleva a la caja propia abierta, a la de otro o al cierre", () => {
+    const caja = { id: CAJA, usuarioId: YO };
+    expect(hrefDeCaja({ ...caja, estado: "abierta" }, YO)).toBe("/caja");
+    expect(hrefDeCaja({ ...caja, estado: "abierta" }, "otro")).toBe(
+      `/caja/cerrar/${CAJA}`,
+    );
+    expect(hrefDeCaja({ ...caja, estado: "cerrada" }, YO)).toBe(
+      `/caja/historial/${CAJA}`,
+    );
+    expect(hrefDeCaja({ ...caja, estado: "cerrada" }, "otro")).toBe(
+      `/caja/historial/${CAJA}`,
+    );
   });
 });
 

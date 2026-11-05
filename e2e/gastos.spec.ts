@@ -57,7 +57,8 @@ test("gastos: el pagado con la caja entra en el arqueo y el pagado por fuera no"
   });
 
   await page.goto("/caja");
-  await page.getByRole("button", { name: "Gastos" }).click();
+  const pestanas = page.getByRole("navigation", { name: "Secciones de caja" });
+  await pestanas.getByRole("link", { name: "Gastos" }).click();
   await expect(page.getByRole("heading", { name: "Gastos" })).toBeVisible();
 
   // Sin elegir de dónde salió la plata no deja guardar.
@@ -73,6 +74,26 @@ test("gastos: el pagado con la caja entra en el arqueo y el pagado por fuera no"
 
   await cargarGastoPagado(page, conCaja, "300", "Mi caja");
   await cargarGastoPagado(page, porFuera, "450", "Por fuera de la caja");
+
+  // Desde el gasto se llega a la caja donde está el retiro, y las pestañas traen de vuelta. El
+  // pagado por fuera no tiene caja a la que ir.
+  const pagados = page.getByRole("list", { name: "Gastos pagados y anulados" });
+  await expect(
+    pagados
+      .getByRole("listitem")
+      .filter({ hasText: porFuera })
+      .getByRole("link", { name: "Ver caja" }),
+  ).toHaveCount(0);
+  await pagados
+    .getByRole("listitem")
+    .filter({ hasText: conCaja })
+    .getByRole("link", { name: "Ver caja" })
+    .click();
+  await expect(
+    page.getByRole("list", { name: "Retiros e ingresos" }),
+  ).toContainText(`Gasto: ${conCaja}`);
+  await pestanas.getByRole("link", { name: "Gastos" }).click();
+  await expect(page.getByRole("heading", { name: "Gastos" })).toBeVisible();
 
   // Por pagar: no toca la caja hasta pagarlo, y se paga con la caja.
   await page.getByRole("button", { name: "Cargá un gasto" }).click();

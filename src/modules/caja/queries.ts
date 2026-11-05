@@ -1,6 +1,7 @@
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import type { LineaCierre } from "./cierre";
+import { hrefDeCaja } from "./gastos";
 
 export type CajaAbierta = {
   id: string;
@@ -176,6 +177,7 @@ export type Gasto = {
   pagadoAt: string | null;
   // Solo si salió de una caja.
   cajaId: string | null;
+  cajaHref: string | null;
 };
 
 type GastoRow = {
@@ -187,13 +189,18 @@ type GastoRow = {
   estado: Gasto["estado"];
   pagado_at: string | null;
   caja_id: string | null;
+  caja: {
+    id: string;
+    estado: "abierta" | "cerrada";
+    usuario_id: string;
+  } | null;
 };
 
 const GASTOS_RESUELTOS_LIMITE = 50;
 const SELECT_GASTO =
-  "id, descripcion, tipo, monto, vencimiento, estado, pagado_at, caja_id";
+  "id, descripcion, tipo, monto, vencimiento, estado, pagado_at, caja_id, caja:cajas!gastos_caja_id_comercio_id_fkey(id, estado, usuario_id)";
 
-function aGasto(row: GastoRow): Gasto {
+function aGasto(row: GastoRow, usuarioId: string): Gasto {
   return {
     id: row.id,
     descripcion: row.descripcion,
@@ -203,6 +210,16 @@ function aGasto(row: GastoRow): Gasto {
     estado: row.estado,
     pagadoAt: row.pagado_at,
     cajaId: row.caja_id,
+    cajaHref: row.caja
+      ? hrefDeCaja(
+          {
+            id: row.caja.id,
+            estado: row.caja.estado,
+            usuarioId: row.caja.usuario_id,
+          },
+          usuarioId,
+        )
+      : null,
   };
 }
 
@@ -211,6 +228,11 @@ export async function getGastos(): Promise<
   ActionResult<{ porPagar: Gasto[]; resueltos: Gasto[] }>
 > {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return fail("Tu sesión venció. Volvé a ingresar.");
+
   const [porPagar, resueltos] = await Promise.all([
     supabase
       .from("gastos")
@@ -232,8 +254,8 @@ export async function getGastos(): Promise<
     return fail("No se pudieron leer los gastos.");
   }
   return ok({
-    porPagar: porPagar.data.map(aGasto),
-    resueltos: resueltos.data.map(aGasto),
+    porPagar: porPagar.data.map((row) => aGasto(row, user.id)),
+    resueltos: resueltos.data.map((row) => aGasto(row, user.id)),
   });
 }
 
