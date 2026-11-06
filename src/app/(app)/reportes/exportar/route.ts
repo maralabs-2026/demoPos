@@ -8,6 +8,7 @@ import {
   filtrosDesdeParams,
   getVentasParaExportar,
 } from "@/modules/reportes";
+import { getCorteDiaComercial } from "@/modules/config";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,9 @@ export async function GET(request: NextRequest) {
   await requireRol("/reportes");
 
   const params = Object.fromEntries(request.nextUrl.searchParams);
-  const hoy = todayISO();
+  const corte = await getCorteDiaComercial();
+  const corteHoras = corte.ok ? corte.data : 0;
+  const hoy = todayISO(new Date(), corteHoras);
 
   if (params.tipo === "stock") {
     const productos = await getProductos(undefined, true);
@@ -45,7 +48,7 @@ export async function GET(request: NextRequest) {
 
   if (params.tipo === "ventas") {
     const filtros = filtrosDesdeParams(params, hoy);
-    const ventas = await getVentasParaExportar(filtros);
+    const ventas = await getVentasParaExportar(filtros, corteHoras);
     if (!ventas.ok) return error("No se pudieron leer las ventas.", 500);
     return archivo(
       await excelDeVentas(ventas.data.filas, ventas.data.truncado),

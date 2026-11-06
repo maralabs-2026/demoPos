@@ -38,16 +38,21 @@ export function sumarDias(fecha: string, dias: number): string {
 }
 
 // Límites de un día en la zona del comercio, para filtrar por created_at. Argentina no cambia la
-// hora: el desplazamiento es siempre -03:00.
-export function inicioDelDia(fecha: string): string {
-  return `${fecha}T00:00:00-03:00`;
+// hora: el desplazamiento es siempre -03:00. `corteHoras` es la hora a la que termina el día
+// comercial (0 = medianoche): con 6, el día 24 va del 24 a las 6:00 al 25 a las 6:00.
+export function inicioDelDia(fecha: string, corteHoras = 0): string {
+  const hora = String(corteHoras).padStart(2, "0");
+  return `${fecha}T${hora}:00:00-03:00`;
 }
 
-export function finDelDia(fecha: string): string {
-  return inicioDelDia(sumarDias(fecha, 1));
+export function finDelDia(fecha: string, corteHoras = 0): string {
+  return inicioDelDia(sumarDias(fecha, 1), corteHoras);
 }
 
-// La fecha de hoy en la zona del comercio, como "2026-10-24".
-export function todayISO(now: Date = new Date()): string {
-  return todayFormatter.format(now);
+// La fecha de hoy en la zona del comercio, como "2026-10-24". Con hora de corte, antes de esa hora
+// todavía es el día anterior.
+export function todayISO(now: Date = new Date(), corteHoras = 0): string {
+  return todayFormatter.format(
+    new Date(now.getTime() - corteHoras * 3_600_000),
+  );
 }

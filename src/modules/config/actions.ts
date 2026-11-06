@@ -7,6 +7,7 @@ import { LOGO_BUCKET, LOGO_TIPOS, tipoDeLogo } from "@/lib/logo";
 import { getAuthProfile } from "@/modules/auth";
 import {
   comercioNombreSchema,
+  corteDiaSchema,
   logoSchema,
   crearCategoriaSchema,
   crearMedioPagoSchema,
@@ -14,6 +15,7 @@ import {
   renombrarSchema,
   ticketSchema,
   type ComercioNombreInput,
+  type CorteDiaInput,
   type CrearCategoriaInput,
   type CrearMedioPagoInput,
   type RenombrarInput,
@@ -148,6 +150,35 @@ export async function quitarLogo(): Promise<ActionResult<null>> {
 
   await supabase.storage.from(LOGO_BUCKET).remove([comercio.logo_path]);
   revalidarComercio();
+  return ok(null);
+}
+
+// Cambia qué es "hoy" en el inicio y cómo se cortan los días en reportes e historial.
+export async function guardarCorteDia(
+  input: CorteDiaInput,
+): Promise<ActionResult<null>> {
+  const parsed = corteDiaSchema.safeParse(input);
+  if (!parsed.success) return datosInvalidos(parsed.error);
+  if (!isSupabaseConfigured()) return fail(FALTA_CONFIG);
+
+  const auth = await requireDueno();
+  if (!auth.ok) return auth;
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("configuracion").upsert(
+    {
+      comercio_id: auth.data.comercio_id,
+      clave: "dia_comercial_corte",
+      valor: parsed.data.horas,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "comercio_id,clave" },
+  );
+  if (error?.code === PG_SIN_PERMISO) return fail(SIN_PERMISO);
+  if (error)
+    return fail("No se pudo guardar la hora de corte. Probá de nuevo.");
+
+  revalidatePath("/", "layout");
   return ok(null);
 }
 

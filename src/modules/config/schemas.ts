@@ -51,6 +51,17 @@ export const crearCategoriaSchema = z.object({ nombre });
 
 export const comercioNombreSchema = z.object({ nombre });
 
+// Hora a la que termina el día comercial: 0 es medianoche. Hasta las 12, porque más tarde ya no es
+// "la madrugada del día anterior".
+export const CORTE_DIA_MAX = 12;
+export const corteDiaSchema = z.object({
+  horas: z
+    .number({ error: "Elegí una hora" })
+    .int({ error: "Elegí una hora en punto" })
+    .min(0, { error: "Elegí una hora entre 0 y 12" })
+    .max(CORTE_DIA_MAX, { error: "Elegí una hora entre 0 y 12" }),
+});
+
 // El tipo real se comprueba en el servidor por los primeros bytes (tipoDeLogo, en lib/logo.ts).
 export const logoSchema = z.object({
   logo: z
@@ -64,3 +75,4 @@ export type CrearMedioPagoInput = z.infer<typeof crearMedioPagoSchema>;
 export type RenombrarInput = z.infer<typeof renombrarSchema>;
 export type CrearCategoriaInput = z.infer<typeof crearCategoriaSchema>;
 export type ComercioNombreInput = z.infer<typeof comercioNombreSchema>;
+export type CorteDiaInput = z.infer<typeof corteDiaSchema>;

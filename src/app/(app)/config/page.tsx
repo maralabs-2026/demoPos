@@ -1,4 +1,6 @@
 import { requireRol } from "@/modules/auth";
+import { getCorteDiaComercial } from "@/modules/config";
+import { DiaComercialForm } from "@/modules/config/components/dia-comercial-form";
 import { ComercioForm } from "@/modules/config/components/comercio-form";
 import { LogoForm } from "@/modules/config/components/logo-form";
 
@@ -6,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ConfigPage() {
   const profile = await requireRol("/config");
+  const corte = await getCorteDiaComercial();
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4 sm:p-6 lg:p-8">
@@ -17,6 +20,8 @@ export default async function ConfigPage() {
       </div>
       <ComercioForm nombreInicial={profile.comercio} />
       <LogoForm logoUrl={profile.logo_url} nombre={profile.comercio} />
+      {!corte.ok && <p className="text-sm text-destructive">{corte.error}</p>}
+      {corte.ok && <DiaComercialForm inicial={corte.data} />}
     </main>
   );
 }
