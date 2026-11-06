@@ -22,7 +22,7 @@ test("configuración: ticket, medios de pago y categorías", async ({ page }) =>
   const pie = `Volvé pronto ${sufijo}`;
 
   await login(page, DUENO, passwordDe("E2E_DUENO_PASSWORD"));
-  await page.goto("/config");
+  await page.goto("/config/ticket");
   await page.waitForLoadState("networkidle");
 
   // Ticket: guarda y se conserva al recargar. Después vuelve al texto original.

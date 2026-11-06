@@ -4,8 +4,11 @@ export {
   crearCategoria,
   crearMedioPago,
   eliminarCategoria,
+  guardarLogo,
+  guardarNombreComercio,
   guardarTicket,
   renombrarCategoria,
+  quitarLogo,
   renombrarMedioPago,
 } from "./actions";
 export {

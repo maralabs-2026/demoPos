@@ -3,13 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { LOGO_BUCKET, LOGO_TIPOS, tipoDeLogo } from "@/lib/logo";
 import { getAuthProfile } from "@/modules/auth";
 import {
+  comercioNombreSchema,
+  logoSchema,
   crearCategoriaSchema,
   crearMedioPagoSchema,
   MEDIOS_PAGO_MAX,
   renombrarSchema,
   ticketSchema,
+  type ComercioNombreInput,
   type CrearCategoriaInput,
   type CrearMedioPagoInput,
   type RenombrarInput,
@@ -26,6 +30,125 @@ const FALTA_CONFIG = "Falta configurar Supabase en .env.local";
 
 function datosInvalidos(error: { issues: { message: string }[] }) {
   return fail(error.issues[0]?.message ?? "Datos inválidos");
+}
+
+// El nombre y el logo se ven en todas las pantallas: se revalida todo el layout.
+function revalidarComercio() {
+  revalidatePath("/", "layout");
+}
+
+async function requireDueno() {
+  const profile = await getAuthProfile();
+  if (!profile) return fail("Tu sesión venció. Volvé a ingresar.");
+  if (profile.rol !== "dueno") return fail(SIN_PERMISO);
+  return ok(profile);
+}
+
+export async function guardarNombreComercio(
+  input: ComercioNombreInput,
+): Promise<ActionResult<null>> {
+  const parsed = comercioNombreSchema.safeParse(input);
+  if (!parsed.success) return datosInvalidos(parsed.error);
+  if (!isSupabaseConfigured()) return fail(FALTA_CONFIG);
+
+  const auth = await requireDueno();
+  if (!auth.ok) return auth;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("comercios")
+    .update({ nombre: parsed.data.nombre })
+    .eq("id", auth.data.comercio_id)
+    .select("id");
+  if (error?.code === PG_SIN_PERMISO || (!error && data.length === 0)) {
+    return fail(SIN_PERMISO);
+  }
+  if (error) return fail("No se pudo guardar el nombre. Probá de nuevo.");
+
+  revalidarComercio();
+  return ok(null);
+}
+
+// Cada logo tiene un nombre nuevo para que nadie siga viendo el anterior por la caché de la URL.
+// Si no se puede borrar el archivo viejo queda sin uso, pero el comercio ya muestra el nuevo.
+export async function guardarLogo(
+  formData: FormData,
+): Promise<ActionResult<null>> {
+  const parsed = logoSchema.safeParse({ logo: formData.get("logo") });
+  if (!parsed.success) return datosInvalidos(parsed.error);
+  if (!isSupabaseConfigured()) return fail(FALTA_CONFIG);
+
+  const bytes = new Uint8Array(await parsed.data.logo.arrayBuffer());
+  const ext = tipoDeLogo(bytes);
+  if (!ext) return fail("El logo tiene que ser PNG, JPG o WebP.");
+
+  const auth = await requireDueno();
+  if (!auth.ok) return auth;
+  const comercioId = auth.data.comercio_id;
+
+  const supabase = await createClient();
+  const { data: comercio, error: errorComercio } = await supabase
+    .from("comercios")
+    .select("logo_path")
+    .eq("id", comercioId)
+    .maybeSingle();
+  if (errorComercio || !comercio) {
+    return fail("No se pudo guardar el logo. Probá de nuevo.");
+  }
+
+  const logos = supabase.storage.from(LOGO_BUCKET);
+  const path = `${comercioId}/logo-${Date.now().toString(36)}.${ext}`;
+  const { error: errorSubida } = await logos.upload(path, bytes, {
+    contentType: LOGO_TIPOS[ext],
+    upsert: false,
+  });
+  if (errorSubida) return fail("No se pudo subir el logo. Probá de nuevo.");
+
+  const { data: actualizados, error } = await supabase
+    .from("comercios")
+    .update({ logo_path: path })
+    .eq("id", comercioId)
+    .select("id");
+  if (error || actualizados.length === 0) {
+    await logos.remove([path]);
+    return fail("No se pudo guardar el logo. Probá de nuevo.");
+  }
+
+  if (comercio.logo_path) await logos.remove([comercio.logo_path]);
+  revalidarComercio();
+  return ok(null);
+}
+
+export async function quitarLogo(): Promise<ActionResult<null>> {
+  if (!isSupabaseConfigured()) return fail(FALTA_CONFIG);
+
+  const auth = await requireDueno();
+  if (!auth.ok) return auth;
+  const comercioId = auth.data.comercio_id;
+
+  const supabase = await createClient();
+  const { data: comercio, error: errorComercio } = await supabase
+    .from("comercios")
+    .select("logo_path")
+    .eq("id", comercioId)
+    .maybeSingle();
+  if (errorComercio || !comercio) {
+    return fail("No se pudo quitar el logo. Probá de nuevo.");
+  }
+  if (!comercio.logo_path) return ok(null);
+
+  const { data: actualizados, error } = await supabase
+    .from("comercios")
+    .update({ logo_path: null })
+    .eq("id", comercioId)
+    .select("id");
+  if (error || actualizados.length === 0) {
+    return fail("No se pudo quitar el logo. Probá de nuevo.");
+  }
+
+  await supabase.storage.from(LOGO_BUCKET).remove([comercio.logo_path]);
+  revalidarComercio();
+  return ok(null);
 }
 
 export async function guardarTicket(
@@ -51,7 +174,7 @@ export async function guardarTicket(
   if (error?.code === PG_SIN_PERMISO) return fail(SIN_PERMISO);
   if (error) return fail("No se pudo guardar el ticket. Probá de nuevo.");
 
-  revalidatePath("/config");
+  revalidatePath("/config/ticket");
   revalidatePath("/vender");
   return ok(null);
 }

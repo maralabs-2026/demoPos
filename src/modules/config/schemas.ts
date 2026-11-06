@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LOGO_MAX_BYTES } from "@/lib/logo";
 
 export const NOMBRE_CONFIG_MAX = 60;
 // Cada medio, activo o no, puede aparecer en el conteo del cierre, que acepta hasta 50
@@ -48,7 +49,18 @@ export const renombrarSchema = z.object({ id, nombre });
 
 export const crearCategoriaSchema = z.object({ nombre });
 
+export const comercioNombreSchema = z.object({ nombre });
+
+// El tipo real se comprueba en el servidor por los primeros bytes (tipoDeLogo, en lib/logo.ts).
+export const logoSchema = z.object({
+  logo: z
+    .file({ error: "Elegí una imagen" })
+    .min(1, { error: "Elegí una imagen" })
+    .max(LOGO_MAX_BYTES, { error: "La imagen puede pesar hasta 512 KB" }),
+});
+
 export type TicketInput = z.infer<typeof ticketSchema>;
 export type CrearMedioPagoInput = z.infer<typeof crearMedioPagoSchema>;
 export type RenombrarInput = z.infer<typeof renombrarSchema>;
 export type CrearCategoriaInput = z.infer<typeof crearCategoriaSchema>;
+export type ComercioNombreInput = z.infer<typeof comercioNombreSchema>;

@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { LOGO_MAX_BYTES } from "@/lib/logo";
 import {
+  comercioNombreSchema,
   crearCategoriaSchema,
   crearMedioPagoSchema,
   NOMBRE_CONFIG_MAX,
   renombrarSchema,
   TEXTO_TICKET_MAX,
+  logoSchema,
   ticketSchema,
 } from "./schemas";
 
@@ -66,5 +69,36 @@ describe("nombres", () => {
     expect(renombrarSchema.safeParse({ id: "x", nombre: "A" }).success).toBe(
       false,
     );
+  });
+});
+
+describe("comercioNombreSchema", () => {
+  it("recorta espacios y rechaza vacío o largo", () => {
+    expect(comercioNombreSchema.parse({ nombre: " Zona 24/7 " }).nombre).toBe(
+      "Zona 24/7",
+    );
+    expect(comercioNombreSchema.safeParse({ nombre: " " }).success).toBe(false);
+    expect(
+      comercioNombreSchema.safeParse({
+        nombre: "x".repeat(NOMBRE_CONFIG_MAX + 1),
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("logoSchema", () => {
+  const archivo = (bytes: number) =>
+    new File([new Uint8Array(bytes)], "logo.png", { type: "image/png" });
+
+  it("acepta hasta 512 KB y rechaza vacío o más pesado", () => {
+    expect(
+      logoSchema.safeParse({ logo: archivo(LOGO_MAX_BYTES) }).success,
+    ).toBe(true);
+    expect(logoSchema.safeParse({ logo: archivo(0) }).success).toBe(false);
+    expect(
+      logoSchema.safeParse({ logo: archivo(LOGO_MAX_BYTES + 1) }).error
+        ?.issues[0]?.message,
+    ).toBe("La imagen puede pesar hasta 512 KB");
+    expect(logoSchema.safeParse({ logo: null }).success).toBe(false);
   });
 });
