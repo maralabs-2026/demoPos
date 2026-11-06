@@ -4,6 +4,7 @@ export {
   crearCategoria,
   crearMedioPago,
   eliminarCategoria,
+  guardarCorteDia,
   guardarLogo,
   guardarNombreComercio,
   guardarTicket,
@@ -13,6 +14,7 @@ export {
 } from "./actions";
 export {
   getComercioName,
+  getCorteDiaComercial,
   getDescuentoMaxCajeroPct,
   getMediosPago,
   getMediosPagoConfig,
@@ -20,6 +22,8 @@ export {
 } from "./queries";
 export type { MedioPago, MedioPagoConfig, TicketConfig } from "./queries";
 export {
+  CORTE_DIA_MAX,
+  corteDiaSchema,
   crearCategoriaSchema,
   crearMedioPagoSchema,
   MEDIOS_PAGO_MAX,
@@ -30,6 +34,7 @@ export {
   TIPOS_MEDIO_PAGO,
 } from "./schemas";
 export type {
+  CorteDiaInput,
   CrearCategoriaInput,
   CrearMedioPagoInput,
   RenombrarInput,

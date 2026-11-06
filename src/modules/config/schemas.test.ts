@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { LOGO_MAX_BYTES } from "@/lib/logo";
 import {
   comercioNombreSchema,
+  CORTE_DIA_MAX,
+  corteDiaSchema,
   crearCategoriaSchema,
   crearMedioPagoSchema,
   NOMBRE_CONFIG_MAX,
@@ -100,5 +102,22 @@ describe("logoSchema", () => {
         ?.issues[0]?.message,
     ).toBe("La imagen puede pesar hasta 512 KB");
     expect(logoSchema.safeParse({ logo: null }).success).toBe(false);
+  });
+});
+
+describe("corteDiaSchema", () => {
+  it("acepta horas en punto de 0 a 12", () => {
+    expect(corteDiaSchema.safeParse({ horas: 0 }).success).toBe(true);
+    expect(corteDiaSchema.safeParse({ horas: CORTE_DIA_MAX }).success).toBe(
+      true,
+    );
+  });
+
+  it("rechaza horas fuera de rango, con minutos o que no son números", () => {
+    expect(corteDiaSchema.safeParse({ horas: 13 }).success).toBe(false);
+    expect(corteDiaSchema.safeParse({ horas: -1 }).success).toBe(false);
+    expect(corteDiaSchema.safeParse({ horas: 5.5 }).success).toBe(false);
+    expect(corteDiaSchema.safeParse({ horas: "6" }).success).toBe(false);
+    expect(corteDiaSchema.safeParse({ horas: undefined }).success).toBe(false);
   });
 });

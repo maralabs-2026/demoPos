@@ -1,5 +1,6 @@
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { corteDiaSchema } from "./schemas";
 
 export async function getComercioName(): Promise<ActionResult<string>> {
   if (!isSupabaseConfigured()) {
@@ -108,4 +109,23 @@ export async function getDescuentoMaxCajeroPct(): Promise<
   if (error) return fail("No se pudo leer la configuración de descuentos.");
   const valor = Number(data?.valor);
   return ok(Number.isFinite(valor) ? valor : DESCUENTO_MAX_CAJERO_DEFAULT);
+}
+
+// Hora a la que termina el día comercial (clave dia_comercial_corte, 0026). Sin la clave, o con un
+// valor inválido, 0: igual que corte_dia_comercial() en la base, para que reportes e inicio coincidan.
+export async function getCorteDiaComercial(): Promise<ActionResult<number>> {
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("configuracion")
+    .select("valor")
+    .eq("clave", "dia_comercial_corte")
+    .maybeSingle();
+
+  if (error) return fail("No se pudo leer la hora de corte del día.");
+  const parsed = corteDiaSchema.safeParse({ horas: data?.valor });
+  return ok(parsed.success ? parsed.data.horas : 0);
 }
