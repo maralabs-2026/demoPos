@@ -29,14 +29,18 @@ test("el dueño sube una foto, se ve en el listado y en la venta, y la quita", a
   await page.goto("/productos");
   const fila = page.getByRole("row").filter({ hasText: PRODUCTO });
   await fila.getByRole("button", { name: "Editar" }).click();
-  await page.getByLabel("Foto (opcional)").setInputFiles({
+  await page.getByLabel("Archivo de la imagen").setInputFiles({
     name: "agua.png",
     mimeType: "image/png",
     buffer: PNG,
   });
-  await expect(page.getByRole("button", { name: "Quitar foto" })).toBeVisible();
-  await page.getByRole("button", { name: "Guardar cambios" }).click();
-  await expect(page.getByRole("heading", { name: "Editar producto" })).toBeHidden({
+  await expect(
+    page.getByRole("button", { name: "Quitá la imagen" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /Guardá los cambios/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Editar producto" }),
+  ).toBeHidden({
     timeout: 15_000,
   });
   await expect(page.getByText("pero la foto no")).toHaveCount(0);
@@ -49,7 +53,7 @@ test("el dueño sube una foto, se ve en el listado y en la venta, y la quita", a
 
   await page.goto("/productos");
   await fila.getByRole("button", { name: "Editar" }).click();
-  await page.getByRole("button", { name: "Quitar foto" }).click();
-  await page.getByRole("button", { name: "Guardar cambios" }).click();
+  await page.getByRole("button", { name: "Quitá la imagen" }).click();
+  await page.getByRole("button", { name: /Guardá los cambios/ }).click();
   await expect(fila.locator("img")).toHaveCount(0, { timeout: 15_000 });
 });
