@@ -104,16 +104,23 @@ vercel deploy --prod --scope <equipo>
 
 ## Comandos
 
-| Comando            | Qué hace                      |
-| ------------------ | ----------------------------- |
-| `npm run dev`      | Servidor de desarrollo        |
-| `npm run build`    | Build de producción           |
-| `npm run lint`     | ESLint                        |
-| `npm run format`   | Prettier                      |
-| `npm run test`     | Tests unitarios (Vitest)      |
-| `npm run test:e2e` | Tests end-to-end (Playwright) |
+| Comando                | Qué hace                                |
+| ---------------------- | --------------------------------------- |
+| `npm run dev`          | Servidor de desarrollo                  |
+| `npm run build`        | Build de producción                     |
+| `npm run lint`         | ESLint                                  |
+| `npm run format`       | Prettier                                |
+| `npm run test`         | Tests unitarios (Vitest)                |
+| `npm run test:e2e`     | Tests end-to-end (Playwright)           |
+| `npm run e2e:preparar` | Prepara la base de pruebas para los e2e |
 
-Los tests e2e corren contra la base de pruebas, con un solo worker: comparten datos. `node scripts/e2e-set-passwords.mjs` define las contraseñas de los usuarios de prueba en `.env.e2e.local` (solo funciona contra la base de pruebas).
+Los tests e2e corren contra la base de pruebas, con un solo worker: comparten datos. `node scripts/e2e-set-passwords.mjs` define las contraseñas de los usuarios de prueba en `.env.e2e.local` (solo funciona contra la base de pruebas). Antes de cada corrida, `npm run e2e:preparar` borra las promos, combos y productos "E2E" de corridas anteriores (los productos con movimientos de stock quedan, porque los movimientos no se borran) y deja el stock que necesitan los tests. Usa la service role de `.env.e2e.local` y se niega a correr contra otra base.
+
+## Validación automática (CI)
+
+Cada PR a `main` corre `.github/workflows/ci.yml` en GitHub Actions: tipado, ESLint, Prettier, Vitest y Playwright contra el build de producción (`next start`) y la base de pruebas. Las corridas de Playwright van de a una porque comparten la base. Si falla, el reporte queda como artefacto del run durante 7 días.
+
+Secretos del repo (Settings → Secrets and variables → Actions), **todos de la base de pruebas**: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `E2E_DUENO_PASSWORD`, `E2E_ENCARGADO_PASSWORD` y `E2E_CAJERO_PASSWORD`. El workflow aborta si la URL no es la de test o si el build contiene la de producción.
 
 ## Estructura
 
