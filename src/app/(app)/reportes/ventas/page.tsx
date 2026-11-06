@@ -9,6 +9,7 @@ import { formatDateTime, sumarDias, todayISO } from "@/lib/date";
 import { requireRol } from "@/modules/auth";
 import { fechaValida } from "@/modules/reportes";
 import { getVentas } from "@/modules/ventas";
+import { getCorteDiaComercial } from "@/modules/config";
 
 export const dynamic = "force-dynamic";
 
@@ -20,11 +21,13 @@ export default async function HistorialVentasPage({
   await requireRol("/reportes/ventas");
 
   const params = await searchParams;
-  const hoy = todayISO();
+  const corte = await getCorteDiaComercial();
+  const corteHoras = corte.ok ? corte.data : 0;
+  const hoy = todayISO(new Date(), corteHoras);
   const desde = fechaValida(params.desde) ?? sumarDias(hoy, -6);
   const hasta = fechaValida(params.hasta) ?? hoy;
   const pagina = Math.max(0, Math.floor(Number(params.pagina)) || 0);
-  const result = await getVentas({ desde, hasta, pagina });
+  const result = await getVentas({ desde, hasta, pagina, corteHoras });
 
   const enlace = (n: number) =>
     `/reportes/ventas?desde=${desde}&hasta=${hasta}&pagina=${n}`;

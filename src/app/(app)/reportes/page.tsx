@@ -14,6 +14,7 @@ import {
   sinCostosCargados,
   type Agrupacion,
 } from "@/modules/reportes";
+import { getCorteDiaComercial } from "@/modules/config";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,9 @@ export default async function ReportesPage({
 }) {
   await requireRol("/reportes");
 
-  const hoy = todayISO();
+  // "Hoy" es el día comercial: con hora de corte, la madrugada cuenta para el día anterior.
+  const corte = await getCorteDiaComercial();
+  const hoy = todayISO(new Date(), corte.ok ? corte.data : 0);
   const filtros = filtrosDesdeParams(await searchParams, hoy);
   const [reporte, cajeros] = await Promise.all([
     getReporteVentas(filtros),

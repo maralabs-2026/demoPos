@@ -166,6 +166,7 @@ export const MAX_FILAS_EXPORTADAS = 30_000; // Vercel limita el tamaño de la re
 // Ítems vendidos del período, paginando. truncado avisa si quedaron filas afuera.
 export async function getVentasParaExportar(
   filtros: FiltrosReporte,
+  corteHoras = 0,
 ): Promise<ActionResult<{ filas: VentaExportada[]; truncado: boolean }>> {
   const supabase = await createClient();
   const filas: VentaExportada[] = [];
@@ -179,8 +180,8 @@ export async function getVentasParaExportar(
          ventas!inner(id, created_at, estado, usuario_id,
            cajero:perfiles!ventas_usuario_id_comercio_id_fkey(nombre))`,
       )
-      .gte("ventas.created_at", inicioDelDia(filtros.desde))
-      .lt("ventas.created_at", finDelDia(filtros.hasta));
+      .gte("ventas.created_at", inicioDelDia(filtros.desde, corteHoras))
+      .lt("ventas.created_at", finDelDia(filtros.hasta, corteHoras));
     if (filtros.usuarioId) {
       query = query.eq("ventas.usuario_id", filtros.usuarioId);
     }

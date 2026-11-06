@@ -39,6 +39,8 @@ export async function getVentas(filtros: {
   desde: string;
   hasta: string;
   pagina: number;
+  // Hora de corte del día comercial (configuración del comercio).
+  corteHoras?: number;
 }): Promise<ActionResult<{ ventas: VentaResumen[]; hayMas: boolean }>> {
   const supabase = await createClient();
   const inicio = filtros.pagina * POR_PAGINA;
@@ -48,8 +50,8 @@ export async function getVentas(filtros: {
     .select(
       `id, created_at, total, estado, ${CAJERO}, venta_pagos(medios_pago(nombre, tipo))`,
     )
-    .gte("created_at", inicioDelDia(filtros.desde))
-    .lt("created_at", finDelDia(filtros.hasta))
+    .gte("created_at", inicioDelDia(filtros.desde, filtros.corteHoras))
+    .lt("created_at", finDelDia(filtros.hasta, filtros.corteHoras))
     .order("created_at", { ascending: false })
     .range(inicio, inicio + POR_PAGINA)
     .overrideTypes<VentaResumenRow[]>();
