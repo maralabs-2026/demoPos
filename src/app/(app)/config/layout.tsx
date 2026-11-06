@@ -2,12 +2,13 @@ import type { ReactNode } from "react";
 import { SectionTabs } from "@/components/section-tabs";
 
 const TABS = [
-  { href: "/config", label: "Ticket" },
+  { href: "/config", label: "Comercio" },
+  { href: "/config/ticket", label: "Ticket" },
   { href: "/config/pagos", label: "Pagos" },
   { href: "/config/categorias", label: "Categorías" },
 ];
 
-// Las tres pestañas son del dueño. Cada página valida su acceso con requireRol.
+// Las pestañas son del dueño. Cada página valida su acceso con requireRol.
 export default function ConfigLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
