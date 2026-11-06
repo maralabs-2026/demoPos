@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
@@ -22,7 +23,29 @@ import {
 import { ROL_LABELS, rolBadgeVariant } from "@/modules/auth/roles";
 import type { Rol, SessionProfile } from "@/modules/auth/session";
 
-function AppBrand({ comercioNombre }: { comercioNombre: string }) {
+function AppBrand({
+  comercioNombre,
+  logoUrl,
+  className,
+}: {
+  comercioNombre: string;
+  logoUrl: string | null;
+  className?: string;
+}) {
+  // Con logo, la imagen reemplaza al nombre; el nombre queda como texto alternativo.
+  if (logoUrl) {
+    return (
+      <Image
+        unoptimized
+        src={logoUrl}
+        alt={comercioNombre}
+        width={480}
+        height={240}
+        className={cn("w-auto max-w-full object-contain", className)}
+      />
+    );
+  }
+
   const { first, rest } = splitBrandName(comercioNombre);
   return (
     <div className="flex min-w-0 items-center gap-2.5">
@@ -76,6 +99,7 @@ export function Navigation({ profile }: { profile: SessionProfile }) {
   const pathname = usePathname();
   const rol = profile.rol;
   const comercioNombre = profile.comercio;
+  const logoUrl = profile.logo_url;
 
   const links = getNavLinks(rol);
   const { barra, mas } = getMobileNav(rol);
@@ -91,7 +115,11 @@ export function Navigation({ profile }: { profile: SessionProfile }) {
       {/* Escritorio: barra lateral fija */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar px-4 pt-7 pb-5 lg:flex">
         <div className="px-2">
-          <AppBrand comercioNombre={comercioNombre} />
+          <AppBrand
+            comercioNombre={comercioNombre}
+            logoUrl={logoUrl}
+            className="max-h-24"
+          />
         </div>
         <nav aria-label="Principal" className="mt-8 flex flex-col gap-1">
           <span className="px-3 pb-2 text-[0.625rem] font-bold tracking-widest text-muted-foreground uppercase">
@@ -113,7 +141,11 @@ export function Navigation({ profile }: { profile: SessionProfile }) {
 
       {/* Celular y tablet: cabecera */}
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-2 border-b border-border bg-card/90 px-4 backdrop-blur-md lg:hidden">
-        <AppBrand comercioNombre={comercioNombre} />
+        <AppBrand
+          comercioNombre={comercioNombre}
+          logoUrl={logoUrl}
+          className="max-h-11"
+        />
         <RoleBadge rol={rol} />
       </header>
 

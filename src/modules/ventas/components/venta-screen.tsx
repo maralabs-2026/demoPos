@@ -137,8 +137,10 @@ export function VentaScreen({
   combos,
   horaServidorMs,
   ticketTextos,
+  logoUrl,
 }: {
   ticketTextos: TicketTextos;
+  logoUrl: string | null;
   cajaId: string;
   // 100 para dueño y encargado; el tope de configuración para el cajero.
   descuentoMaxPct: number;
@@ -572,6 +574,7 @@ export function VentaScreen({
       <ComprobanteView
         comprobante={comprobante}
         textos={ticketTextos}
+        logoUrl={logoUrl}
         onNuevaVenta={() => setComprobante(null)}
       />
     );

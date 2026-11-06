@@ -18,7 +18,7 @@ export default async function VentaDetallePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireRol("/reportes/ventas");
+  const profile = await requireRol("/reportes/ventas");
   const { id } = await params;
   if (!UUID.test(id)) notFound();
 
@@ -106,7 +106,11 @@ export default async function VentaDetallePage({
 
       {estado === "completada" && (
         <>
-          <TicketControles venta={venta} textos={textos} />
+          <TicketControles
+            venta={venta}
+            textos={textos}
+            logoUrl={profile.logo_url}
+          />
           <AnularVenta ventaId={venta.ventaId} />
         </>
       )}

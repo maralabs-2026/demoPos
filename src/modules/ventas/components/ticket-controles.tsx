@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { flushSync } from "react-dom";
+import Image from "next/image";
 import { MessageCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
@@ -21,10 +22,12 @@ type Papel = keyof typeof ANCHOS;
 function TicketImpreso({
   venta,
   textos,
+  logoUrl,
   papel,
 }: {
   venta: Comprobante;
   textos: TicketTextos;
+  logoUrl: string | null;
   papel: Papel;
 }) {
   return (
@@ -34,6 +37,17 @@ function TicketImpreso({
     >
       {/* El tamaño de página depende del papel elegido: no se puede fijar en el CSS global. */}
       <style>{`@media print { @page { size: ${papel}mm auto; margin: 0; } }`}</style>
+      {logoUrl && (
+        // En grises: la impresora térmica no tiene color, y así se controla cómo sale.
+        <Image
+          unoptimized
+          src={logoUrl}
+          alt=""
+          width={480}
+          height={240}
+          className="mx-auto mb-1 h-auto max-h-24 w-auto max-w-[80%] object-contain grayscale"
+        />
+      )}
       {textos.titulo && (
         <p className="text-center text-sm font-bold">{textos.titulo}</p>
       )}
@@ -88,9 +102,11 @@ function TicketImpreso({
 export function TicketControles({
   venta,
   textos,
+  logoUrl,
 }: {
   venta: Comprobante;
   textos: TicketTextos;
+  logoUrl: string | null;
 }) {
   const [papel, setPapel] = useState<Papel>(80);
 
@@ -121,7 +137,12 @@ export function TicketControles({
         <MessageCircle aria-hidden="true" className="size-4" />
         Compartí por WhatsApp
       </a>
-      <TicketImpreso venta={venta} textos={textos} papel={papel} />
+      <TicketImpreso
+        venta={venta}
+        textos={textos}
+        logoUrl={logoUrl}
+        papel={papel}
+      />
     </div>
   );
 }

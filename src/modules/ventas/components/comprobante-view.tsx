@@ -9,10 +9,12 @@ import { TicketControles } from "./ticket-controles";
 export function ComprobanteView({
   comprobante,
   textos,
+  logoUrl,
   onNuevaVenta,
 }: {
   comprobante: Comprobante;
   textos: TicketTextos;
+  logoUrl: string | null;
   onNuevaVenta: () => void;
 }) {
   const fecha = new Date(comprobante.fecha).toLocaleString("es-AR", {
@@ -89,7 +91,7 @@ export function ComprobanteView({
         </div>
       </div>
 
-      <TicketControles venta={comprobante} textos={textos} />
+      <TicketControles venta={comprobante} textos={textos} logoUrl={logoUrl} />
 
       <Button autoFocus className="w-full" size="lg" onClick={onNuevaVenta}>
         Nueva venta

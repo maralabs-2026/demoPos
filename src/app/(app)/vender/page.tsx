@@ -87,6 +87,7 @@ export default async function VenderPage() {
             ? ticketResult.data
             : { titulo: "", leyenda: "", pie: "" }
         }
+        logoUrl={profile?.logo_url ?? null}
       />
     </main>
   );
