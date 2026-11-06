@@ -18,6 +18,7 @@ import {
   precioDesdeMargen,
   STOCK_INICIAL_MAX,
 } from "../schemas";
+import { CamaraCodigo } from "@/components/camara-codigo";
 import { FotoProducto } from "@/components/foto-producto";
 import { Button } from "@/components/ui/button";
 import { DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -337,15 +338,22 @@ export function ProductoForm({
           </Campo>
 
           <Campo id="producto-codigo" label="Código de barras *">
-            <Input
-              id="producto-codigo"
-              value={codigoBarras}
-              onChange={(event) => setCodigoBarras(event.target.value)}
-              placeholder="Escaneá o escribí"
-              autoComplete="off"
-              inputMode="numeric"
-              required
-            />
+            <div className="relative">
+              <Input
+                id="producto-codigo"
+                value={codigoBarras}
+                onChange={(event) => setCodigoBarras(event.target.value)}
+                placeholder="Escaneá o escribí"
+                autoComplete="off"
+                inputMode="numeric"
+                className="pr-12"
+                required
+              />
+              <CamaraCodigo
+                onCodigo={setCodigoBarras}
+                className="absolute top-1/2 right-1.5 -translate-y-1/2"
+              />
+            </div>
           </Campo>
 
           <div className="flex flex-col gap-1.5">
