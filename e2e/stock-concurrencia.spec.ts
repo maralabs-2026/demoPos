@@ -3,7 +3,7 @@ import { abrirCajaSiHaceFalta, login, passwordDe } from "./helpers";
 
 // Fase 4e: dos ventas simultáneas del mismo producto con stock 1. Una se cobra y la otra falla
 // limpiamente (registrar_venta bloquea el producto con FOR UPDATE).
-// Requiere el fixture supabase/tests/e2e_fixture_stock1.sql en la base de pruebas.
+// Requiere correr antes `npm run e2e:preparar` (deja el producto con stock 1).
 
 const CODIGO = "9990000000999";
 const PRECIO = "100";
