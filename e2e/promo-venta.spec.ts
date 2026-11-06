@@ -10,7 +10,7 @@ import {
 // ticket y en la venta. Al terminar, la promo se pausa para no alterar otras pruebas.
 
 const COCA = "7790010000154"; // Coca-Cola 500ml, $ 2.500
-// Nombre único por corrida: la limpieza pausa la promo, no la borra.
+// Nombre único por corrida: el test pausa la promo al terminar y `npm run e2e:preparar` la borra.
 const NOMBRE_PROMO = `E2E 2x1 Coca ${Date.now()}`;
 
 test("promo 2x1: dos Coca cobran $ 2.500 y el ticket muestra la promo", async ({
@@ -28,7 +28,10 @@ test("promo 2x1: dos Coca cobran $ 2.500 y el ticket muestra la promo", async ({
       .locator("select:has(option:text-is('Coca-Cola 500ml'))")
       .selectOption({ label: "Coca-Cola 500ml" });
     await page.getByRole("button", { name: "Creá la promo" }).click();
-    await expect(page.getByText(NOMBRE_PROMO)).toBeVisible({ timeout: 15_000 });
+    // En la lista, no en el aviso de "creada", que también muestra el nombre.
+    await expect(page.getByRole("main").getByText(NOMBRE_PROMO)).toBeVisible({
+      timeout: 15_000,
+    });
 
     // Vender dos unidades del producto.
     await abrirCajaSiHaceFalta(page);
