@@ -39,6 +39,8 @@ npx supabase db push --linked
 
 Corré siempre el `--dry-run` antes y revisá que liste solo las migraciones nuevas del PR. Si alguna vez se aplica una migración a mano (`db query -f`), registrala después con `npx supabase migration repair --status applied 00NN --linked` para que el historial no se desincronice.
 
+`db push` y `migration repair` se conectan directo a la base. Si la red no tiene IPv6 y la CLI responde "IPv6 is not supported on your current network", aplicá la migración con `npx supabase db query --linked --yes -f supabase/migrations/00NN_nombre.sql` y registrala en el mismo paso con `insert into supabase_migrations.schema_migrations (version, name) values ('00NN', 'nombre');`.
+
 Reglas para migraciones nuevas: por defecto `anon` y `authenticated` **no tienen ningún privilegio** sobre tablas nuevas. Cada tabla necesita `enable row level security`, políticas por `comercio_id` y `GRANT` explícitos (por columna cuando corresponda). `productos.stock_actual` solo lo modifica el trigger de `movimientos_stock`; las ventas solo se escriben con la función `registrar_venta`.
 
 ### Tipos generados
