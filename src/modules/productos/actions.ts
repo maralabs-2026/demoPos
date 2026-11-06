@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getAuthProfile, type Rol, type SessionProfile } from "@/modules/auth";
+import { crearCategoria } from "@/modules/config";
+import { registrarIngreso } from "@/modules/stock";
 import {
   actualizarPreciosSchema,
   esJpeg,
@@ -12,6 +14,7 @@ import {
   FOTOS_BUCKET,
   fotoProductoSchema,
   productoSchema,
+  stockInicialSchema,
   validarCsvProductos,
   valoresAnterioresSchema,
   type ActualizarPreciosInput,
@@ -20,7 +23,9 @@ import {
 } from "./schemas";
 
 export type PreciosActualizados = { actualizados: number };
-export type ProductoGuardado = { id: string };
+// `aviso`: el producto se guardó, pero algo posterior (el stock inicial) no.
+export type ProductoGuardado = { id: string; aviso?: string };
+export type CategoriaCreada = { id: string; nombre: string };
 export type ProductosImportados = { creados: number; actualizados: number };
 
 // La RLS de productos y las funciones SQL son la barrera real; esto solo da un mensaje claro antes.
@@ -149,10 +154,58 @@ async function guardarProducto(
   return ok({ id: String(data) });
 }
 
+// El stock inicial no se escribe en el producto: entra como un ingreso de mercadería, igual que
+// cualquier reposición. Si ese paso falla, el producto ya está creado y se avisa.
 export async function crearProducto(
   input: ProductoInput,
+  stockInicial = 0,
 ): Promise<ActionResult<ProductoGuardado>> {
-  return guardarProducto(null, input, null);
+  const cantidad = stockInicialSchema.safeParse(stockInicial);
+  if (!cantidad.success) {
+    return fail(
+      cantidad.error.issues[0]?.message ?? "Cantidad en stock inválida",
+    );
+  }
+
+  const result = await guardarProducto(null, input, null);
+  if (!result.ok || cantidad.data === 0) return result;
+
+  const ingreso = await registrarIngreso({
+    productoId: result.data.id,
+    cantidad: cantidad.data,
+    motivo: "Stock inicial",
+  });
+  return ok({
+    id: result.data.id,
+    aviso: ingreso.ok
+      ? undefined
+      : "El producto se creó, pero el stock inicial no. Cargalo desde Stock.",
+  });
+}
+
+// "+ Nueva" en el formulario de producto. Crear categorías es del dueño (lo valida config) y
+// devuelve la categoría para elegirla sin recargar.
+export async function crearCategoriaRapida(
+  nombre: string,
+): Promise<ActionResult<CategoriaCreada>> {
+  const creada = await crearCategoria({ nombre });
+  if (!creada.ok) return creada;
+
+  const buscado = nombre.trim().toLowerCase();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("categorias")
+    .select("id, nombre");
+  const categoria = data?.find(
+    (c) => c.nombre.trim().toLowerCase() === buscado,
+  );
+  if (error || !categoria) {
+    return fail(
+      "La categoría se creó, pero no se pudo elegir. Recargá la página.",
+    );
+  }
+  revalidarCatalogo();
+  return ok({ id: categoria.id, nombre: categoria.nombre });
 }
 
 // `anterior` son el precio y el costo que se vieron al abrir el formulario: si cambiaron en la

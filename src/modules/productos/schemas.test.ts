@@ -10,6 +10,9 @@ import {
   fotoProductoSchema,
   medidasFoto,
   precioActualizado,
+  precioDesdeMargen,
+  STOCK_INICIAL_MAX,
+  stockInicialSchema,
   productoSchema,
   validarCsvProductos,
 } from "./schemas";
@@ -356,5 +359,41 @@ describe("validarCsvProductos", () => {
     });
     const muchas = Array.from({ length: CSV_MAX_FILAS + 1 }, () => FILA_CSV);
     expect(validar(muchas).ok).toBe(false);
+  });
+});
+
+describe("precioDesdeMargen", () => {
+  it("es la inversa de calcularMargen", () => {
+    expect(precioDesdeMargen(750, 25)).toBe(1000);
+    expect(calcularMargen(750, 1000)).toBe(25);
+    expect(precioDesdeMargen(100, 0)).toBe(100);
+  });
+
+  it("redondea a centavos", () => {
+    expect(precioDesdeMargen(100, 33)).toBe(149.25);
+  });
+
+  it("sin costo o con margen de 100 % o más no da precio", () => {
+    expect(precioDesdeMargen(null, 30)).toBeNull();
+    expect(precioDesdeMargen(0, 30)).toBeNull();
+    expect(precioDesdeMargen(100, 100)).toBeNull();
+    expect(precioDesdeMargen(100, 150)).toBeNull();
+    expect(precioDesdeMargen(100, null)).toBeNull();
+  });
+});
+
+describe("stockInicialSchema", () => {
+  it("acepta enteros de 0 al tope", () => {
+    expect(stockInicialSchema.safeParse(0).success).toBe(true);
+    expect(stockInicialSchema.safeParse(STOCK_INICIAL_MAX).success).toBe(true);
+  });
+
+  it("rechaza negativos, decimales y de más", () => {
+    expect(stockInicialSchema.safeParse(-1).success).toBe(false);
+    expect(stockInicialSchema.safeParse(1.5).success).toBe(false);
+    expect(stockInicialSchema.safeParse(STOCK_INICIAL_MAX + 1).success).toBe(
+      false,
+    );
+    expect(stockInicialSchema.safeParse(Number.NaN).success).toBe(false);
   });
 });

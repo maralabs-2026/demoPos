@@ -97,6 +97,25 @@ export function calcularMargen(
   return ((precio - costo) / precio) * 100;
 }
 
+// Precio que da un margen sobre el precio (el mismo que calcularMargen): costo / (1 − margen).
+// Sin costo, o con un margen de 100 % o más, no hay precio posible.
+export function precioDesdeMargen(
+  costo: number | null,
+  margenPct: number | null,
+): number | null {
+  if (costo === null || !(costo > 0) || margenPct === null) return null;
+  if (!Number.isFinite(margenPct) || margenPct >= 100) return null;
+  return Math.round((costo / (1 - margenPct / 100)) * 100) / 100;
+}
+
+// Stock inicial al crear un producto: se registra como ingreso de mercadería.
+export const STOCK_INICIAL_MAX = 100_000;
+export const stockInicialSchema = z
+  .number({ error: "Escribí la cantidad en stock" })
+  .int({ error: "La cantidad en stock debe ser un número entero" })
+  .min(0, { error: "La cantidad en stock no puede ser negativa" })
+  .max(STOCK_INICIAL_MAX, { error: "La cantidad en stock es demasiado alta" });
+
 // Mismos límites que la función actualizar_precios (migración 0009).
 export const PORCENTAJE_MIN = -50;
 export const PORCENTAJE_MAX = 200;
