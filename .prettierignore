@@ -2,3 +2,8 @@
 node_modules
 package-lock.json
 CLAUDE.md
+specs
+playwright-report
+test-results
+.claude
+.vercel

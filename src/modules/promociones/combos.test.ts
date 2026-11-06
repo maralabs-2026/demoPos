@@ -33,7 +33,9 @@ describe("aplicarCombos", () => {
     // menor producto_id.
     expect(r.get(COCA)?.descuento).toBe(214.29);
     expect(r.get(OTRO)?.descuento).toBe(285.71);
-    expect((r.get(COCA)?.descuento ?? 0) + (r.get(OTRO)?.descuento ?? 0)).toBe(500);
+    expect((r.get(COCA)?.descuento ?? 0) + (r.get(OTRO)?.descuento ?? 0)).toBe(
+      500,
+    );
     expect(r.get(COCA)?.nombres).toEqual(["Combo test"]);
   });
 
@@ -46,7 +48,9 @@ describe("aplicarCombos", () => {
       [comboBase],
       ahora,
     );
-    expect((r.get(COCA)?.descuento ?? 0) + (r.get(OTRO)?.descuento ?? 0)).toBe(1000);
+    expect((r.get(COCA)?.descuento ?? 0) + (r.get(OTRO)?.descuento ?? 0)).toBe(
+      1000,
+    );
     expect(r.get(COCA)?.consumido).toBe(2);
     expect(r.get(OTRO)?.consumido).toBe(2);
   });
@@ -103,12 +107,14 @@ describe("aplicarCombos", () => {
   // Mismos números que el caso (i) de supabase/tests/fase4d2_combos_validation.sql: la pantalla y la
   // base tienen que repartir igual, también con un producto de regalo y un medio centavo.
   it("reparte al centavo sin negativos, con un producto a $ 0", () => {
-    const lineas = ["id0-regalo", "id1-a", "id2-b", "id3-c"].map((productoId, i) => ({
-      productoId,
-      categoriaId: null,
-      precio: i === 0 ? 0 : 10.01,
-      cantidad: 1,
-    }));
+    const lineas = ["id0-regalo", "id1-a", "id2-b", "id3-c"].map(
+      (productoId, i) => ({
+        productoId,
+        categoriaId: null,
+        precio: i === 0 ? 0 : 10.01,
+        cantidad: 1,
+      }),
+    );
     const r = aplicarCombos(
       lineas,
       [
@@ -126,7 +132,12 @@ describe("aplicarCombos", () => {
   });
 
   it("un combo no reusa unidades que ya usó otro combo", () => {
-    const otro: Combo = { ...comboBase, id: "c2", nombre: "Combo 2", precio: 5000 };
+    const otro: Combo = {
+      ...comboBase,
+      id: "c2",
+      nombre: "Combo 2",
+      precio: 5000,
+    };
     const r = aplicarCombos(
       [
         { productoId: COCA, categoriaId: null, precio: 2500, cantidad: 1 },

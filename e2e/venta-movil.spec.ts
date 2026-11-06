@@ -11,7 +11,11 @@ import {
 
 const COCA = "Coca-Cola 500ml"; // $ 2.500
 
-test.use({ viewport: { width: 360, height: 780 }, hasTouch: true, isMobile: true });
+test.use({
+  viewport: { width: 360, height: 780 },
+  hasTouch: true,
+  isMobile: true,
+});
 
 test("celular: toca un producto, abre el carrito y cobra desde el panel", async ({
   page,

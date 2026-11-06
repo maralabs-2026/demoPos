@@ -134,7 +134,11 @@ export type Combo = {
 };
 
 // Lo que aporta el combo a una línea del ticket.
-export type DescuentoCombo = { descuento: number; nombres: string[]; consumido: number };
+export type DescuentoCombo = {
+  descuento: number;
+  nombres: string[];
+  consumido: number;
+};
 
 // Combos en orden de creación, como los devuelve la consulta.
 export function aplicarCombos(
@@ -145,7 +149,13 @@ export function aplicarCombos(
   const estado = new Map(
     lineas.map((l) => [
       l.productoId,
-      { precio: l.precio, cantidad: l.cantidad, descC: 0, consumido: 0, nombres: [] as string[] },
+      {
+        precio: l.precio,
+        cantidad: l.cantidad,
+        descC: 0,
+        consumido: 0,
+        nombres: [] as string[],
+      },
     ]),
   );
 
@@ -157,11 +167,16 @@ export function aplicarCombos(
       ahora.hora <= combo.hasta;
     if (!vigente || combo.items.length < 2) continue;
 
-    const partes = combo.items.map((item) => ({ item, linea: estado.get(item.productoId) }));
+    const partes = combo.items.map((item) => ({
+      item,
+      linea: estado.get(item.productoId),
+    }));
     if (partes.some((p) => !p.linea)) continue;
 
     const k = Math.min(
-      ...partes.map((p) => Math.floor((p.linea!.cantidad - p.linea!.consumido) / p.item.cantidad)),
+      ...partes.map((p) =>
+        Math.floor((p.linea!.cantidad - p.linea!.consumido) / p.item.cantidad),
+      ),
     );
     if (k <= 0) continue;
 
