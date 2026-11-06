@@ -15,6 +15,7 @@
     "@base-ui/react": "^1.8.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
+    "barcode-detector": "3.2.3",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.3.0",
     "exceljs": "^4.4.0",
