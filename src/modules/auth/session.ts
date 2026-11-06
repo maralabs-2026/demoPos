@@ -7,6 +7,8 @@ export interface SessionProfile {
   comercio_id: string;
   nombre: string;
   comercio: string;
+  // URL pública del logo del comercio, o null si no subió uno.
+  logo_url: string | null;
   must_change_password: boolean;
 }
 
@@ -29,6 +31,7 @@ export function buildSessionProfile(
   metadata: unknown,
   perfil: PerfilData,
   comercioNombre: string | null | undefined,
+  logoUrl: string | null = null,
 ): SessionProfile {
   return {
     email: email ?? "",
@@ -36,6 +39,7 @@ export function buildSessionProfile(
     comercio_id: perfil.comercio_id,
     nombre: perfil.nombre,
     comercio: comercioNombre ?? "",
+    logo_url: logoUrl,
     must_change_password: mustChangePasswordFromMetadata(metadata),
   };
 }

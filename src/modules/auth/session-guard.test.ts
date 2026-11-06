@@ -9,6 +9,7 @@ function makeProfile(overrides: Partial<SessionProfile> = {}): SessionProfile {
     comercio_id: "11111111-1111-1111-1111-111111111111",
     nombre: "Juan Pérez",
     comercio: "Kiosko Demo",
+    logo_url: null,
     must_change_password: false,
     ...overrides,
   };

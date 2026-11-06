@@ -314,16 +314,19 @@ export type Database = {
         Row: {
           created_at: string;
           id: string;
+          logo_path: string | null;
           nombre: string;
         };
         Insert: {
           created_at?: string;
           id?: string;
+          logo_path?: string | null;
           nombre: string;
         };
         Update: {
           created_at?: string;
           id?: string;
+          logo_path?: string | null;
           nombre?: string;
         };
         Relationships: [];

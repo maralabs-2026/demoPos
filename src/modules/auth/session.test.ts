@@ -42,6 +42,7 @@ describe("buildSessionProfile", () => {
       comercio_id: "com-1",
       nombre: "Juan Pérez",
       comercio: "Kiosko Demo",
+      logo_url: null,
       must_change_password: true,
     });
   });

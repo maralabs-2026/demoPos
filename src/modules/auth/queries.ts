@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { LOGO_BUCKET } from "@/lib/logo";
 import {
   buildSessionProfile,
   type Rol,
@@ -9,7 +10,7 @@ import {
 } from "./session";
 
 type PerfilRow = PerfilData & {
-  comercios: { nombre: string } | null;
+  comercios: { nombre: string; logo_path: string | null } | null;
 };
 
 // cache(): el layout, el guard y la página piden el perfil en la misma request; se resuelve una vez.
@@ -26,7 +27,7 @@ export const getAuthProfile = cache(
 
     const { data, error } = await supabase
       .from("perfiles")
-      .select("rol, comercio_id, nombre, comercios(nombre)")
+      .select("rol, comercio_id, nombre, comercios(nombre, logo_path)")
       .eq("id", user.id)
       // Un usuario desactivado no tiene sesión, aunque su token siga vigente.
       .eq("activo", true)
@@ -41,6 +42,11 @@ export const getAuthProfile = cache(
       user.app_metadata,
       data,
       data.comercios?.nombre,
+      data.comercios?.logo_path
+        ? supabase.storage
+            .from(LOGO_BUCKET)
+            .getPublicUrl(data.comercios.logo_path).data.publicUrl
+        : null,
     );
   },
 );
