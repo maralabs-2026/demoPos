@@ -27,6 +27,7 @@ import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { QuickAmounts } from "@/components/ui/quick-amounts";
 import { toast } from "@/components/ui/toaster";
 import type { MedioPago } from "@/modules/config";
+import { CamaraCodigo } from "@/components/camara-codigo";
 import { FotoProducto } from "@/components/foto-producto";
 import type { Producto } from "@/modules/productos";
 import { formatCurrency } from "@/lib/currency";
@@ -304,8 +305,9 @@ export function VentaScreen({
     setError(null);
   }
 
-  function handleBuscarSubmit() {
-    const term = busqueda.trim();
+  // El código leído con la cámara se busca igual que uno escaneado con el lector y Enter.
+  function handleBuscarSubmit(texto: string = busqueda) {
+    const term = texto.trim();
     if (!term) return;
 
     const porCodigo = productos.find((p) => p.codigoBarras === term);
@@ -604,10 +606,13 @@ export function VentaScreen({
                 handleBuscarSubmit();
               }
             }}
-            className="h-13 rounded-xl border-primary pr-3 pl-12 text-base sm:pr-12 shadow-[0_0_0_3px_var(--accent)] md:text-base"
+            className="h-13 rounded-xl border-primary pr-12 pl-12 text-base sm:pr-20 shadow-[0_0_0_3px_var(--accent)] md:text-base"
           />
-          <span className="absolute top-1/2 right-3 hidden -translate-y-1/2 text-muted-foreground sm:block">
-            <KeyHint>/</KeyHint>
+          <span className="absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-1 text-muted-foreground">
+            <CamaraCodigo onCodigo={(codigo) => handleBuscarSubmit(codigo)} />
+            <span className="hidden sm:inline-flex">
+              <KeyHint>/</KeyHint>
+            </span>
           </span>
         </div>
 
