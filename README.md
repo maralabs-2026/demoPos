@@ -28,14 +28,18 @@ La service role la usan el alta, el blanqueo y la desactivación de usuarios, y 
 
 ## Base de datos
 
-Las migraciones viven en `supabase/migrations/` y se aplican **en orden numérico**, una por vez, con la CLI vinculada al proyecto:
+Las migraciones viven en `supabase/migrations/` y se aplican **en orden numérico**. El historial de la CLI está sincronizado en test y en producción (desde `0026`), así que `db push` aplica solo las que faltan y las registra:
 
 ```bash
 npx supabase link --project-ref <ref-del-proyecto>
-npx supabase db query --linked --yes -f supabase/migrations/00NN_nombre.sql
+npx supabase migration list --linked
+npx supabase db push --linked --dry-run
+npx supabase db push --linked
 ```
 
-No uses `supabase db push`: el historial de migraciones de la CLI no está sincronizado con este repo.
+Corré siempre el `--dry-run` antes y revisá que liste solo las migraciones nuevas del PR. Si alguna vez se aplica una migración a mano (`db query -f`), registrala después con `npx supabase migration repair --status applied 00NN --linked` para que el historial no se desincronice.
+
+`db push` y `migration repair` se conectan directo a la base. Si la red no tiene IPv6 y la CLI responde "IPv6 is not supported on your current network", aplicá la migración con `npx supabase db query --linked --yes -f supabase/migrations/00NN_nombre.sql` y registrala en el mismo paso con `insert into supabase_migrations.schema_migrations (version, name) values ('00NN', 'nombre');`.
 
 Reglas para migraciones nuevas: por defecto `anon` y `authenticated` **no tienen ningún privilegio** sobre tablas nuevas. Cada tabla necesita `enable row level security`, políticas por `comercio_id` y `GRANT` explícitos (por columna cuando corresponda). `productos.stock_actual` solo lo modifica el trigger de `movimientos_stock`; las ventas solo se escriben con la función `registrar_venta`.
 
