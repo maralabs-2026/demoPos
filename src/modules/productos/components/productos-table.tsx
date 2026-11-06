@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { FotoProducto } from "@/components/foto-producto";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -46,12 +47,15 @@ type ProductosTableProps = {
   categorias: Categoria[];
   // Dueño o encargado. La RLS es la barrera real; esto solo oculta lo que fallaría.
   puedeGestionar: boolean;
+  // Solo el dueño crea categorías desde el formulario.
+  puedeCrearCategoria: boolean;
 };
 
 export function ProductosTable({
   productos,
   categorias,
   puedeGestionar,
+  puedeCrearCategoria,
 }: ProductosTableProps) {
   const [busqueda, setBusqueda] = useState("");
   const [formulario, setFormulario] = useState<Producto | "nuevo" | null>(null);
@@ -129,7 +133,7 @@ export function ProductosTable({
                 : `${conAlerta} productos con stock bajo`}
             </Badge>
           )}
-          {puedeGestionar && formulario === null && (
+          {puedeGestionar && (
             <Button onClick={() => setFormulario("nuevo")}>
               Nuevo producto
             </Button>
@@ -137,14 +141,26 @@ export function ProductosTable({
         </div>
       </div>
 
-      {formulario && puedeGestionar && (
-        <ProductoForm
-          key={formulario === "nuevo" ? "nuevo" : formulario.id}
-          categorias={categorias}
-          producto={formulario === "nuevo" ? undefined : formulario}
-          onSuccess={cerrarFormulario}
-          onCancel={() => setFormulario(null)}
-        />
+      {puedeGestionar && (
+        <Dialog
+          open={formulario !== null}
+          onOpenChange={(abierto) => {
+            if (!abierto) setFormulario(null);
+          }}
+        >
+          <DialogContent className="gap-0 overflow-hidden p-0 pb-0 sm:max-h-[90dvh] sm:max-w-5xl sm:pb-0">
+            {formulario && (
+              <ProductoForm
+                key={formulario === "nuevo" ? "nuevo" : formulario.id}
+                categorias={categorias}
+                producto={formulario === "nuevo" ? undefined : formulario}
+                puedeCrearCategoria={puedeCrearCategoria}
+                onSuccess={cerrarFormulario}
+                onCancel={() => setFormulario(null)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       )}
 
       {error && (

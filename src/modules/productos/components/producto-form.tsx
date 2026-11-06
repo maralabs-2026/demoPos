@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { ImageUp, Plus, Trash2 } from "lucide-react";
 import {
+  crearCategoriaRapida,
   crearProducto,
   editarProducto,
   guardarFotoProducto,
@@ -9,11 +12,17 @@ import {
 } from "../actions";
 import { achicarFoto } from "../foto";
 import type { Categoria, Producto } from "../queries";
-import { calcularMargen, FOTO_TIPO } from "../schemas";
+import {
+  calcularMargen,
+  FOTO_TIPO,
+  precioDesdeMargen,
+  STOCK_INICIAL_MAX,
+} from "../schemas";
 import { FotoProducto } from "@/components/foto-producto";
 import { Button } from "@/components/ui/button";
+import { DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { formatPercent, parseMonto } from "@/lib/currency";
+import { formatCurrency, parseMonto } from "@/lib/currency";
 
 // Muestra un monto guardado como lo escribiría el usuario: "1234,5".
 function montoAEditar(value: number | null | undefined): string {
@@ -25,17 +34,62 @@ function montoAEditar(value: number | null | undefined): string {
       });
 }
 
+const SUMAS_STOCK = [1, 5, 10, 24] as const;
+
+const selectClass =
+  "h-10 w-full rounded-xl border border-input bg-card px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+
+function Seccion({
+  titulo,
+  children,
+}: {
+  titulo: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="flex min-w-0 flex-col gap-4">
+      <h3 className="text-sm font-semibold">{titulo}</h3>
+      {children}
+    </section>
+  );
+}
+
+function Campo({
+  id,
+  label,
+  ayuda,
+  children,
+}: {
+  id: string;
+  label: React.ReactNode;
+  ayuda?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-sm font-medium">
+        {label}
+      </label>
+      {children}
+      {ayuda && <p className="text-xs text-muted-foreground">{ayuda}</p>}
+    </div>
+  );
+}
+
 type ProductoFormProps = {
   categorias: Categoria[];
   producto?: Producto;
-  // `aviso`: el producto se guardó, pero algo de la foto falló.
+  // Crear categorías es del dueño: el encargado no ve "+ Nueva".
+  puedeCrearCategoria: boolean;
+  // `aviso`: el producto se guardó, pero algo posterior (foto o stock inicial) falló.
   onSuccess?: (aviso?: string) => void;
   onCancel?: () => void;
 };
 
 export function ProductoForm({
-  categorias,
+  categorias: categoriasIniciales,
   producto,
+  puedeCrearCategoria,
   onSuccess,
   onCancel,
 }: ProductoFormProps) {
@@ -43,12 +97,20 @@ export function ProductoForm({
   const [codigoBarras, setCodigoBarras] = useState(
     producto?.codigoBarras ?? "",
   );
+  const [categorias, setCategorias] = useState(categoriasIniciales);
   const [categoriaId, setCategoriaId] = useState(producto?.categoriaId ?? "");
+  const [nuevaCategoria, setNuevaCategoria] = useState<string | null>(null);
+  const [creandoCategoria, setCreandoCategoria] = useState(false);
   const [costo, setCosto] = useState(montoAEditar(producto?.costo));
   const [precio, setPrecio] = useState(montoAEditar(producto?.precio));
+  const [margenTexto, setMargenTexto] = useState(() => {
+    const m = producto ? calcularMargen(producto.costo, producto.precio) : null;
+    return m === null ? "" : montoAEditar(Math.round(m * 100) / 100);
+  });
   const [unidadVenta, setUnidadVenta] = useState(
     producto?.unidadVenta ?? "unidad",
   );
+  const [stockInicial, setStockInicial] = useState("0");
   const [stockMinimo, setStockMinimo] = useState(
     producto?.stockMinimo !== undefined ? String(producto.stockMinimo) : "0",
   );
@@ -59,6 +121,7 @@ export function ProductoForm({
   const [quitarFoto, setQuitarFoto] = useState(false);
   const [procesandoFoto, setProcesandoFoto] = useState(false);
   const fotoInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const fotoVisible =
     fotoVistaPrevia ?? (quitarFoto ? null : (producto?.fotoUrl ?? null));
 
@@ -72,10 +135,48 @@ export function ProductoForm({
   const precioNumero = parseMonto(precio);
   const costoInvalido = Number.isNaN(costoNumero);
   const precioInvalido = precioNumero === null || Number.isNaN(precioNumero);
-  const margen =
-    precioInvalido || costoInvalido
+  const ganancia =
+    precioInvalido || costoInvalido || costoNumero === null
       ? null
-      : calcularMargen(costoNumero, precioNumero);
+      : precioNumero - costoNumero;
+
+  // El margen se recalcula cuando cambian el costo o el precio; si se edita el margen, se
+  // recalcula el precio. Es el margen sobre el precio, el mismo que muestra la tabla.
+  function margenDe(costoTexto: string, precioTexto: string): string {
+    const c = parseMonto(costoTexto);
+    const p = parseMonto(precioTexto);
+    if (c === null || Number.isNaN(c) || p === null || Number.isNaN(p)) {
+      return "";
+    }
+    const m = calcularMargen(c, p);
+    return m === null ? "" : montoAEditar(Math.round(m * 100) / 100);
+  }
+
+  function handleCosto(valor: string) {
+    setCosto(valor);
+    setMargenTexto(margenDe(valor, precio));
+  }
+
+  function handlePrecio(valor: string) {
+    setPrecio(valor);
+    setMargenTexto(margenDe(costo, valor));
+  }
+
+  function handleMargen(valor: string) {
+    setMargenTexto(valor);
+    const m = parseMonto(valor);
+    const nuevo = precioDesdeMargen(
+      costoInvalido ? null : costoNumero,
+      m === null || Number.isNaN(m) ? null : m,
+    );
+    if (nuevo !== null) setPrecio(montoAEditar(nuevo));
+  }
+
+  function sumarStock(cantidad: number) {
+    const actual = Number.parseInt(stockInicial, 10);
+    const base = Number.isFinite(actual) && actual > 0 ? actual : 0;
+    setStockInicial(String(Math.min(base + cantidad, STOCK_INICIAL_MAX)));
+  }
 
   async function handleFoto(event: React.ChangeEvent<HTMLInputElement>) {
     const archivo = event.target.files?.[0];
@@ -101,10 +202,31 @@ export function ProductoForm({
     if (fotoInputRef.current) fotoInputRef.current.value = "";
   }
 
+  async function handleCrearCategoria() {
+    if (nuevaCategoria === null || creandoCategoria) return;
+    setError("");
+    setCreandoCategoria(true);
+    try {
+      const result = await crearCategoriaRapida(nuevaCategoria);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setCategorias((actuales) => [...actuales, result.data]);
+      setCategoriaId(result.data.id);
+      setNuevaCategoria(null);
+    } catch {
+      setError("No se pudo conectar. Revisá la conexión y probá de nuevo.");
+    } finally {
+      setCreandoCategoria(false);
+    }
+  }
+
   // Corre con el producto ya guardado: si falla, no se puede reintentar con el mismo formulario
   // (crearía el producto otra vez), así que devuelve un aviso en vez de dejarlo abierto.
   async function guardarCambiosFoto(id: string): Promise<string | undefined> {
-    const aviso = "El producto se guardó, pero la foto no. Editalo y probá de nuevo.";
+    const aviso =
+      "El producto se guardó, pero la foto no. Editalo y probá de nuevo.";
     try {
       if (fotoNueva) {
         const formData = new FormData();
@@ -128,9 +250,10 @@ export function ProductoForm({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (guardando || procesandoFoto) return;
     setError("");
     if (precioInvalido) {
-      setError("Revisá el precio: escribilo como 1234,50.");
+      setError("Revisá el precio de venta: escribilo como 1234,50.");
       return;
     }
     if (costoInvalido) {
@@ -139,6 +262,7 @@ export function ProductoForm({
       );
       return;
     }
+    const cantidadInicial = Number(stockInicial === "" ? "0" : stockInicial);
 
     const input = {
       nombre,
@@ -157,13 +281,16 @@ export function ProductoForm({
             precio: producto.precio,
             costo: producto.costo,
           })
-        : await crearProducto(input);
+        : await crearProducto(input, cantidadInicial);
 
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      onSuccess?.(await guardarCambiosFoto(result.data.id));
+      const avisoFoto = await guardarCambiosFoto(result.data.id);
+      onSuccess?.(
+        [result.data.aviso, avisoFoto].filter(Boolean).join(" ") || undefined,
+      );
     } catch {
       setError("No se pudo conectar. Revisá la conexión y probá de nuevo.");
     } finally {
@@ -171,172 +298,358 @@ export function ProductoForm({
     }
   }
 
+  // Ctrl+Enter (o Cmd+Enter) guarda desde cualquier campo.
+  function handleKeyDown(event: React.KeyboardEvent<HTMLFormElement>) {
+    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      formRef.current?.requestSubmit();
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-md border p-4">
-      <div>
-        <h2 className="text-lg font-medium">
-          {producto ? "Editar producto" : "Nuevo producto"}
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          Completá los datos del producto.
-        </p>
+    <form
+      ref={formRef}
+      onSubmit={handleSubmit}
+      onKeyDown={handleKeyDown}
+      noValidate
+      className="flex max-h-[inherit] min-h-0 flex-col"
+    >
+      <div className="border-b border-border px-6 py-5 pr-14">
+        <DialogTitle>
+          {producto ? "Editar producto" : "Agregar producto"}
+        </DialogTitle>
+        <DialogDescription className="mt-1">
+          Los campos con * son obligatorios.
+        </DialogDescription>
       </div>
 
-      <div className="space-y-2">
-        <label htmlFor="producto-nombre" className="text-sm font-medium">
-          Nombre
-        </label>
-        <Input
-          id="producto-nombre"
-          value={nombre}
-          onChange={(event) => setNombre(event.target.value)}
-          placeholder="Ej. Coca Cola 500 ml"
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <label htmlFor="producto-foto" className="text-sm font-medium">
-          Foto (opcional)
-        </label>
-        <div className="flex items-center gap-3">
-          <FotoProducto src={fotoVisible} className="size-16" />
-          <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
+      <div className="grid min-h-0 flex-1 gap-8 overflow-y-auto px-6 py-5 lg:grid-cols-3">
+        <Seccion titulo="Datos básicos">
+          <Campo id="producto-nombre" label="Nombre del producto *">
             <Input
-              id="producto-foto"
-              ref={fotoInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(event) => void handleFoto(event)}
+              id="producto-nombre"
+              value={nombre}
+              onChange={(event) => setNombre(event.target.value)}
+              placeholder="Ej. Coca-Cola Zero 2,25 L"
+              autoComplete="off"
+              required
             />
-            {fotoVisible && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={handleQuitarFoto}
+          </Campo>
+
+          <Campo id="producto-codigo" label="Código de barras *">
+            <Input
+              id="producto-codigo"
+              value={codigoBarras}
+              onChange={(event) => setCodigoBarras(event.target.value)}
+              placeholder="Escaneá o escribí"
+              autoComplete="off"
+              inputMode="numeric"
+              required
+            />
+          </Campo>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium">Imagen</span>
+            <div className="flex items-center gap-3">
+              <FotoProducto src={fotoVisible} className="size-20" />
+              <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
+                <input
+                  id="producto-foto"
+                  ref={fotoInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  aria-label="Archivo de la imagen"
+                  className="sr-only"
+                  tabIndex={-1}
+                  onChange={(event) => void handleFoto(event)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={procesandoFoto}
+                  onClick={() => fotoInputRef.current?.click()}
+                >
+                  <ImageUp aria-hidden="true" />
+                  {procesandoFoto
+                    ? "Preparando..."
+                    : fotoVisible
+                      ? "Cambiá la imagen"
+                      : "Subí una imagen"}
+                </Button>
+                {fotoVisible && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleQuitarFoto}
+                  >
+                    <Trash2 aria-hidden="true" />
+                    Quitá la imagen
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <label
+                htmlFor="producto-categoria"
+                className="text-sm font-medium"
               >
-                Quitar foto
-              </Button>
+                Categoría
+              </label>
+              {puedeCrearCategoria && nuevaCategoria === null && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="xs"
+                  className="h-auto px-0"
+                  onClick={() => setNuevaCategoria("")}
+                >
+                  <Plus aria-hidden="true" />
+                  Nueva
+                </Button>
+              )}
+            </div>
+            <select
+              id="producto-categoria"
+              value={categoriaId}
+              onChange={(event) => setCategoriaId(event.target.value)}
+              className={selectClass}
+            >
+              <option value="">Sin categoría</option>
+              {categorias.map((categoria) => (
+                <option key={categoria.id} value={categoria.id}>
+                  {categoria.nombre}
+                </option>
+              ))}
+            </select>
+            {nuevaCategoria !== null && (
+              <div className="flex gap-2">
+                <Input
+                  aria-label="Nombre de la categoría nueva"
+                  value={nuevaCategoria}
+                  maxLength={60}
+                  placeholder="Ej. Bazar"
+                  autoFocus
+                  onChange={(event) => setNuevaCategoria(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.ctrlKey) {
+                      event.preventDefault();
+                      void handleCrearCategoria();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-10"
+                  disabled={creandoCategoria}
+                  onClick={() => void handleCrearCategoria()}
+                >
+                  {creandoCategoria ? "Creando..." : "Creá"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-10"
+                  onClick={() => setNuevaCategoria(null)}
+                >
+                  Cancelá
+                </Button>
+              </div>
             )}
           </div>
-        </div>
+        </Seccion>
+
+        <Seccion titulo="Precios y rentabilidad">
+          <div className="grid grid-cols-2 gap-3">
+            <Campo id="producto-costo" label="Precio de costo">
+              <Input
+                id="producto-costo"
+                inputMode="decimal"
+                placeholder="$ 0"
+                aria-invalid={costoInvalido || undefined}
+                value={costo}
+                onChange={(event) => handleCosto(event.target.value)}
+              />
+            </Campo>
+            <Campo id="producto-margen" label="Margen %">
+              <Input
+                id="producto-margen"
+                inputMode="decimal"
+                placeholder="0"
+                value={margenTexto}
+                onChange={(event) => handleMargen(event.target.value)}
+              />
+            </Campo>
+          </div>
+          <p className="-mt-2 text-xs text-muted-foreground">
+            Margen sobre el precio de venta. Si lo cambiás, se recalcula el
+            precio.
+          </p>
+
+          <div className="flex flex-col gap-3 rounded-2xl border border-success/30 bg-success-soft p-4">
+            <div className="flex items-end justify-between gap-3">
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <label
+                  htmlFor="producto-precio"
+                  className="text-sm font-semibold"
+                >
+                  Precio de venta final *
+                </label>
+                <Input
+                  id="producto-precio"
+                  inputMode="decimal"
+                  placeholder="$ 0"
+                  aria-invalid={(precio !== "" && precioInvalido) || undefined}
+                  value={precio}
+                  onChange={(event) => handlePrecio(event.target.value)}
+                  className="h-12 bg-card font-display text-2xl font-bold tabular-nums"
+                  required
+                />
+              </div>
+              <div className="shrink-0 pb-1 text-right" aria-live="polite">
+                <p className="text-[0.625rem] font-bold tracking-widest text-success-text uppercase">
+                  Ganancia
+                </p>
+                <p className="font-display text-xl font-extrabold text-success-text tabular-nums">
+                  {ganancia === null
+                    ? "—"
+                    : `${ganancia >= 0 ? "+" : "−"}${formatCurrency(Math.abs(ganancia))}`}
+                </p>
+              </div>
+            </div>
+            {costoNumero === null && (
+              <p className="text-xs text-muted-foreground">
+                Cargá el costo para ver la ganancia y el margen.
+              </p>
+            )}
+          </div>
+        </Seccion>
+
+        <Seccion titulo="Inventario">
+          {producto ? (
+            <div className="flex flex-col gap-1.5 rounded-xl border border-border p-3">
+              <span className="text-sm font-medium">Stock actual</span>
+              <span className="font-display text-xl font-bold tabular-nums">
+                {producto.stockActual} {producto.unidadVenta}
+              </span>
+              <Link
+                href={`/stock?producto=${producto.id}`}
+                className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+              >
+                Cargá un ingreso o ajustá en Stock
+              </Link>
+            </div>
+          ) : (
+            <Campo
+              id="producto-stock-inicial"
+              label="Cantidad en stock"
+              ayuda="Se registra como ingreso de mercadería con motivo «Stock inicial»."
+            >
+              <Input
+                id="producto-stock-inicial"
+                type="number"
+                min="0"
+                max={STOCK_INICIAL_MAX}
+                step="1"
+                inputMode="numeric"
+                value={stockInicial}
+                onChange={(event) => setStockInicial(event.target.value)}
+              />
+              <div className="flex flex-wrap gap-2">
+                {SUMAS_STOCK.map((n) => (
+                  <Button
+                    key={n}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    aria-label={`Sumá ${n} al stock`}
+                    onClick={() => sumarStock(n)}
+                  >
+                    +{n}
+                  </Button>
+                ))}
+              </div>
+            </Campo>
+          )}
+
+          <Campo
+            id="producto-stock-minimo"
+            label="Stock mínimo"
+            ayuda="Te avisamos cuando el stock llegue a este número."
+          >
+            <Input
+              id="producto-stock-minimo"
+              type="number"
+              min="0"
+              step="1"
+              inputMode="numeric"
+              value={stockMinimo}
+              onChange={(event) => setStockMinimo(event.target.value)}
+              required
+            />
+          </Campo>
+
+          <div className="flex flex-col gap-3 rounded-xl border border-border p-3">
+            <span className="text-sm font-semibold">Más opciones</span>
+            <Campo
+              id="producto-unidad"
+              label="Presentación"
+              ayuda="Unidad suelta, pack de 6, kilo… Se muestra junto al stock."
+            >
+              <Input
+                id="producto-unidad"
+                value={unidadVenta}
+                onChange={(event) => setUnidadVenta(event.target.value)}
+                placeholder="unidad"
+                required
+              />
+            </Campo>
+          </div>
+        </Seccion>
       </div>
 
-      <div className="space-y-2">
-        <label htmlFor="producto-codigo" className="text-sm font-medium">
-          Código de barras
-        </label>
-        <Input
-          id="producto-codigo"
-          value={codigoBarras}
-          onChange={(event) => setCodigoBarras(event.target.value)}
-          placeholder="Ej. 7791234567890"
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <label htmlFor="producto-categoria" className="text-sm font-medium">
-          Categoría
-        </label>
-        <select
-          id="producto-categoria"
-          value={categoriaId}
-          onChange={(event) => setCategoriaId(event.target.value)}
-          className="border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 h-8 w-full rounded-md border bg-transparent px-2.5 text-base outline-none focus-visible:ring-3 md:text-sm"
-        >
-          <option value="">Sin categoría</option>
-          {categorias.map((categoria) => (
-            <option key={categoria.id} value={categoria.id}>
-              {categoria.nombre}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <label htmlFor="producto-costo" className="text-sm font-medium">
-            Costo (opcional)
-          </label>
-          <Input
-            id="producto-costo"
-            inputMode="decimal"
-            placeholder="Ej. 850,50"
-            aria-invalid={costoInvalido || undefined}
-            value={costo}
-            onChange={(event) => setCosto(event.target.value)}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="producto-precio" className="text-sm font-medium">
-            Precio
-          </label>
-          <Input
-            id="producto-precio"
-            inputMode="decimal"
-            placeholder="Ej. 1200"
-            aria-invalid={(precio !== "" && precioInvalido) || undefined}
-            value={precio}
-            onChange={(event) => setPrecio(event.target.value)}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="producto-unidad" className="text-sm font-medium">
-            Unidad de venta
-          </label>
-          <Input
-            id="producto-unidad"
-            value={unidadVenta}
-            onChange={(event) => setUnidadVenta(event.target.value)}
-            placeholder="unidad"
-            required
-          />
-        </div>
-      </div>
-
-      <div className="text-sm" aria-live="polite">
-        <span className="text-muted-foreground">
-          Margen bruto sobre precio:{" "}
-        </span>
-        <span className="font-medium">{formatPercent(margen)}</span>
-      </div>
-
-      <div className="space-y-2">
-        <label htmlFor="producto-stock-minimo" className="text-sm font-medium">
-          Stock mínimo
-        </label>
-        <Input
-          id="producto-stock-minimo"
-          type="number"
-          min="0"
-          step="1"
-          value={stockMinimo}
-          onChange={(event) => setStockMinimo(event.target.value)}
-          required
-        />
-      </div>
-
-      {error && (
-        <p className="text-destructive text-sm" role="alert">
-          {error}
-        </p>
-      )}
-
-      <div className="flex gap-2">
-        <Button type="submit" disabled={guardando || procesandoFoto}>
-          {guardando ? "Guardando..." : producto ? "Guardar cambios" : "Crear"}
-        </Button>
-
-        {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
-          </Button>
+      <div className="flex flex-col gap-3 border-t border-border bg-card px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-end">
+        {error && (
+          <p
+            className="text-sm font-medium text-destructive sm:mr-auto"
+            role="alert"
+          >
+            {error}
+          </p>
         )}
+        <div className="flex flex-col-reverse gap-2 sm:flex-row">
+          {onCancel && (
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              onClick={onCancel}
+            >
+              Cancelá
+            </Button>
+          )}
+          <Button
+            type="submit"
+            size="lg"
+            variant="success"
+            disabled={guardando || procesandoFoto}
+          >
+            {guardando
+              ? "Guardando..."
+              : producto
+                ? "Guardá los cambios"
+                : "Creá el producto"}
+            <kbd className="hidden h-5 items-center rounded-md border border-current/30 px-1.5 font-mono text-[11px] lg:inline-flex">
+              Ctrl+Enter
+            </kbd>
+          </Button>
+        </div>
       </div>
     </form>
   );

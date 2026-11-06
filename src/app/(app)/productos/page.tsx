@@ -58,6 +58,7 @@ export default async function ProductosPage() {
         <p className="text-destructive text-sm">{categoriasResult.error}</p>
       ) : (
         <ProductosTable
+          puedeCrearCategoria={profile?.rol === "dueno"}
           productos={productosResult.data}
           categorias={categoriasResult.data}
           puedeGestionar={puedeGestionar}
