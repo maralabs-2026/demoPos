@@ -10,7 +10,13 @@
 
 import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -42,16 +48,22 @@ function setVar(content, key, value) {
 }
 
 // Barreras: la CLI y el archivo tienen que apuntar los dos a la base de pruebas.
-if (!existsSync(ENV_FILE)) abort(`no existe ${ENV_FILE}. Corré el script desde la raíz del repo.`);
-if (!existsSync(REF_FILE)) abort("la CLI de Supabase no está linkeada a ningún proyecto.");
+if (!existsSync(ENV_FILE))
+  abort(`no existe ${ENV_FILE}. Corré el script desde la raíz del repo.`);
+if (!existsSync(REF_FILE))
+  abort("la CLI de Supabase no está linkeada a ningún proyecto.");
 const linkedRef = readFileSync(REF_FILE, "utf8").trim();
 if (linkedRef !== TEST_PROJECT_REF) {
-  abort(`la CLI está linkeada a ${linkedRef}, no a kiosko-demo-test. No se cambió nada.`);
+  abort(
+    `la CLI está linkeada a ${linkedRef}, no a kiosko-demo-test. No se cambió nada.`,
+  );
 }
 let content = readFileSync(ENV_FILE, "utf8");
 const url = readVar(content, "NEXT_PUBLIC_SUPABASE_URL");
 if (url !== `https://${TEST_PROJECT_REF}.supabase.co`) {
-  abort(`NEXT_PUBLIC_SUPABASE_URL de ${ENV_FILE} no es kiosko-demo-test. No se cambió nada.`);
+  abort(
+    `NEXT_PUBLIC_SUPABASE_URL de ${ENV_FILE} no es kiosko-demo-test. No se cambió nada.`,
+  );
 }
 
 const users = USERS.map((user) => {
@@ -64,7 +76,9 @@ const users = USERS.map((user) => {
 });
 
 for (const user of users) {
-  console.log(`${user.email}: ${user.reused ? "usa el valor de" : "genera un valor para"} ${user.key}`);
+  console.log(
+    `${user.email}: ${user.reused ? "usa el valor de" : "genera un valor para"} ${user.key}`,
+  );
 }
 if (dryRun) {
   console.log("Simulación: no se cambió nada.");
@@ -76,7 +90,9 @@ for (const user of users) content = setVar(content, user.key, user.password);
 writeFileSync(ENV_FILE, content);
 
 const quote = (text) => `'${text.replace(/'/g, "''")}'`;
-const values = users.map((u) => `(${quote(u.email)}, ${quote(u.password)})`).join(",\n    ");
+const values = users
+  .map((u) => `(${quote(u.email)}, ${quote(u.password)})`)
+  .join(",\n    ");
 const sql = `with nuevas (email, password) as (
   values
     ${values}
@@ -96,19 +112,28 @@ const tempDir = mkdtempSync(join(tmpdir(), "e2e-passwords-"));
 const sqlFile = join(tempDir, "update.sql");
 try {
   writeFileSync(sqlFile, sql, { mode: 0o600 });
-  const result = spawnSync(`npx --yes supabase db query --linked --yes -f "${sqlFile}"`, {
-    shell: true,
-    encoding: "utf8",
-  });
+  const result = spawnSync(
+    `npx --yes supabase db query --linked --yes -f "${sqlFile}"`,
+    {
+      shell: true,
+      encoding: "utf8",
+    },
+  );
   if (result.status !== 0) {
-    throw new Error("Supabase rechazó la actualización. Revisá tu sesión de la CLI.");
+    throw new Error(
+      "Supabase rechazó la actualización. Revisá tu sesión de la CLI.",
+    );
   }
 
   const updated = JSON.parse(result.stdout).rows?.[0]?.actualizados;
   if (updated !== users.length) {
-    throw new Error(`se actualizaron ${updated ?? 0} de ${users.length} usuarios. Revisá que existan en la base.`);
+    throw new Error(
+      `se actualizaron ${updated ?? 0} de ${users.length} usuarios. Revisá que existan en la base.`,
+    );
   }
-  console.log(`Listo: ${updated} usuarios actualizados en kiosko-demo-test y ${ENV_FILE} al día.`);
+  console.log(
+    `Listo: ${updated} usuarios actualizados en kiosko-demo-test y ${ENV_FILE} al día.`,
+  );
 } catch (error) {
   // Sin process.exit: el finally tiene que borrar el archivo con las contraseñas.
   console.error(`Error: ${error.message}`);

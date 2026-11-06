@@ -86,7 +86,9 @@ export async function cambiarActivaPromocion(
 }
 
 // Alta atómica del combo y sus productos (crear_combo, migración 0014).
-export async function crearCombo(input: ComboInput): Promise<ActionResult<null>> {
+export async function crearCombo(
+  input: ComboInput,
+): Promise<ActionResult<null>> {
   const parsed = comboSchema.safeParse(input);
   if (!parsed.success) {
     return fail(parsed.error.issues[0]?.message ?? "Datos del combo inválidos");

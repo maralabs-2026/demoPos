@@ -42,7 +42,9 @@ export function CombosSection({
 
   function alternarDia(d: number) {
     setDias((actual) =>
-      actual.includes(d) ? actual.filter((x) => x !== d) : [...actual, d].sort(),
+      actual.includes(d)
+        ? actual.filter((x) => x !== d)
+        : [...actual, d].sort(),
     );
   }
 
@@ -122,7 +124,9 @@ export function CombosSection({
       <Card className="gap-3">
         <CardEyebrow>Combos del comercio</CardEyebrow>
         {combos.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Todavía no hay combos.</p>
+          <p className="text-sm text-muted-foreground">
+            Todavía no hay combos.
+          </p>
         ) : (
           <ul className="flex flex-col gap-2">
             {combos.map((c) => (
@@ -241,11 +245,19 @@ export function CombosSection({
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
               Desde
-              <Input type="time" value={desde} onChange={(e) => setDesde(e.target.value)} />
+              <Input
+                type="time"
+                value={desde}
+                onChange={(e) => setDesde(e.target.value)}
+              />
             </label>
             <label className="flex flex-col gap-1 text-sm">
               Hasta
-              <Input type="time" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+              <Input
+                type="time"
+                value={hasta}
+                onChange={(e) => setHasta(e.target.value)}
+              />
             </label>
           </div>
 
