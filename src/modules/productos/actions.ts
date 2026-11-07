@@ -132,6 +132,7 @@ async function guardarProducto(
     p_precio_anterior: anterior?.precio ?? null,
     p_costo_anterior: anterior?.costo ?? null,
     p_controla_stock: parsed.data.controlaStock,
+    p_precio_libre: parsed.data.precioLibre,
   });
 
   if (error) {

@@ -160,6 +160,17 @@ const productoValido = {
 };
 
 describe("productoSchema", () => {
+  it("sin la marca, el producto no tiene precio al cobrar", () => {
+    const comun = productoSchema.safeParse(productoValido);
+    expect(comun.success && comun.data.precioLibre).toBe(false);
+    const libre = productoSchema.safeParse({
+      ...productoValido,
+      precio: 0,
+      precioLibre: true,
+    });
+    expect(libre.success && libre.data.precioLibre).toBe(true);
+  });
+
   it("sin la marca, el producto controla stock; un servicio la trae en false", () => {
     const comun = productoSchema.safeParse(productoValido);
     expect(comun.success && comun.data.controlaStock).toBe(true);
@@ -297,6 +308,7 @@ describe("validarCsvProductos", () => {
             stockMinimo: 6,
             // La importación no marca servicios: entran controlando stock.
             controlaStock: true,
+            precioLibre: false,
           },
         },
       ],

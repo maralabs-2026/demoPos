@@ -117,6 +117,10 @@ export function ProductoForm({
   const [esServicio, setEsServicio] = useState(
     producto ? !producto.controlaStock : false,
   );
+  // Precio al cobrar (0032): se escribe al vender; el precio de acá queda como sugerido.
+  const [precioLibre, setPrecioLibre] = useState(
+    producto?.precioLibre ?? false,
+  );
   const [stockMinimo, setStockMinimo] = useState(
     producto?.stockMinimo !== undefined ? String(producto.stockMinimo) : "0",
   );
@@ -301,6 +305,7 @@ export function ProductoForm({
       unidadVenta,
       stockMinimo: esServicio ? 0 : Number(stockMinimo),
       controlaStock: !esServicio,
+      precioLibre,
     };
 
     setGuardando(true);
@@ -602,6 +607,22 @@ export function ProductoForm({
               </p>
             )}
           </div>
+          <label className="flex items-start gap-3 rounded-xl border border-border p-3 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4"
+              checked={precioLibre}
+              onChange={(event) => setPrecioLibre(event.target.checked)}
+            />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-semibold">Precio al cobrar</span>
+              <span className="text-xs text-muted-foreground">
+                Para montos que cambian, como una carga de celular: al venderlo
+                se escribe el precio. El de arriba queda como sugerido y puede
+                ser $ 0.
+              </span>
+            </span>
+          </label>
         </Seccion>
 
         <Seccion titulo="Inventario">
