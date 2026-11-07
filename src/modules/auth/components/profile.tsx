@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { ROL_LABELS, rolBadgeVariant } from "@/modules/auth/roles";
 import type { SessionProfile } from "@/modules/auth/session";
+import { borrarPaginasGuardadas } from "@/lib/service-worker";
 
 function initials(nombre: string): string {
   const parts = nombre.trim().split(/\s+/);
@@ -38,6 +39,7 @@ export function Profile({ profile: usuario }: { profile: SessionProfile }) {
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
+    await borrarPaginasGuardadas();
     router.replace("/login");
     router.refresh();
   }
