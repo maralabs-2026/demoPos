@@ -225,3 +225,23 @@ describe("ventaSinConexionSchema", () => {
     ).toBe(false);
   });
 });
+
+describe("precio al cobrar en registrarVentaSchema", () => {
+  it("acepta un precio positivo y lo deja opcional", () => {
+    const conPrecio = {
+      ...venta,
+      items: [{ productoId: PRODUCTO, cantidad: 1, precio: 1500 }],
+    };
+    expect(registrarVentaSchema.safeParse(conPrecio).success).toBe(true);
+    expect(registrarVentaSchema.safeParse(venta).success).toBe(true);
+  });
+
+  it("rechaza un precio en cero o negativo", () => {
+    for (const precio of [0, -10]) {
+      const item = { productoId: PRODUCTO, cantidad: 1, precio };
+      expect(
+        registrarVentaSchema.safeParse({ ...venta, items: [item] }).success,
+      ).toBe(false);
+    }
+  });
+});

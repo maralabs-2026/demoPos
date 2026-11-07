@@ -87,6 +87,8 @@ type CartItem = {
   unidadVenta: string;
   cantidad: number;
   stockDisponible: number;
+  // Precio al cobrar (0032): el precio de la línea lo escribe quien cobra.
+  precioLibre: boolean;
 };
 
 const TODAS = "Todos";
@@ -228,6 +230,8 @@ export function VentaScreen({
   const [panel, setPanel] = useState<"carrito" | "cobro" | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
+  // Línea con precio al cobrar que espera su precio (ver el efecto del foco).
+  const focoPrecioRef = useRef<string | null>(null);
   const cerrarPanelRef = useRef<HTMLButtonElement>(null);
 
   // En una pantalla táctil, enfocar el buscador abre el teclado y tapa el catálogo.
@@ -237,7 +241,24 @@ export function VentaScreen({
   }
 
   useEffect(() => {
-    if (!comprobante) enfocarBusqueda();
+    if (comprobante) return;
+    // Un producto con precio al cobrar recién agregado: el foco va a su precio. En celular y
+    // tablet se abre el ticket para escribirlo.
+    const pendiente = focoPrecioRef.current;
+    if (pendiente) {
+      focoPrecioRef.current = null;
+      if (!window.matchMedia(ESCRITORIO).matches) {
+        setPanel("carrito");
+        return;
+      }
+      const campo = document.getElementById(`precio-${pendiente}`);
+      if (campo instanceof HTMLInputElement) {
+        campo.focus();
+        campo.select();
+        return;
+      }
+    }
+    enfocarBusqueda();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [comprobante, cart.length, panel]);
 
@@ -325,6 +346,12 @@ export function VentaScreen({
       : null;
 
   function agregarAlCarrito(producto: Producto) {
+    if (
+      producto.precioLibre &&
+      !cart.some((i) => i.productoId === producto.id)
+    ) {
+      focoPrecioRef.current = producto.id;
+    }
     if (disponible(producto) <= 0) {
       setError(`"${producto.nombre}" no tiene stock`);
       return;
@@ -351,6 +378,7 @@ export function VentaScreen({
           unidadVenta: producto.unidadVenta,
           cantidad: 1,
           stockDisponible: disponible(producto),
+          precioLibre: producto.precioLibre,
           categoriaId: producto.categoriaId,
           descuentoPct: 0,
         },
@@ -385,6 +413,19 @@ export function VentaScreen({
       return;
     }
     setError(`No se encontró "${term}"`);
+  }
+
+  function cambiarPrecioLinea(productoId: string, precio: number | null) {
+    setCart((prev) =>
+      prev.map((i) =>
+        i.productoId === productoId
+          ? {
+              ...i,
+              precio: precio === null ? 0 : Math.round(precio * 100) / 100,
+            }
+          : i,
+      ),
+    );
   }
 
   function actualizarCantidad(productoId: string, cantidad: number) {
@@ -497,6 +538,12 @@ export function VentaScreen({
       setError("El carrito está vacío");
       return;
     }
+    const sinPrecio = cart.find((i) => i.precioLibre && i.precio <= 0);
+    if (sinPrecio) {
+      setError(`Escribí el precio de "${sinPrecio.nombre}"`);
+      document.getElementById(`precio-${sinPrecio.productoId}`)?.focus();
+      return;
+    }
     const resueltos = resolverPagos(
       total,
       pagosCombinados
@@ -523,6 +570,7 @@ export function VentaScreen({
                 productoId: i.productoId,
                 cantidad: i.cantidad,
                 descuentoPct: i.descuentoPct,
+                ...(i.precioLibre ? { precio: i.precio } : {}),
               })),
               descuentoPct: descuentoTotalPct,
               // Los montos suman el total de la pantalla: si un precio cambió en la base,
@@ -971,9 +1019,32 @@ export function VentaScreen({
                     </p>
                   )}
                   <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                    <span className="tabular-nums">
-                      {formatCurrency(item.precio, { decimals: 0 })} c/u
-                    </span>
+                    {item.precioLibre ? (
+                      <label className="flex items-center gap-1">
+                        Precio
+                        <MoneyInput
+                          id={`precio-${item.productoId}`}
+                          aria-label={`Precio de ${item.nombre}`}
+                          placeholder="$ 0"
+                          value={item.precio > 0 ? item.precio : null}
+                          onValueChange={(valor) =>
+                            cambiarPrecioLinea(item.productoId, valor)
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              enfocarBusqueda();
+                            }
+                          }}
+                          className="h-7 w-24 text-right text-sm font-semibold tabular-nums"
+                        />
+                        c/u
+                      </label>
+                    ) : (
+                      <span className="tabular-nums">
+                        {formatCurrency(item.precio, { decimals: 0 })} c/u
+                      </span>
+                    )}
                     <label className="flex items-center gap-1">
                       Desc.
                       <input

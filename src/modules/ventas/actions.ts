@@ -153,6 +153,7 @@ export async function registrarVenta(
       producto_id: i.productoId,
       cantidad: i.cantidad,
       descuento_pct: i.descuentoPct ?? 0,
+      ...(i.precio !== undefined ? { precio: i.precio } : {}),
     })),
     p_descuento_pct: descuentoPct ?? 0,
     p_pagos: pagos.map((p) => ({
