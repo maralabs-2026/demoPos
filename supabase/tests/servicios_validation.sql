@@ -145,6 +145,22 @@ begin
   end if;
   ok := ok || 'h: al volver a controlar, el stock es la suma de movimientos'::text;
 
+  -- (i) Importar un CSV con stock mínimo no se lo pone a un servicio que ya existe.
+  execute 'reset role';
+  update public.productos set controla_stock = false, stock_minimo = 0 where id = carga;
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', dueno, 'role', 'authenticated')::text, true);
+  perform public.importar_productos(jsonb_build_array(jsonb_build_object(
+    'nombre', 'Carga celular (test)', 'codigo_barras', '3100000000001', 'precio', 1200,
+    'unidad_venta', 'unidad', 'stock_minimo', 5)));
+  execute 'reset role';
+  if (select stock_minimo from public.productos where id = carga) <> 0
+     or (select precio from public.productos where id = carga) <> 1200 then
+    raise exception 'FAIL (i): la importación le puso mínimo al servicio';
+  end if;
+  ok := ok || 'i: la importación respeta los servicios'::text;
+
   raise exception 'PV999: VALIDACION OK (todo revertido). Casos: %', array_to_string(ok, ' | ');
 end
 $$;
