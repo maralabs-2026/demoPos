@@ -41,6 +41,8 @@ export const productoSchema = z.object({
     .int({ error: "El stock mínimo debe ser un número entero" })
     .min(0, { error: "El stock mínimo no puede ser negativo" })
     .max(100_000, { error: "El stock mínimo es demasiado alto" }),
+  // false = servicio (0031): no lleva stock ni stock mínimo. Sin el campo, controla stock.
+  controlaStock: z.boolean().default(true),
 });
 
 export type ProductoInput = z.input<typeof productoSchema>;
