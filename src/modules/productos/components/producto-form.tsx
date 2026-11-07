@@ -113,6 +113,10 @@ export function ProductoForm({
     producto?.unidadVenta ?? "unidad",
   );
   const [stockInicial, setStockInicial] = useState("0");
+  // Servicio (0031): se vende sin controlar stock, como una carga de celular o una fotocopia.
+  const [esServicio, setEsServicio] = useState(
+    producto ? !producto.controlaStock : false,
+  );
   const [stockMinimo, setStockMinimo] = useState(
     producto?.stockMinimo !== undefined ? String(producto.stockMinimo) : "0",
   );
@@ -295,7 +299,8 @@ export function ProductoForm({
       costo: costoNumero,
       precio: precioNumero,
       unidadVenta,
-      stockMinimo: Number(stockMinimo),
+      stockMinimo: esServicio ? 0 : Number(stockMinimo),
+      controlaStock: !esServicio,
     };
 
     setGuardando(true);
@@ -305,7 +310,7 @@ export function ProductoForm({
             precio: producto.precio,
             costo: producto.costo,
           })
-        : await crearProducto(input, cantidadInicial);
+        : await crearProducto(input, esServicio ? 0 : cantidadInicial);
 
       if (!result.ok) {
         setError(result.error);
@@ -600,68 +605,90 @@ export function ProductoForm({
         </Seccion>
 
         <Seccion titulo="Inventario">
-          {producto ? (
-            <div className="flex flex-col gap-1.5 rounded-xl border border-border p-3">
-              <span className="text-sm font-medium">Stock actual</span>
-              <span className="font-display text-xl font-bold tabular-nums">
-                {producto.stockActual} {producto.unidadVenta}
-              </span>
-              <Link
-                href={`/stock?producto=${producto.id}`}
-                className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
-              >
-                Cargá un ingreso o ajustá en Stock
-              </Link>
-            </div>
-          ) : (
-            <Campo
-              id="producto-stock-inicial"
-              label="Cantidad en stock"
-              ayuda="Se registra como ingreso de mercadería con motivo «Stock inicial»."
-            >
-              <Input
-                id="producto-stock-inicial"
-                type="number"
-                min="0"
-                max={STOCK_INICIAL_MAX}
-                step="1"
-                inputMode="numeric"
-                value={stockInicial}
-                onChange={(event) => setStockInicial(event.target.value)}
-              />
-              <div className="flex flex-wrap gap-2">
-                {SUMAS_STOCK.map((n) => (
-                  <Button
-                    key={n}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    aria-label={`Sumá ${n} al stock`}
-                    onClick={() => sumarStock(n)}
-                  >
-                    +{n}
-                  </Button>
-                ))}
-              </div>
-            </Campo>
-          )}
-
-          <Campo
-            id="producto-stock-minimo"
-            label="Stock mínimo"
-            ayuda="Te avisamos cuando el stock llegue a este número."
-          >
-            <Input
-              id="producto-stock-minimo"
-              type="number"
-              min="0"
-              step="1"
-              inputMode="numeric"
-              value={stockMinimo}
-              onChange={(event) => setStockMinimo(event.target.value)}
-              required
+          <label className="flex items-start gap-3 rounded-xl border border-border p-3 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4"
+              checked={esServicio}
+              onChange={(event) => setEsServicio(event.target.checked)}
             />
-          </Campo>
+            <span className="flex flex-col gap-0.5">
+              <span className="font-semibold">
+                Es un servicio (no lleva stock)
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Cargas de celular, fotocopias, SUBE: se venden sin controlar
+                stock y no aparecen en reposición.
+              </span>
+            </span>
+          </label>
+
+          {!esServicio && (
+            <>
+              {producto ? (
+                <div className="flex flex-col gap-1.5 rounded-xl border border-border p-3">
+                  <span className="text-sm font-medium">Stock actual</span>
+                  <span className="font-display text-xl font-bold tabular-nums">
+                    {producto.stockActual} {producto.unidadVenta}
+                  </span>
+                  <Link
+                    href={`/stock?producto=${producto.id}`}
+                    className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+                  >
+                    Cargá un ingreso o ajustá en Stock
+                  </Link>
+                </div>
+              ) : (
+                <Campo
+                  id="producto-stock-inicial"
+                  label="Cantidad en stock"
+                  ayuda="Se registra como ingreso de mercadería con motivo «Stock inicial»."
+                >
+                  <Input
+                    id="producto-stock-inicial"
+                    type="number"
+                    min="0"
+                    max={STOCK_INICIAL_MAX}
+                    step="1"
+                    inputMode="numeric"
+                    value={stockInicial}
+                    onChange={(event) => setStockInicial(event.target.value)}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {SUMAS_STOCK.map((n) => (
+                      <Button
+                        key={n}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        aria-label={`Sumá ${n} al stock`}
+                        onClick={() => sumarStock(n)}
+                      >
+                        +{n}
+                      </Button>
+                    ))}
+                  </div>
+                </Campo>
+              )}
+
+              <Campo
+                id="producto-stock-minimo"
+                label="Stock mínimo"
+                ayuda="Te avisamos cuando el stock llegue a este número."
+              >
+                <Input
+                  id="producto-stock-minimo"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  value={stockMinimo}
+                  onChange={(event) => setStockMinimo(event.target.value)}
+                  required
+                />
+              </Campo>
+            </>
+          )}
 
           <div className="flex flex-col gap-3 rounded-xl border border-border p-3">
             <span className="text-sm font-semibold">Más opciones</span>
