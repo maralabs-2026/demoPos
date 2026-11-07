@@ -26,6 +26,8 @@ export const itemVentaSchema = z.object({
   cantidad: z.number().int().positive(),
   // Porcentaje: el monto lo calcula registrar_venta (0012), con el tope del rol.
   descuentoPct: porcentajeSchema.optional(),
+  // Solo para productos con precio al cobrar (0032); en los demás la base lo ignora.
+  precio: z.number().finite().positive().max(9_999_999_999.99).optional(),
 });
 
 const montoSchema = z.number().finite().positive().max(9_999_999_999.99);
