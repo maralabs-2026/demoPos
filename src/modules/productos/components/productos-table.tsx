@@ -20,6 +20,7 @@ import { formatCurrency, formatPercent } from "@/lib/currency";
 import { eliminarProducto } from "../actions";
 import type { Categoria, Producto } from "../queries";
 import { calcularMargen } from "../schemas";
+import { EtiquetasDialog } from "./etiquetas-dialog";
 import { ProductoForm } from "./producto-form";
 
 function StockCell({ producto }: { producto: Producto }) {
@@ -61,6 +62,7 @@ export function ProductosTable({
   const [formulario, setFormulario] = useState<Producto | "nuevo" | null>(null);
   const [error, setError] = useState("");
   const [eliminando, setEliminando] = useState<string | null>(null);
+  const [etiquetas, setEtiquetas] = useState<Producto | null>(null);
   const router = useRouter();
 
   const filtrados = useMemo(() => {
@@ -163,6 +165,13 @@ export function ProductosTable({
         </Dialog>
       )}
 
+      {puedeGestionar && (
+        <EtiquetasDialog
+          producto={etiquetas}
+          onClose={() => setEtiquetas(null)}
+        />
+      )}
+
       {error && (
         <p className="text-destructive text-sm" role="alert">
           {error}
@@ -236,6 +245,13 @@ export function ProductosTable({
                           onClick={() => setFormulario(producto)}
                         >
                           Editar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEtiquetas(producto)}
+                        >
+                          Etiquetas
                         </Button>
                         <Button
                           size="sm"
