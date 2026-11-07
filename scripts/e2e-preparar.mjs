@@ -1,6 +1,6 @@
 // Prepara la base de pruebas (kiosko-demo-test) antes de correr Playwright:
 //   1. Borra lo que dejaron corridas anteriores: promos, combos y productos "E2E ...".
-//      Un producto E2E con movimientos de stock queda: los movimientos son de solo agregado.
+//      Un producto E2E con movimientos de stock o ventas queda: no se borran.
 //   2. Deja el producto de stock-concurrencia con stock exactamente 1 y repone Coca-Cola y
 //      Bon o Bon, que consumen los tests de venta, promo y combo.
 //
@@ -86,13 +86,21 @@ async function main() {
   if (candidatos.length > 0) {
     const ids = candidatos.map((p) => p.id);
     // movimientos_stock es de solo agregado: un producto con movimientos (por ejemplo, el
-    // "E2E stock inicial" del popup) queda. Sin movimientos tampoco tiene ventas.
+    // "E2E stock inicial" del popup) queda.
     const movidos = await run(
       "movimientos de productos E2E",
       db.from("movimientos_stock").select("producto_id").in("producto_id", ids),
     );
-    const conMovimientos = new Set(movidos.map((m) => m.producto_id));
-    const borrables = ids.filter((id) => !conMovimientos.has(id));
+    // Un servicio (0031) vendido no tiene movimientos, pero sus ventas lo usan: también queda.
+    const vendidos = await run(
+      "ventas de productos E2E",
+      db.from("venta_items").select("producto_id").in("producto_id", ids),
+    );
+    const conHistoria = new Set([
+      ...movidos.map((m) => m.producto_id),
+      ...vendidos.map((v) => v.producto_id),
+    ]);
+    const borrables = ids.filter((id) => !conHistoria.has(id));
     productosConservados = ids.length - borrables.length;
     if (borrables.length > 0) {
       const borrados = await run(
@@ -166,7 +174,7 @@ async function main() {
 
   console.log(
     `Base de test lista: ${promos.length} promos, ${combos.length} combos y ` +
-      `${productosBorrados} productos E2E borrados (${productosConservados} con movimientos quedan); ` +
+      `${productosBorrados} productos E2E borrados (${productosConservados} con movimientos o ventas quedan); ` +
       `${ajustes.length} ajustes de stock.`,
   );
 }
