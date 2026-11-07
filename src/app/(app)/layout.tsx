@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getAuthProfile, mustChangePassword } from "@/modules/auth";
+import { RegistrarSW } from "@/components/registrar-sw";
 import { AppShell } from "@/modules/auth/components/app-shell";
 
 export const dynamic = "force-dynamic";
@@ -14,5 +15,10 @@ export default async function AppLayout({
   if (!profile) redirect("/login");
   if (mustChangePassword(profile)) redirect("/cambiar-contrasena");
 
-  return <AppShell profile={profile}>{children}</AppShell>;
+  return (
+    <AppShell profile={profile}>
+      <RegistrarSW />
+      {children}
+    </AppShell>
+  );
 }
