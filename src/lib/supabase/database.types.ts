@@ -1173,6 +1173,7 @@ export type Database = {
           p_descuento_pct?: number;
           p_items: Json;
           p_pagos: Json;
+          p_venta_id?: string;
         };
         Returns: Json;
       };

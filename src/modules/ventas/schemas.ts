@@ -44,6 +44,9 @@ export const ITEMS_VENTA_MAX = 200;
 export const PAGOS_VENTA_MAX = 20;
 
 export const registrarVentaSchema = z.object({
+  // Lo genera la pantalla: si la respuesta se pierde, la misma venta se reenvía sin conexión con
+  // este id y no se duplica (0029).
+  ventaId: z.uuid().optional(),
   cajaId: z.string().uuid({ error: "Abrí tu caja para cobrar" }),
   items: z
     .array(itemVentaSchema)

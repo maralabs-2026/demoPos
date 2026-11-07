@@ -33,7 +33,12 @@ import type { Producto } from "@/modules/productos";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { registrarVenta, type Comprobante } from "../actions";
-import { resolverPagos, restantePorAsignar, type PagoParcial } from "../pagos";
+import {
+  resolverPagos,
+  restantePorAsignar,
+  type PagoParcial,
+  type PagoVenta,
+} from "../pagos";
 import { calcularTotales, descuentoDeLinea } from "../totales";
 import {
   aplicarCombos,
@@ -43,7 +48,34 @@ import {
   type Promo,
 } from "@/modules/promociones";
 import type { TicketTextos } from "../ticket";
+import { guardarEnCola } from "@/lib/cola-ventas";
+import {
+  armarVentaSinConexion,
+  comprobanteSinConexion,
+  type LineaCobrada,
+} from "../sin-conexion";
+import { AvisoSinConexion } from "./aviso-sin-conexion";
 import { ComprobanteView } from "./comprobante-view";
+
+// Si el cobro online no responde en este tiempo, la venta pasa a la cola sin conexión con el mismo
+// id: si igual había entrado, el reenvío la reconoce y no la duplica.
+const ESPERA_COBRO_MS = 10_000;
+
+function conLimite<T>(promesa: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = window.setTimeout(() => reject(new Error("tiempo agotado")), ms);
+    promesa.then(
+      (valor) => {
+        window.clearTimeout(t);
+        resolve(valor);
+      },
+      (error: unknown) => {
+        window.clearTimeout(t);
+        reject(error);
+      },
+    );
+  });
+}
 
 type CartItem = {
   productoId: string;
@@ -168,6 +200,7 @@ export function VentaScreen({
     null,
   );
   const [comprobante, setComprobante] = useState<Comprobante | null>(null);
+  const [comprobanteSinRed, setComprobanteSinRed] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [desfaseRelojMs] = useState(() => horaServidorMs - Date.now());
   // Panel abierto en celular y tablet; en escritorio siempre es null.
@@ -455,19 +488,38 @@ export function VentaScreen({
       return;
     }
 
+    const ventaId = crypto.randomUUID();
+    const pagos = resueltos.pagos;
     startTransition(async () => {
-      const result = await registrarVenta({
-        cajaId,
-        items: cart.map((i) => ({
-          productoId: i.productoId,
-          cantidad: i.cantidad,
-          descuentoPct: i.descuentoPct,
-        })),
-        descuentoPct: descuentoTotalPct,
-        // Los montos suman el total de la pantalla: si un precio cambió en la base,
-        // registrar_venta lo rechaza.
-        pagos: resueltos.pagos,
-      });
+      let result: Awaited<ReturnType<typeof registrarVenta>> | null = null;
+      if (navigator.onLine) {
+        try {
+          result = await conLimite(
+            registrarVenta({
+              ventaId,
+              cajaId,
+              items: cart.map((i) => ({
+                productoId: i.productoId,
+                cantidad: i.cantidad,
+                descuentoPct: i.descuentoPct,
+              })),
+              descuentoPct: descuentoTotalPct,
+              // Los montos suman el total de la pantalla: si un precio cambió en la base,
+              // registrar_venta lo rechaza.
+              pagos,
+            }),
+            ESPERA_COBRO_MS,
+          );
+        } catch {
+          // Sin respuesta: no se sabe si entró. Va a la cola con el mismo id.
+          result = null;
+        }
+      }
+
+      if (result === null) {
+        await cobrarSinConexion(ventaId, pagos);
+        return;
+      }
 
       if (!result.ok) {
         // También en pantalla: el toast se va a los 7 s y el cajero puede no verlo.
@@ -484,26 +536,78 @@ export function VentaScreen({
         return;
       }
 
-      const vendido = new Map(cart.map((i) => [i.productoId, i.cantidad]));
-      setProductos((prev) =>
-        prev.map((p) =>
-          vendido.has(p.id)
-            ? { ...p, stockActual: p.stockActual - vendido.get(p.id)! }
-            : p,
-        ),
-      );
-      setComprobante(result.data);
-      setPanel(null);
+      terminarVenta(result.data, false);
       toast.success(
         "Venta registrada",
         `${formatCurrency(result.data.total)} · ${result.data.medioPagoNombre}`,
       );
-      setCart([]);
-      setMontoRecibido(null);
-      setPagosCombinados(null);
-      setDescuentoTotalPct(0);
-      setError(null);
     });
+  }
+
+  // Lo que se cobró, línea por línea, con el mismo cálculo que muestra el ticket.
+  function lineasCobradas(): LineaCobrada[] {
+    return cart.map((i) => {
+      const beneficio = beneficioPorLinea.get(i.productoId);
+      const comboDescuento = beneficio?.comboDescuento ?? 0;
+      const promoDescuento = beneficio?.promoDescuento ?? 0;
+      return {
+        productoId: i.productoId,
+        nombre: i.nombre,
+        precio: i.precio,
+        cantidad: i.cantidad,
+        descuento: descuentoDeLinea({ ...i, comboDescuento, promoDescuento }),
+        promocionDescuento:
+          Math.round((comboDescuento + promoDescuento) * 100) / 100,
+        promocionNombre: beneficio?.nombre || null,
+      };
+    });
+  }
+
+  async function cobrarSinConexion(ventaId: string, pagos: PagoVenta[]) {
+    const lineas = lineasCobradas();
+    const venta = armarVentaSinConexion({
+      ventaId,
+      cajaId,
+      // Hora del servidor: el reloj del dispositivo puede estar desfasado.
+      fecha: new Date(Date.now() + desfaseRelojMs),
+      lineas,
+      descuentoTotal: totales.descuentoTotal,
+      pagos,
+    });
+    const comprobanteLocal = comprobanteSinConexion(venta, lineas, mediosPago);
+    try {
+      await guardarEnCola(venta, comprobanteLocal);
+    } catch {
+      const mensaje =
+        "No hay conexión y este dispositivo no pudo guardar la venta. No la cobres hasta que vuelva internet.";
+      setError(mensaje);
+      toast.error("No se pudo cobrar", mensaje);
+      return;
+    }
+    terminarVenta(comprobanteLocal, true);
+    toast.success(
+      "Venta guardada sin conexión",
+      `${formatCurrency(comprobanteLocal.total)} · se envía cuando vuelva internet`,
+    );
+  }
+
+  function terminarVenta(nuevo: Comprobante, sinConexion: boolean) {
+    const vendido = new Map(cart.map((i) => [i.productoId, i.cantidad]));
+    setProductos((prev) =>
+      prev.map((p) =>
+        vendido.has(p.id)
+          ? { ...p, stockActual: p.stockActual - vendido.get(p.id)! }
+          : p,
+      ),
+    );
+    setComprobante(nuevo);
+    setComprobanteSinRed(sinConexion);
+    setPanel(null);
+    setCart([]);
+    setMontoRecibido(null);
+    setPagosCombinados(null);
+    setDescuentoTotalPct(0);
+    setError(null);
   }
 
   useEffect(() => {
@@ -573,17 +677,22 @@ export function VentaScreen({
 
   if (comprobante) {
     return (
-      <ComprobanteView
-        comprobante={comprobante}
-        textos={ticketTextos}
-        logoUrl={logoUrl}
-        onNuevaVenta={() => setComprobante(null)}
-      />
+      <div className="flex flex-col gap-4">
+        <AvisoSinConexion cajaId={cajaId} />
+        <ComprobanteView
+          comprobante={comprobante}
+          textos={ticketTextos}
+          logoUrl={logoUrl}
+          sinConexion={comprobanteSinRed}
+          onNuevaVenta={() => setComprobante(null)}
+        />
+      </div>
     );
   }
 
   return (
     <div className="flex flex-wrap items-start gap-4 pb-28 lg:pb-0">
+      <AvisoSinConexion cajaId={cajaId} className="basis-full" />
       <section
         aria-label="Catálogo"
         inert={panel !== null}

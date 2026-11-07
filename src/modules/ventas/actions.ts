@@ -142,10 +142,11 @@ export async function registrarVenta(
   if (!parsed.success) {
     return fail(parsed.error.issues[0]?.message ?? "Datos de venta inválidos");
   }
-  const { cajaId, items, pagos, descuentoPct } = parsed.data;
+  const { ventaId, cajaId, items, pagos, descuentoPct } = parsed.data;
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("registrar_venta", {
+    p_venta_id: ventaId,
     p_caja_id: cajaId,
     p_items: items.map((i) => ({
       producto_id: i.productoId,
