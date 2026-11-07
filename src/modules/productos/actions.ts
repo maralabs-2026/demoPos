@@ -41,6 +41,7 @@ const PV_PORCENTAJE_INVALIDO = "PV007";
 const PV_CATEGORIA_INVALIDA = "PV008";
 const PV_CAMBIO_CONCURRENTE = "PV009";
 const PV_IMPORTACION_INVALIDA = "PV010";
+const PV_SIN_CODIGOS = "PV023";
 
 async function requireRolCatalogo(
   mensaje: string,
@@ -181,6 +182,25 @@ export async function crearProducto(
       ? undefined
       : "El producto se creó, pero el stock inicial no. Cargalo desde Stock.",
   });
+}
+
+// "Generá un código": código EAN-13 interno (prefijo 20) para productos sin código de fábrica.
+// La base lleva la numeración por comercio y nunca entrega dos veces el mismo (0027).
+export async function generarCodigoInterno(): Promise<ActionResult<string>> {
+  const auth = await requireRolCatalogo("Tu rol no puede crear productos.");
+  if (!auth.ok) return auth;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("siguiente_codigo_interno");
+  if (error || !data) {
+    if (error?.code === PG_INSUFFICIENT_PRIVILEGE) {
+      return fail("Tu rol no puede crear productos.");
+    }
+    if (error?.code === PV_SIN_CODIGOS) {
+      return fail("No quedan códigos internos libres.");
+    }
+    return fail("No se pudo generar el código. Probá de nuevo.");
+  }
+  return ok(data);
 }
 
 // "+ Nueva" en el formulario de producto. Crear categorías es del dueño (lo valida config) y

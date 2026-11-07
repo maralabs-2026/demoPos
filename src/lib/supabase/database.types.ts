@@ -1075,6 +1075,7 @@ export type Database = {
         Args: { p_caja_id: string; p_conteos: Json; p_nota?: string };
         Returns: Json;
       };
+      corte_dia_comercial: { Args: never; Returns: string };
       crear_combo: {
         Args: {
           p_desde: string;
@@ -1175,6 +1176,7 @@ export type Database = {
         };
         Returns: Json;
       };
+      siguiente_codigo_interno: { Args: never; Returns: string };
     };
     Enums: {
       rol_usuario: "dueno" | "encargado" | "cajero";
