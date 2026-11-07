@@ -102,8 +102,22 @@ const ICONO_MEDIO = {
   cuenta_corriente: UserRound,
 } satisfies Record<MedioPago["tipo"], unknown>;
 
+// Un servicio (0031) no lleva stock: se puede vender sin límite. Tope alto para el selector de cantidad.
+const SIN_LIMITE = 9999;
+
+function disponible(producto: Producto): number {
+  return producto.controlaStock ? producto.stockActual : SIN_LIMITE;
+}
+
 // Stock del celular: corto, con el mismo color de alerta que el StockChip.
 function StockCorto({ producto }: { producto: Producto }) {
+  if (!producto.controlaStock) {
+    return (
+      <span className="text-xs whitespace-nowrap text-muted-foreground lg:hidden">
+        Servicio
+      </span>
+    );
+  }
   const sin = producto.stockActual <= 0;
   const bajo = !sin && producto.stockActual < producto.stockMinimo;
   return (
@@ -124,6 +138,13 @@ function StockCorto({ producto }: { producto: Producto }) {
 
 // Estado del stock como en el StockChip de Mostrador: al día, bajo el mínimo o sin stock.
 function StockChip({ producto }: { producto: Producto }) {
+  if (!producto.controlaStock) {
+    return (
+      <span className="inline-flex h-[22px] items-center self-start rounded-full border border-border bg-card px-2 text-xs font-semibold whitespace-nowrap text-muted-foreground">
+        Servicio
+      </span>
+    );
+  }
   const sin = producto.stockActual <= 0;
   const bajo = !sin && producto.stockActual < producto.stockMinimo;
   return (
@@ -304,14 +325,14 @@ export function VentaScreen({
       : null;
 
   function agregarAlCarrito(producto: Producto) {
-    if (producto.stockActual <= 0) {
+    if (disponible(producto) <= 0) {
       setError(`"${producto.nombre}" no tiene stock`);
       return;
     }
     setCart((prev) => {
       const existente = prev.find((i) => i.productoId === producto.id);
       if (existente) {
-        if (existente.cantidad + 1 > producto.stockActual) {
+        if (existente.cantidad + 1 > disponible(producto)) {
           setError(
             `Solo quedan ${producto.stockActual} de "${producto.nombre}"`,
           );
@@ -329,7 +350,7 @@ export function VentaScreen({
           precio: producto.precio,
           unidadVenta: producto.unidadVenta,
           cantidad: 1,
-          stockDisponible: producto.stockActual,
+          stockDisponible: disponible(producto),
           categoriaId: producto.categoriaId,
           descuentoPct: 0,
         },
@@ -743,7 +764,7 @@ export function VentaScreen({
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(176px,1fr))]">
           {catalogo.map((producto) => {
-            const sinStock = producto.stockActual <= 0;
+            const sinStock = disponible(producto) <= 0;
             const enTicket =
               cart.find((i) => i.productoId === producto.id)?.cantidad ?? 0;
             return (

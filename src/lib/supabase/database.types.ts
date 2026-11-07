@@ -606,6 +606,7 @@ export type Database = {
           categoria_id: string | null;
           codigo_barras: string;
           comercio_id: string;
+          controla_stock: boolean;
           created_at: string;
           foto_path: string | null;
           id: string;
@@ -619,6 +620,7 @@ export type Database = {
           categoria_id?: string | null;
           codigo_barras: string;
           comercio_id: string;
+          controla_stock?: boolean;
           created_at?: string;
           foto_path?: string | null;
           id?: string;
@@ -632,6 +634,7 @@ export type Database = {
           categoria_id?: string | null;
           codigo_barras?: string;
           comercio_id?: string;
+          controla_stock?: boolean;
           created_at?: string;
           foto_path?: string | null;
           id?: string;
@@ -1127,6 +1130,7 @@ export type Database = {
         Args: {
           p_categoria_id: string;
           p_codigo_barras: string;
+          p_controla_stock?: boolean;
           p_costo: number;
           p_costo_anterior?: number;
           p_id: string;

@@ -160,6 +160,20 @@ const productoValido = {
 };
 
 describe("productoSchema", () => {
+  it("sin la marca, el producto controla stock; un servicio la trae en false", () => {
+    const comun = productoSchema.safeParse(productoValido);
+    expect(comun.success && comun.data.controlaStock).toBe(true);
+    const servicio = productoSchema.safeParse({
+      ...productoValido,
+      controlaStock: false,
+    });
+    expect(servicio.success && servicio.data.controlaStock).toBe(false);
+    expect(
+      productoSchema.safeParse({ ...productoValido, controlaStock: "no" })
+        .success,
+    ).toBe(false);
+  });
+
   it("acepta un producto completo con costo y precio", () => {
     expect(productoSchema.safeParse(productoValido).success).toBe(true);
   });
@@ -281,6 +295,8 @@ describe("validarCsvProductos", () => {
             precio: 4250.5,
             unidadVenta: "unidad",
             stockMinimo: 6,
+            // La importación no marca servicios: entran controlando stock.
+            controlaStock: true,
           },
         },
       ],

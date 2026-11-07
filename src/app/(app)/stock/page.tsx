@@ -30,7 +30,8 @@ export default async function StockPage({
 
       {productosResult.ok ? (
         <StockScreen
-          productos={productosResult.data}
+          // Un servicio (0031) no lleva stock: no se le cargan ingresos ni ajustes.
+          productos={productosResult.data.filter((p) => p.controlaStock)}
           productoSeleccionadoId={producto ?? null}
           historial={
             movimientosResult === null ? null : movimientosResult.ok ? (

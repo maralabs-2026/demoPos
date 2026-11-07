@@ -126,10 +126,12 @@ async function guardarProducto(
     p_codigo_barras: parsed.data.codigoBarras,
     p_precio: parsed.data.precio,
     p_unidad_venta: parsed.data.unidadVenta,
-    p_stock_minimo: parsed.data.stockMinimo,
+    // Un servicio no tiene stock mínimo: la base lo exige (0031).
+    p_stock_minimo: parsed.data.controlaStock ? parsed.data.stockMinimo : 0,
     p_costo: parsed.data.costo,
     p_precio_anterior: anterior?.precio ?? null,
     p_costo_anterior: anterior?.costo ?? null,
+    p_controla_stock: parsed.data.controlaStock,
   });
 
   if (error) {

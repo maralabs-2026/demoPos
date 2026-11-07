@@ -18,6 +18,8 @@ export type Producto = {
   precio: number;
   stockActual: number;
   stockMinimo: number;
+  // false = servicio: no lleva stock (0031).
+  controlaStock: boolean;
   unidadVenta: string;
   fotoUrl: string | null;
 };
@@ -32,6 +34,7 @@ type ProductoRow = Pick<
   | "precio"
   | "stock_actual"
   | "stock_minimo"
+  | "controla_stock"
   | "unidad_venta"
   | "categoria_id"
   | "foto_path"
@@ -42,7 +45,7 @@ type ProductoRow = Pick<
 };
 
 const COLUMNAS =
-  "id, nombre, codigo_barras, precio, stock_actual, stock_minimo, unidad_venta, categoria_id, foto_path, categorias(nombre)";
+  "id, nombre, codigo_barras, precio, stock_actual, stock_minimo, controla_stock, unidad_venta, categoria_id, foto_path, categorias(nombre)";
 
 function costoDe(row: ProductoRow): number | null {
   const rel = Array.isArray(row.productos_costos)
@@ -89,6 +92,7 @@ export async function getProductos(
     precio: Number(row.precio),
     stockActual: row.stock_actual,
     stockMinimo: row.stock_minimo,
+    controlaStock: row.controla_stock,
     unidadVenta: row.unidad_venta,
     fotoUrl: row.foto_path
       ? supabase.storage.from(FOTOS_BUCKET).getPublicUrl(row.foto_path).data
