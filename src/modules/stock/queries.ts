@@ -71,7 +71,9 @@ export async function getProductosAContar(
   const supabase = await createClient();
   const consulta = supabase
     .from("productos")
-    .select("id, nombre, codigo_barras");
+    .select("id, nombre, codigo_barras")
+    // Un servicio (0031) no lleva stock: no se cuenta.
+    .eq("controla_stock", true);
   const { data, error } = await (
     categoriaId
       ? consulta.eq("categoria_id", categoriaId)

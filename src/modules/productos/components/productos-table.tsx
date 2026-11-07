@@ -24,6 +24,9 @@ import { EtiquetasDialog } from "./etiquetas-dialog";
 import { ProductoForm } from "./producto-form";
 
 function StockCell({ producto }: { producto: Producto }) {
+  if (!producto.controlaStock) {
+    return <Badge>Servicio</Badge>;
+  }
   const stock = `${producto.stockActual} ${producto.unidadVenta}`;
   if (producto.stockActual <= 0) {
     return (
@@ -75,9 +78,10 @@ export function ProductosTable({
     );
   }, [productos, busqueda]);
 
-  // Misma regla que StockCell: sin stock o bajo mínimo.
+  // Misma regla que StockCell: sin stock o bajo mínimo. Un servicio nunca alerta.
   const conAlerta = productos.filter(
-    (p) => p.stockActual <= 0 || p.stockActual < p.stockMinimo,
+    (p) =>
+      p.controlaStock && (p.stockActual <= 0 || p.stockActual < p.stockMinimo),
   ).length;
 
   function cerrarFormulario(aviso?: string) {
