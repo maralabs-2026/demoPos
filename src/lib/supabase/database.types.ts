@@ -942,6 +942,8 @@ export type Database = {
           estado: string;
           id: string;
           motivo_anulacion: string | null;
+          revisada_at: string | null;
+          revisada_por: string | null;
           sin_conexion: boolean;
           sincronizada_at: string | null;
           total: number;
@@ -960,6 +962,8 @@ export type Database = {
           estado?: string;
           id?: string;
           motivo_anulacion?: string | null;
+          revisada_at?: string | null;
+          revisada_por?: string | null;
           sin_conexion?: boolean;
           sincronizada_at?: string | null;
           total: number;
@@ -978,6 +982,8 @@ export type Database = {
           estado?: string;
           id?: string;
           motivo_anulacion?: string | null;
+          revisada_at?: string | null;
+          revisada_por?: string | null;
           sin_conexion?: boolean;
           sincronizada_at?: string | null;
           total?: number;
@@ -1004,6 +1010,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "comercios";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ventas_revisada_por_comercio_fkey";
+            columns: ["revisada_por", "comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "perfiles";
+            referencedColumns: ["id", "comercio_id"];
           },
           {
             foreignKeyName: "ventas_usuario_id_comercio_id_fkey";
@@ -1139,6 +1152,7 @@ export type Database = {
           rol: Database["public"]["Enums"]["rol_usuario"];
         }[];
       };
+      marcar_venta_revisada: { Args: { p_venta_id: string }; Returns: Json };
       pagar_gasto: {
         Args: { p_caja_id?: string; p_gasto_id: string };
         Returns: undefined;

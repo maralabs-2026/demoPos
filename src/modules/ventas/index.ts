@@ -1,5 +1,10 @@
 // Public API of the ventas module. Other modules import only from here.
-export { anularVenta, enviarVentaSinConexion, registrarVenta } from "./actions";
+export {
+  anularVenta,
+  enviarVentaSinConexion,
+  marcarVentaRevisada,
+  registrarVenta,
+} from "./actions";
 export type {
   AvisoSinConexion,
   Comprobante,

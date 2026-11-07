@@ -161,3 +161,76 @@ test("sin conexión: recargar Vender muestra la copia guardada y se sigue cobran
   await expect(page).toHaveURL(/\/login/);
   await expect.poll(hayCopia).toBe(false);
 });
+
+// Bloque 3.2c-2: una venta sin conexión cobrada con un precio que ya no es el del catálogo queda
+// como pendiente en el inicio hasta que el dueño o el encargado la revisan.
+test("sin conexión: la venta con aviso de precio queda pendiente hasta revisarla", async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(120_000);
+  await login(page, DUENO, passwordDe("E2E_DUENO_PASSWORD"));
+  await abrirCajaSiHaceFalta(page);
+
+  await context.setOffline(true);
+  const buscar = page.getByLabel("Buscar producto");
+  await buscar.fill(COCA);
+  await buscar.press("Enter");
+  await page.getByLabel("Monto recibido").fill("2500");
+  await page.keyboard.press("F2");
+  await expect(page.getByText("1 venta por enviar")).toBeVisible();
+
+  // Simula que el precio cambió mientras no había red: la copia de la pantalla tenía $ 2.400.
+  const ventaId = await page.evaluate(
+    () =>
+      new Promise<string>((resolve, reject) => {
+        const pedido = indexedDB.open("pos-ventas", 1);
+        pedido.onerror = () => reject(pedido.error);
+        pedido.onsuccess = () => {
+          const db = pedido.result;
+          const tx = db.transaction("cola", "readwrite");
+          const store = tx.objectStore("cola");
+          const todo = store.getAll();
+          todo.onsuccess = () => {
+            const r = todo.result[0];
+            r.venta.items[0].precioUnitario = 2400;
+            r.venta.pagos[0].monto = 2400;
+            store.put(r);
+            tx.oncomplete = () => {
+              db.close();
+              resolve(r.venta.ventaId as string);
+            };
+          };
+        };
+      }),
+  );
+
+  await context.setOffline(false);
+  await expect.poll(() => leerCola(page), { timeout: 45_000 }).toHaveLength(0);
+
+  // El inicio la muestra como pendiente, con el aviso.
+  await page.goto("/inicio");
+  const pendiente = page
+    .getByRole("list", { name: "Pendientes" })
+    .getByRole("link")
+    .filter({ hasText: "Venta sin conexión" })
+    .filter({ hasText: "precio distinto del catálogo" });
+  await expect(pendiente.first()).toBeVisible();
+  await page.goto(`/reportes/ventas/${ventaId}`);
+  await expect(page.getByText("Cobrada sin conexión")).toBeVisible();
+  await expect(
+    page.getByText("Algún precio cobrado no coincidía con el catálogo"),
+  ).toBeVisible();
+  await expect(page.locator("main")).toContainText("$ 2.400,00");
+
+  // Revisada: deja constancia y sale del inicio.
+  await page.getByRole("button", { name: "Marcá como revisada" }).click();
+  await expect(page.getByText(/Revisada por/)).toBeVisible({ timeout: 15_000 });
+  await expect(
+    page.getByRole("button", { name: "Marcá como revisada" }),
+  ).toHaveCount(0);
+  await page.goto("/inicio");
+  await expect(
+    page.locator(`a[href="/reportes/ventas/${ventaId}"]`),
+  ).toHaveCount(0);
+});

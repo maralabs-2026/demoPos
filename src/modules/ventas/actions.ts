@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import {
@@ -327,4 +328,34 @@ export async function enviarVentaSinConexion(
     avisos: r.avisos ?? [],
     repetida: Boolean(r.repetida),
   });
+}
+
+const PV_NO_SIN_CONEXION = "PV026";
+
+// El dueño o el encargado dejan constancia de que revisaron una venta cobrada sin conexión (0030).
+// No cambia la venta, el stock ni la caja.
+export async function marcarVentaRevisada(
+  ventaId: string,
+): Promise<ActionResult<{ revisadaAt: string }>> {
+  const parsed = z.uuid().safeParse(ventaId);
+  if (!parsed.success) return fail("La venta no es válida.");
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("marcar_venta_revisada", {
+    p_venta_id: parsed.data,
+  });
+  if (error) {
+    if (error.code === PG_INSUFFICIENT_PRIVILEGE) {
+      return fail("Tu rol no puede revisar ventas.");
+    }
+    if (error.code === PV_NO_SIN_CONEXION) {
+      return fail("Esta venta no se cobró sin conexión.");
+    }
+    return fail("No se pudo marcar la venta. Probá de nuevo.");
+  }
+  revalidatePath("/inicio");
+  revalidatePath(`/reportes/ventas/${parsed.data}`);
+  return ok({ revisadaAt: (data as { revisada_at: string }).revisada_at });
 }
