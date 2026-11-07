@@ -35,6 +35,27 @@ export type Inicio = {
     usuario: string;
     ref: string;
   }[];
+  // Cobradas sin conexión con avisos (0028) que nadie revisó todavía (0030).
+  ventasSinConexion: {
+    ventaId: string;
+    fecha: string;
+    total: number;
+    cajero: string;
+    avisos: AvisoSinConexion[];
+  }[];
+};
+
+export type AvisoSinConexion = "precio" | "stock";
+
+// Hasta cuántas muestra el inicio: el resto aparece cuando se revisan las primeras.
+const VENTAS_A_REVISAR_MAX = 20;
+
+type VentaARevisarRow = {
+  id: string;
+  created_at: string;
+  total: number;
+  avisos_sin_conexion: AvisoSinConexion[];
+  cajero: { nombre: string } | null;
 };
 
 type InicioRow = {
@@ -72,8 +93,22 @@ type InicioRow = {
 
 export async function getInicio(): Promise<ActionResult<Inicio>> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("inicio_resumen");
-  if (error) return fail("No se pudo armar el inicio.");
+  const [{ data, error }, aRevisar] = await Promise.all([
+    supabase.rpc("inicio_resumen"),
+    supabase
+      .from("ventas")
+      .select(
+        "id, created_at, total, avisos_sin_conexion, cajero:perfiles!ventas_usuario_id_comercio_id_fkey(nombre)",
+      )
+      .eq("sin_conexion", true)
+      .eq("estado", "completada")
+      .is("revisada_at", null)
+      .not("avisos_sin_conexion", "eq", "{}")
+      .order("created_at", { ascending: false })
+      .limit(VENTAS_A_REVISAR_MAX)
+      .overrideTypes<VentaARevisarRow[], { merge: false }>(),
+  ]);
+  if (error || aRevisar.error) return fail("No se pudo armar el inicio.");
 
   const r = data as InicioRow;
   return ok({
@@ -101,6 +136,13 @@ export async function getInicio(): Promise<ActionResult<Inicio>> {
     actividad: r.actividad.map((a) => ({
       ...a,
       monto: a.monto === null ? null : Number(a.monto),
+    })),
+    ventasSinConexion: (aRevisar.data ?? []).map((v) => ({
+      ventaId: v.id,
+      fecha: v.created_at,
+      total: Number(v.total),
+      cajero: v.cajero?.nombre ?? "Otro usuario",
+      avisos: v.avisos_sin_conexion,
     })),
   });
 }

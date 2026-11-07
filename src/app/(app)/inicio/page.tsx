@@ -11,11 +11,17 @@ import {
   gananciaNeta,
   getInicio,
   sinCostosCargados,
+  type AvisoSinConexion,
   type Inicio,
   type TipoActividad,
 } from "@/modules/reportes";
 
 export const dynamic = "force-dynamic";
+
+const AVISO: Record<AvisoSinConexion, string> = {
+  precio: "precio distinto del catálogo",
+  stock: "dejó stock negativo",
+};
 
 const ACTIVIDAD: Record<TipoActividad, string> = {
   anulacion: "Venta anulada",
@@ -83,7 +89,8 @@ export default async function InicioPage() {
   const sinPendientes =
     inicio.reposicion === 0 &&
     inicio.cajasConDiferencia.length === 0 &&
-    inicio.gastos.length === 0;
+    inicio.gastos.length === 0 &&
+    inicio.ventasSinConexion.length === 0;
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-4 p-4 sm:p-6 lg:p-8">
@@ -169,6 +176,19 @@ export default async function InicioPage() {
                   titulo={`Caja de ${c.titular} con diferencia`}
                   detalle={`Cerrada el ${formatDateTime(c.cerradaAt)}`}
                   destacado={<DiferenciaBadge diferencia={c.diferencia} />}
+                />
+              ))}
+              {inicio.ventasSinConexion.map((v) => (
+                <Pendiente
+                  key={v.ventaId}
+                  href={`/reportes/ventas/${v.ventaId}`}
+                  titulo={`Venta sin conexión de ${v.cajero} para revisar`}
+                  detalle={`${formatDateTime(v.fecha)} · ${v.avisos.map((a) => AVISO[a]).join(" y ")}`}
+                  destacado={
+                    <span className="text-sm font-semibold tabular-nums">
+                      {formatCurrency(v.total)}
+                    </span>
+                  }
                 />
               ))}
               {inicio.gastos.map((g) => (

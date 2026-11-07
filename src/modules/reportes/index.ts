@@ -6,4 +6,4 @@ export { fechaValida, filtrosDesdeParams } from "./schemas";
 export type { Agrupacion, FiltrosReporte } from "./schemas";
 export { gananciaNeta, sinCostosCargados } from "./ganancia";
 export { getInicio } from "./inicio";
-export type { Inicio, TipoActividad } from "./inicio";
+export type { AvisoSinConexion, Inicio, TipoActividad } from "./inicio";
