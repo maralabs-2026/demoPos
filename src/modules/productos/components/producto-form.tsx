@@ -7,6 +7,7 @@ import {
   crearCategoriaRapida,
   crearProducto,
   editarProducto,
+  generarCodigoInterno,
   guardarFotoProducto,
   quitarFotoProducto,
 } from "../actions";
@@ -116,6 +117,19 @@ export function ProductoForm({
     producto?.stockMinimo !== undefined ? String(producto.stockMinimo) : "0",
   );
   const [error, setError] = useState("");
+  const [generandoCodigo, setGenerandoCodigo] = useState(false);
+
+  async function handleGenerarCodigo() {
+    setGenerandoCodigo(true);
+    setError("");
+    const result = await generarCodigoInterno();
+    setGenerandoCodigo(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setCodigoBarras(result.data);
+  }
   const [guardando, setGuardando] = useState(false);
   const [fotoNueva, setFotoNueva] = useState<Blob | null>(null);
   const [fotoVistaPrevia, setFotoVistaPrevia] = useState<string | null>(null);
@@ -354,6 +368,18 @@ export function ProductoForm({
                 className="absolute top-1/2 right-1.5 -translate-y-1/2"
               />
             </div>
+            {codigoBarras.trim() === "" && (
+              <button
+                type="button"
+                onClick={handleGenerarCodigo}
+                disabled={generandoCodigo}
+                className="self-start text-xs font-medium text-primary underline-offset-2 hover:underline disabled:opacity-60"
+              >
+                {generandoCodigo
+                  ? "Generando..."
+                  : "¿No tiene código? Generá uno"}
+              </button>
+            )}
           </Campo>
 
           <div className="flex flex-col gap-1.5">
