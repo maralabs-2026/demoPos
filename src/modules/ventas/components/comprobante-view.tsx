@@ -11,8 +11,11 @@ export function ComprobanteView({
   textos,
   logoUrl,
   onNuevaVenta,
+  sinConexion = false,
 }: {
   comprobante: Comprobante;
+  // Cobrada sin internet: está guardada en el dispositivo y se envía sola.
+  sinConexion?: boolean;
   textos: TicketTextos;
   logoUrl: string | null;
   onNuevaVenta: () => void;
@@ -29,6 +32,12 @@ export function ComprobanteView({
         </span>
         <h2 className="text-xl">Venta cobrada</h2>
         <p className="text-xs text-muted-foreground">{fecha}</p>
+        {sinConexion && (
+          <p className="rounded-lg bg-warning-soft px-3 py-2 text-xs font-medium text-warning-foreground">
+            Cobrada sin conexión. Quedó guardada en este dispositivo y se envía
+            sola cuando vuelva internet.
+          </p>
+        )}
       </div>
 
       <div>
