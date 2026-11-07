@@ -111,3 +111,53 @@ test("sin conexión: cobra, guarda la venta y la envía sola al volver internet"
   await escribirCola(page, null, falsa.venta.ventaId);
   await expect(cerrar).toBeEnabled();
 });
+
+// Bloque 3.2c: con el service worker, /vender abre aunque se recargue sin internet. Al cerrar
+// sesión se borra la copia guardada.
+test("sin conexión: recargar Vender muestra la copia guardada y se sigue cobrando", async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(120_000);
+  await login(page, DUENO, passwordDe("E2E_DUENO_PASSWORD"));
+  await abrirCajaSiHaceFalta(page);
+
+  // El service worker guarda la copia de /vender la primera vez que la página la abre.
+  const hayCopia = () =>
+    page.evaluate(async () =>
+      Boolean(await caches.match("/vender", { cacheName: "pos-paginas" })),
+    );
+  await expect.poll(hayCopia, { timeout: 30_000 }).toBe(true);
+
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByLabel("Buscar producto")).toBeVisible();
+  await expect(page.getByText("Sin conexión", { exact: true })).toBeVisible();
+
+  const buscar = page.getByLabel("Buscar producto");
+  await buscar.fill(COCA);
+  await buscar.press("Enter");
+  await page.getByLabel("Monto recibido").fill("2500");
+  await page.keyboard.press("F2");
+  await expect(page.getByText("Cobrada sin conexión")).toBeVisible();
+  await expect(page.getByText("1 venta por enviar")).toBeVisible();
+
+  // Otra pantalla sin red avisa y lleva a Vender.
+  await page.goto("/productos");
+  await expect(page.getByText("Esta pantalla necesita internet")).toBeVisible();
+  await page.getByRole("link", { name: "Abrí Vender" }).click();
+  await expect(page.getByLabel("Buscar producto")).toBeVisible();
+
+  // Vuelve la red: la venta se envía sola.
+  await context.setOffline(false);
+  await expect(page.getByText("1 venta por enviar")).toBeHidden({
+    timeout: 45_000,
+  });
+  await expect.poll(() => leerCola(page), { timeout: 20_000 }).toHaveLength(0);
+
+  // Cerrar sesión borra la copia: tiene el catálogo y el nombre del usuario.
+  await page.goto("/perfil");
+  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await expect(page).toHaveURL(/\/login/);
+  await expect.poll(hayCopia).toBe(false);
+});
