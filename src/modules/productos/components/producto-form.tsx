@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ImageUp, Plus, Trash2 } from "lucide-react";
+import { Camera, ImageUp, Plus, Trash2 } from "lucide-react";
 import {
   crearCategoriaRapida,
   crearProducto,
@@ -136,6 +136,14 @@ export function ProductoForm({
   const [quitarFoto, setQuitarFoto] = useState(false);
   const [procesandoFoto, setProcesandoFoto] = useState(false);
   const fotoInputRef = useRef<HTMLInputElement>(null);
+  const camaraInputRef = useRef<HTMLInputElement>(null);
+  // "Sacá una foto" solo en pantallas táctiles (celular, tablet): en la PC abriría el mismo
+  // selector de archivos que "Subí una imagen".
+  const [tactil, setTactil] = useState(false);
+
+  useEffect(() => {
+    setTactil(window.matchMedia("(pointer: coarse)").matches);
+  }, []);
   const formRef = useRef<HTMLFormElement>(null);
   const fotoVisible =
     fotoVistaPrevia ?? (quitarFoto ? null : (producto?.fotoUrl ?? null));
@@ -215,6 +223,7 @@ export function ProductoForm({
     setFotoVistaPrevia(null);
     setQuitarFoto(true);
     if (fotoInputRef.current) fotoInputRef.current.value = "";
+    if (camaraInputRef.current) camaraInputRef.current.value = "";
   }
 
   async function handleCrearCategoria() {
@@ -397,6 +406,31 @@ export function ProductoForm({
                   tabIndex={-1}
                   onChange={(event) => void handleFoto(event)}
                 />
+                {/* capture abre directo la cámara trasera del celular. La foto pasa por
+                    achicarFoto como cualquier otra imagen. */}
+                <input
+                  id="producto-foto-camara"
+                  ref={camaraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  aria-label="Foto de la cámara"
+                  className="sr-only"
+                  tabIndex={-1}
+                  onChange={(event) => void handleFoto(event)}
+                />
+                {tactil && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={procesandoFoto}
+                    onClick={() => camaraInputRef.current?.click()}
+                  >
+                    <Camera aria-hidden="true" />
+                    Sacá una foto
+                  </Button>
+                )}
                 <Button
                   type="button"
                   variant="outline"
