@@ -7,6 +7,7 @@ import { requireRol } from "@/modules/auth";
 import { getTicketConfig } from "@/modules/config";
 import { getVenta, numeroTicket } from "@/modules/ventas";
 import { AnularVenta } from "@/modules/ventas/components/anular-venta";
+import { MarcarRevisada } from "@/modules/ventas/components/marcar-revisada";
 import { TicketControles } from "@/modules/ventas/components/ticket-controles";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +35,13 @@ export default async function VentaDetallePage({
     );
   }
 
-  const { comprobante: venta, estado, cajero, anulacion } = result.data;
+  const {
+    comprobante: venta,
+    estado,
+    cajero,
+    anulacion,
+    sinConexion,
+  } = result.data;
   const textos = ticket.ok ? ticket.data : { titulo: "", leyenda: "", pie: "" };
 
   return (
@@ -51,7 +58,14 @@ export default async function VentaDetallePage({
               {cajero} · {venta.medioPagoNombre}
             </p>
           </div>
-          {estado === "anulada" && <Badge variant="destructive">Anulada</Badge>}
+          <div className="flex flex-wrap gap-2">
+            {sinConexion && (
+              <Badge variant="warning">Cobrada sin conexión</Badge>
+            )}
+            {estado === "anulada" && (
+              <Badge variant="destructive">Anulada</Badge>
+            )}
+          </div>
         </div>
 
         <ul aria-label="Ítems de la venta" className="flex flex-col text-sm">
@@ -93,6 +107,33 @@ export default async function VentaDetallePage({
           </div>
         </div>
 
+        {sinConexion && (
+          <div className="flex flex-col gap-1">
+            <CardEyebrow>Venta sin conexión</CardEyebrow>
+            <p className="text-sm">
+              Se cobró sin internet y se envió cuando volvió la conexión. Se
+              guardó lo que se cobró en ese momento.
+            </p>
+            {sinConexion.avisos.includes("precio") && (
+              <p className="text-sm font-medium text-warning-foreground">
+                Algún precio cobrado no coincidía con el catálogo al enviarla.
+              </p>
+            )}
+            {sinConexion.avisos.includes("stock") && (
+              <p className="text-sm font-medium text-warning-foreground">
+                Dejó stock negativo: corregilo con un ingreso o un ajuste en
+                Stock.
+              </p>
+            )}
+            {sinConexion.revisada && (
+              <p className="text-xs text-muted-foreground">
+                Revisada por {sinConexion.revisada.por} ·{" "}
+                {formatDateTime(sinConexion.revisada.fecha)}
+              </p>
+            )}
+          </div>
+        )}
+
         {anulacion && (
           <div className="flex flex-col gap-1">
             <CardEyebrow>Anulación</CardEyebrow>
@@ -103,6 +144,14 @@ export default async function VentaDetallePage({
           </div>
         )}
       </Card>
+
+      {sinConexion &&
+        sinConexion.avisos.length > 0 &&
+        !sinConexion.revisada && (
+          <div className="print:hidden">
+            <MarcarRevisada ventaId={venta.ventaId} />
+          </div>
+        )}
 
       {estado === "completada" && (
         <>
