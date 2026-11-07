@@ -6,8 +6,10 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import {
   anularVentaSchema,
   registrarVentaSchema,
+  ventaSinConexionSchema,
   type AnularVentaInput,
   type RegistrarVentaInput,
+  type VentaSinConexionInput,
 } from "./schemas";
 
 const PV_CAJA_CERRADA = "PV012";
@@ -234,5 +236,94 @@ export async function registrarVenta(
       .join(" + "),
     vuelto: hayEfectivo ? Number(venta.vuelto) : null,
     fecha: venta.created_at,
+  });
+}
+
+// Ventas cobradas sin internet (0028). "registrada" incluye el reenvío de una venta que ya había
+// entrado. "rechazada" es definitiva: la base no la va a aceptar aunque se reintente (por ejemplo,
+// la caja ya se cerró), así que el dispositivo deja de reenviarla y la muestra. Un fail es
+// transitorio (sin red, sesión vencida): el dispositivo la reintenta más tarde.
+export type AvisoSinConexion = "precio" | "stock";
+export type EnvioSinConexion =
+  | {
+      estado: "registrada";
+      ventaId: string;
+      avisos: AvisoSinConexion[];
+      repetida: boolean;
+    }
+  | { estado: "rechazada"; motivo: string };
+
+const PV_HORA_FUERA_DE_TURNO = "PV024";
+const PV_ID_EN_USO = "PV025";
+
+const RECHAZOS_SIN_CONEXION: Record<string, string> = {
+  [PV_CAJA_INVALIDA]: "La caja de esta venta ya se cerró o no es tuya.",
+  [PV_HORA_FUERA_DE_TURNO]:
+    "La hora de la venta no coincide con el turno de la caja.",
+  [PV_DESCUENTO_EXCEDIDO]: "La venta tiene un descuento mayor al permitido.",
+  [PV_PRODUCTO_INEXISTENTE]: "Un producto de la venta ya no existe.",
+  [PV_PAGO_INVALIDO]: "Los pagos de la venta no son válidos.",
+  [PV_DATOS_INVALIDOS]: "La venta tiene cantidades o montos inválidos.",
+  [PV_ID_EN_USO]: "La venta tiene un identificador repetido.",
+  [PG_INSUFFICIENT_PRIVILEGE]: "Tu usuario no puede registrar ventas.",
+};
+
+export async function enviarVentaSinConexion(
+  input: VentaSinConexionInput,
+): Promise<ActionResult<EnvioSinConexion>> {
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
+  }
+  const parsed = ventaSinConexionSchema.safeParse(input);
+  if (!parsed.success) {
+    return ok({
+      estado: "rechazada",
+      motivo: parsed.error.issues[0]?.message ?? "Datos de venta inválidos",
+    });
+  }
+  const { ventaId, cajaId, fecha, items, pagos, descuento } = parsed.data;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("registrar_venta_sin_conexion", {
+    p_venta_id: ventaId,
+    p_caja_id: cajaId,
+    p_fecha: fecha,
+    p_items: items.map((i) => ({
+      producto_id: i.productoId,
+      cantidad: i.cantidad,
+      precio_unitario: i.precioUnitario,
+      descuento: i.descuento,
+      promocion_descuento: i.promocionDescuento,
+      promocion_nombre: i.promocionNombre,
+    })),
+    p_pagos: pagos.map((p) => ({
+      medio_pago_id: p.medioPagoId,
+      monto: p.monto,
+      ...(p.recibido !== undefined ? { recibido: p.recibido } : {}),
+    })),
+    p_descuento: descuento,
+  });
+
+  if (error) {
+    const motivo = RECHAZOS_SIN_CONEXION[error.code];
+    if (motivo) return ok({ estado: "rechazada", motivo });
+    if (error.code === PG_NOT_AUTHENTICATED) {
+      return fail("Tu sesión venció. Volvé a ingresar para enviar las ventas.");
+    }
+    return fail("No se pudo enviar la venta. Se reintenta sola.");
+  }
+
+  const r = data as {
+    venta_id: string;
+    avisos: AvisoSinConexion[];
+    repetida: boolean;
+  };
+  revalidatePath("/vender");
+  revalidatePath("/productos");
+  return ok({
+    estado: "registrada",
+    ventaId: r.venta_id,
+    avisos: r.avisos ?? [],
+    repetida: Boolean(r.repetida),
   });
 }

@@ -62,3 +62,53 @@ export const registrarVentaSchema = z.object({
 });
 
 export type RegistrarVentaInput = z.infer<typeof registrarVentaSchema>;
+
+// Venta cobrada sin internet (0028). El dispositivo manda lo que se cobró: precio, promo y
+// descuentos de cada línea. La base controla que las cuentas cierren y el tope del rol.
+const montoNoNegativoSchema = z.number().finite().min(0).max(9_999_999_999.99);
+
+export const itemSinConexionSchema = z
+  .object({
+    productoId: z.uuid(),
+    cantidad: z.number().int().positive(),
+    precioUnitario: montoNoNegativoSchema,
+    // Descuento total de la línea en pesos (promo + manual).
+    descuento: montoNoNegativoSchema,
+    promocionDescuento: montoNoNegativoSchema,
+    promocionNombre: z.string().trim().max(200).nullable(),
+  })
+  .refine((i) => i.promocionDescuento <= i.descuento, {
+    error: "El descuento de la promo no puede superar el de la línea",
+  })
+  .refine((i) => i.descuento <= i.precioUnitario * i.cantidad, {
+    error: "El descuento no puede superar el importe de la línea",
+  });
+
+export const ventaSinConexionSchema = z.object({
+  // Lo genera el dispositivo: reenviar la misma venta no la duplica.
+  ventaId: z.uuid({ error: "La venta no tiene id" }),
+  cajaId: z.uuid({ error: "La venta no tiene caja" }),
+  // Hora en que se cobró, con zona: la base la acepta solo dentro del turno de la caja.
+  fecha: z.iso.datetime({
+    offset: true,
+    error: "La hora de la venta no es válida",
+  }),
+  items: z
+    .array(itemSinConexionSchema)
+    .min(1, "La venta no tiene productos")
+    .max(ITEMS_VENTA_MAX)
+    .refine(
+      (items) => new Set(items.map((i) => i.productoId)).size === items.length,
+      {
+        error: "Un producto aparece dos veces en la venta",
+      },
+    ),
+  pagos: z
+    .array(pagoVentaSchema)
+    .min(1, "La venta no tiene pagos")
+    .max(PAGOS_VENTA_MAX),
+  // Descuento sobre el total, en pesos.
+  descuento: montoNoNegativoSchema,
+});
+
+export type VentaSinConexionInput = z.infer<typeof ventaSinConexionSchema>;

@@ -3,6 +3,7 @@ import {
   ITEMS_VENTA_MAX,
   PAGOS_VENTA_MAX,
   registrarVentaSchema,
+  ventaSinConexionSchema,
 } from "./schemas";
 
 const CAJA = "3f8a1c2e-5b7d-4e9f-8a6b-1c2d3e4f5a6b";
@@ -95,5 +96,132 @@ describe("registrarVentaSchema", () => {
         pagos: pagos(PAGOS_VENTA_MAX + 1),
       }).error?.issues[0]?.message,
     ).toBe("La venta puede tener hasta 20 pagos");
+  });
+});
+
+describe("ventaSinConexionSchema", () => {
+  const VENTA = "6d1c4f5b-8e0a-4b2c-9d9e-4f5a6b7c8d9e";
+  const OTRO = "7e2d5a6c-9f1b-4c3d-8e0f-5a6b7c8d9e0f";
+  const linea = {
+    productoId: PRODUCTO,
+    cantidad: 2,
+    precioUnitario: 1000,
+    descuento: 500,
+    promocionDescuento: 500,
+    promocionNombre: "2x1",
+  };
+  const sinConexion = {
+    ventaId: VENTA,
+    cajaId: CAJA,
+    fecha: "2026-11-06T22:15:00.000-03:00",
+    items: [linea],
+    pagos: [{ medioPagoId: MEDIO, monto: 1500, recibido: 2000 }],
+    descuento: 0,
+  };
+
+  it("acepta lo que se cobró, con promo y hora local", () => {
+    expect(ventaSinConexionSchema.safeParse(sinConexion).success).toBe(true);
+    expect(
+      ventaSinConexionSchema.safeParse({
+        ...sinConexion,
+        fecha: "2026-11-07T01:15:00Z",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("acepta un producto a precio cero sin promo", () => {
+    const gratis = {
+      ...linea,
+      precioUnitario: 0,
+      descuento: 0,
+      promocionDescuento: 0,
+      promocionNombre: null,
+    };
+    expect(
+      ventaSinConexionSchema.safeParse({
+        ...sinConexion,
+        items: [gratis, { ...linea, productoId: OTRO }],
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rechaza una venta sin id o con una hora inválida", () => {
+    expect(
+      ventaSinConexionSchema.safeParse({ ...sinConexion, ventaId: "x" })
+        .success,
+    ).toBe(false);
+    expect(
+      ventaSinConexionSchema.safeParse({ ...sinConexion, fecha: "ayer" })
+        .success,
+    ).toBe(false);
+    expect(
+      ventaSinConexionSchema.safeParse({
+        ...sinConexion,
+        fecha: "2026-11-06T22:15:00",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rechaza descuentos que no cierran", () => {
+    const masPromoQueDescuento = {
+      ...linea,
+      descuento: 100,
+      promocionDescuento: 500,
+    };
+    const masQueLaLinea = { ...linea, descuento: 2500, promocionDescuento: 0 };
+    expect(
+      ventaSinConexionSchema.safeParse({
+        ...sinConexion,
+        items: [masPromoQueDescuento],
+      }).success,
+    ).toBe(false);
+    expect(
+      ventaSinConexionSchema.safeParse({
+        ...sinConexion,
+        items: [masQueLaLinea],
+      }).success,
+    ).toBe(false);
+    expect(
+      ventaSinConexionSchema.safeParse({ ...sinConexion, descuento: -1 })
+        .success,
+    ).toBe(false);
+  });
+
+  it("rechaza un producto repetido, cantidades inválidas y ventas vacías", () => {
+    expect(
+      ventaSinConexionSchema.safeParse({
+        ...sinConexion,
+        items: [linea, linea],
+      }).success,
+    ).toBe(false);
+    expect(
+      ventaSinConexionSchema.safeParse({
+        ...sinConexion,
+        items: [{ ...linea, cantidad: 1.5 }],
+      }).success,
+    ).toBe(false);
+    expect(
+      ventaSinConexionSchema.safeParse({ ...sinConexion, items: [] }).success,
+    ).toBe(false);
+    expect(
+      ventaSinConexionSchema.safeParse({ ...sinConexion, pagos: [] }).success,
+    ).toBe(false);
+  });
+
+  it("respeta los topes de ítems y pagos", () => {
+    const items = Array.from({ length: ITEMS_VENTA_MAX + 1 }, (_, i) => ({
+      ...linea,
+      productoId: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
+    }));
+    expect(
+      ventaSinConexionSchema.safeParse({ ...sinConexion, items }).success,
+    ).toBe(false);
+    const pagos = Array.from({ length: PAGOS_VENTA_MAX + 1 }, () => ({
+      medioPagoId: MEDIO,
+      monto: 1,
+    }));
+    expect(
+      ventaSinConexionSchema.safeParse({ ...sinConexion, pagos }).success,
+    ).toBe(false);
   });
 });
