@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useEffect, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MoneyInput } from "@/components/ui/money-input";
 import { formatDateTime } from "@/lib/date";
+import { EVENTO_COLA, pendientesDeCaja } from "@/lib/cola-ventas";
 import { cerrarCaja } from "../actions";
 import type { MedioAContar } from "../queries";
 import { NOTA_CIERRE_MAX } from "../schemas";
@@ -30,10 +31,19 @@ export function CerrarCajaForm({
   const [confirmando, setConfirmando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  // Ventas de esta caja cobradas sin internet que este dispositivo todavía no envió.
+  const [sinEnviar, setSinEnviar] = useState(0);
+
+  useEffect(() => {
+    const contar = () => void pendientesDeCaja(cajaId).then(setSinEnviar);
+    contar();
+    window.addEventListener(EVENTO_COLA, contar);
+    return () => window.removeEventListener(EVENTO_COLA, contar);
+  }, [cajaId]);
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (isPending) return;
+    if (isPending || sinEnviar > 0) return;
 
     const falta = medios.find((m) => (contados[m.id] ?? null) === null);
     if (falta) {
@@ -118,6 +128,18 @@ export function CerrarCajaForm({
           />
         </div>
 
+        {sinEnviar > 0 && (
+          <p
+            role="alert"
+            className="rounded-lg bg-warning-soft px-3 py-2 text-sm font-medium text-warning-foreground"
+          >
+            {sinEnviar === 1
+              ? "Hay 1 venta cobrada sin conexión que todavía no se envió."
+              : `Hay ${sinEnviar} ventas cobradas sin conexión que todavía no se enviaron.`}{" "}
+            Abrí Vender con internet para enviarlas antes de cerrar la caja.
+          </p>
+        )}
+
         {error && (
           <p role="alert" className="text-sm font-medium text-destructive">
             {error}
@@ -137,7 +159,7 @@ export function CerrarCajaForm({
             variant={confirmando ? "success" : "default"}
             size="lg"
             className="w-full"
-            disabled={isPending}
+            disabled={isPending || sinEnviar > 0}
           >
             <Lock data-icon="inline-start" />
             {isPending
