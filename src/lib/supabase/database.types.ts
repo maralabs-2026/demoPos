@@ -932,6 +932,7 @@ export type Database = {
         Row: {
           anulada_at: string | null;
           anulada_por: string | null;
+          avisos_sin_conexion: string[];
           caja_id: string;
           cliente_id: string | null;
           comercio_id: string;
@@ -941,12 +942,15 @@ export type Database = {
           estado: string;
           id: string;
           motivo_anulacion: string | null;
+          sin_conexion: boolean;
+          sincronizada_at: string | null;
           total: number;
           usuario_id: string;
         };
         Insert: {
           anulada_at?: string | null;
           anulada_por?: string | null;
+          avisos_sin_conexion?: string[];
           caja_id: string;
           cliente_id?: string | null;
           comercio_id: string;
@@ -956,12 +960,15 @@ export type Database = {
           estado?: string;
           id?: string;
           motivo_anulacion?: string | null;
+          sin_conexion?: boolean;
+          sincronizada_at?: string | null;
           total: number;
           usuario_id: string;
         };
         Update: {
           anulada_at?: string | null;
           anulada_por?: string | null;
+          avisos_sin_conexion?: string[];
           caja_id?: string;
           cliente_id?: string | null;
           comercio_id?: string;
@@ -971,6 +978,8 @@ export type Database = {
           estado?: string;
           id?: string;
           motivo_anulacion?: string | null;
+          sin_conexion?: boolean;
+          sincronizada_at?: string | null;
           total?: number;
           usuario_id?: string;
         };
@@ -1164,6 +1173,17 @@ export type Database = {
           p_descuento_pct?: number;
           p_items: Json;
           p_pagos: Json;
+        };
+        Returns: Json;
+      };
+      registrar_venta_sin_conexion: {
+        Args: {
+          p_caja_id: string;
+          p_descuento?: number;
+          p_fecha: string;
+          p_items: Json;
+          p_pagos: Json;
+          p_venta_id: string;
         };
         Returns: Json;
       };
