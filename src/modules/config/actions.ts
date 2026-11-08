@@ -7,6 +7,7 @@ import { LOGO_BUCKET, LOGO_TIPOS, tipoDeLogo } from "@/lib/logo";
 import { getAuthProfile } from "@/modules/auth";
 import {
   comercioNombreSchema,
+  avisoVencimientoSchema,
   corteDiaSchema,
   logoSchema,
   crearCategoriaSchema,
@@ -15,6 +16,7 @@ import {
   renombrarSchema,
   ticketSchema,
   type ComercioNombreInput,
+  type AvisoVencimientoInput,
   type CorteDiaInput,
   type CrearCategoriaInput,
   type CrearMedioPagoInput,
@@ -179,6 +181,35 @@ export async function guardarCorteDia(
     return fail("No se pudo guardar la hora de corte. Probá de nuevo.");
 
   revalidatePath("/", "layout");
+  return ok(null);
+}
+
+// Días de anticipación con que el inicio avisa los vencimientos (vencimientos_proximos, 0033).
+export async function guardarAvisoVencimiento(
+  input: AvisoVencimientoInput,
+): Promise<ActionResult<null>> {
+  const parsed = avisoVencimientoSchema.safeParse(input);
+  if (!parsed.success) return datosInvalidos(parsed.error);
+  if (!isSupabaseConfigured()) return fail(FALTA_CONFIG);
+
+  const auth = await requireDueno();
+  if (!auth.ok) return auth;
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("configuracion").upsert(
+    {
+      comercio_id: auth.data.comercio_id,
+      clave: "vencimiento_aviso_dias",
+      valor: parsed.data.dias,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "comercio_id,clave" },
+  );
+  if (error?.code === PG_SIN_PERMISO) return fail(SIN_PERMISO);
+  if (error) return fail("No se pudieron guardar los días. Probá de nuevo.");
+
+  revalidatePath("/inicio");
+  revalidatePath("/config");
   return ok(null);
 }
 

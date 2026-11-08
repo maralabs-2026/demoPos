@@ -4,6 +4,7 @@ export {
   crearCategoria,
   crearMedioPago,
   eliminarCategoria,
+  guardarAvisoVencimiento,
   guardarCorteDia,
   guardarLogo,
   guardarNombreComercio,
@@ -13,6 +14,7 @@ export {
   renombrarMedioPago,
 } from "./actions";
 export {
+  getAvisoVencimiento,
   getComercioName,
   getCorteDiaComercial,
   getDescuentoMaxCajeroPct,
@@ -22,6 +24,9 @@ export {
 } from "./queries";
 export type { MedioPago, MedioPagoConfig, TicketConfig } from "./queries";
 export {
+  AVISO_VENCIMIENTO_DEFECTO,
+  AVISO_VENCIMIENTO_MAX,
+  avisoVencimientoSchema,
   CORTE_DIA_MAX,
   corteDiaSchema,
   crearCategoriaSchema,
@@ -34,6 +39,7 @@ export {
   TIPOS_MEDIO_PAGO,
 } from "./schemas";
 export type {
+  AvisoVencimientoInput,
   CorteDiaInput,
   CrearCategoriaInput,
   CrearMedioPagoInput,

@@ -62,6 +62,17 @@ export const corteDiaSchema = z.object({
     .max(CORTE_DIA_MAX, { error: "Elegí una hora entre 0 y 12" }),
 });
 
+// Con cuántos días de anticipación avisa el inicio lo que está por vencer (0033).
+export const AVISO_VENCIMIENTO_DEFECTO = 30;
+export const AVISO_VENCIMIENTO_MAX = 180;
+export const avisoVencimientoSchema = z.object({
+  dias: z
+    .number({ error: "Escribí los días de aviso" })
+    .int({ error: "Escribí un número entero de días" })
+    .min(1, { error: "Escribí entre 1 y 180 días" })
+    .max(AVISO_VENCIMIENTO_MAX, { error: "Escribí entre 1 y 180 días" }),
+});
+
 // El tipo real se comprueba en el servidor por los primeros bytes (tipoDeLogo, en lib/logo.ts).
 export const logoSchema = z.object({
   logo: z
@@ -76,3 +87,4 @@ export type RenombrarInput = z.infer<typeof renombrarSchema>;
 export type CrearCategoriaInput = z.infer<typeof crearCategoriaSchema>;
 export type ComercioNombreInput = z.infer<typeof comercioNombreSchema>;
 export type CorteDiaInput = z.infer<typeof corteDiaSchema>;
+export type AvisoVencimientoInput = z.infer<typeof avisoVencimientoSchema>;
