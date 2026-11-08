@@ -17,6 +17,11 @@ type ConNulos<Fn extends { Args: object }, K extends keyof Fn["Args"]> = Omit<
 type Fns = Generated["public"]["Functions"];
 
 type FuncionesConNulos = {
+  // Sin monto pagado cuando la orden se cancela o vence.
+  aplicar_estado_mp_cobro: ConNulos<
+    Fns["aplicar_estado_mp_cobro"],
+    "p_monto_pagado"
+  >;
   // Sin vencimiento; sin caja cuando se paga por fuera.
   registrar_gasto: ConNulos<
     Fns["registrar_gasto"],

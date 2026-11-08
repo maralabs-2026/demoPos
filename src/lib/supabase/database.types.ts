@@ -695,6 +695,105 @@ export type Database = {
           },
         ];
       };
+      mp_cobros: {
+        Row: {
+          comercio_id: string;
+          creado_por: string;
+          created_at: string;
+          estado: string;
+          id: string;
+          monto: number;
+          monto_pagado: number | null;
+          order_id: string | null;
+          punto_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          comercio_id: string;
+          creado_por: string;
+          created_at?: string;
+          estado?: string;
+          id?: string;
+          monto: number;
+          monto_pagado?: number | null;
+          order_id?: string | null;
+          punto_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          comercio_id?: string;
+          creado_por?: string;
+          created_at?: string;
+          estado?: string;
+          id?: string;
+          monto?: number;
+          monto_pagado?: number | null;
+          order_id?: string | null;
+          punto_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mp_cobros_comercio_id_fkey";
+            columns: ["comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "comercios";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mp_cobros_creado_por_fkey";
+            columns: ["creado_por"];
+            isOneToOne: false;
+            referencedRelation: "perfiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mp_cobros_punto_id_comercio_id_fkey";
+            columns: ["punto_id", "comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "mp_puntos";
+            referencedColumns: ["id", "comercio_id"];
+          },
+        ];
+      };
+      mp_puntos: {
+        Row: {
+          activo: boolean;
+          comercio_id: string;
+          created_at: string;
+          external_pos_id: string;
+          id: string;
+          nombre: string;
+          updated_at: string;
+        };
+        Insert: {
+          activo?: boolean;
+          comercio_id: string;
+          created_at?: string;
+          external_pos_id: string;
+          id?: string;
+          nombre: string;
+          updated_at?: string;
+        };
+        Update: {
+          activo?: boolean;
+          comercio_id?: string;
+          created_at?: string;
+          external_pos_id?: string;
+          id?: string;
+          nombre?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mp_puntos_comercio_id_fkey";
+            columns: ["comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "comercios";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       perfiles: {
         Row: {
           activo: boolean;
@@ -1254,6 +1353,15 @@ export type Database = {
         Args: { p_categoria_id: string; p_conteos: Json };
         Returns: Json;
       };
+      aplicar_estado_mp_cobro: {
+        Args: {
+          p_cobro_id: string;
+          p_estado: string;
+          p_monto_pagado: number;
+          p_order_id: string;
+        };
+        Returns: string;
+      };
       caja_esperado_por_medio: {
         Args: { p_caja_id: string };
         Returns: {
@@ -1279,6 +1387,7 @@ export type Database = {
         };
         Returns: undefined;
       };
+      cancelar_mp_cobro: { Args: { p_cobro_id: string }; Returns: undefined };
       cerrar_caja: {
         Args: { p_caja_id: string; p_conteos: Json; p_nota?: string };
         Returns: Json;
@@ -1295,6 +1404,10 @@ export type Database = {
         };
         Returns: string;
       };
+      crear_mp_cobro: {
+        Args: { p_monto: number; p_punto_id: string };
+        Returns: string;
+      };
       current_comercio_id: { Args: never; Returns: string };
       current_rol: {
         Args: never;
@@ -1307,6 +1420,10 @@ export type Database = {
           p_promo: Database["public"]["Tables"]["promociones"]["Row"];
         };
         Returns: number;
+      };
+      fijar_orden_mp_cobro: {
+        Args: { p_cobro_id: string; p_order_id: string };
+        Returns: undefined;
       };
       gasto_validar_rol: { Args: never; Returns: undefined };
       guardar_producto: {
