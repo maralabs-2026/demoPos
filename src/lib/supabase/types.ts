@@ -33,6 +33,7 @@ type FuncionesConNulos = {
     | "p_costo"
     | "p_precio_anterior"
     | "p_costo_anterior"
+    | "p_proveedor_id"
   >;
   // Sin usuario: todos los cajeros.
   reporte_ventas: ConNulos<Fns["reporte_ventas"], "p_usuario_id">;

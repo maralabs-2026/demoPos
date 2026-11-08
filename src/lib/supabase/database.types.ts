@@ -616,6 +616,7 @@ export type Database = {
           nombre: string;
           precio: number;
           precio_libre: boolean;
+          proveedor_id: string | null;
           stock_actual: number;
           stock_minimo: number;
           unidad_venta: string;
@@ -631,6 +632,7 @@ export type Database = {
           nombre: string;
           precio: number;
           precio_libre?: boolean;
+          proveedor_id?: string | null;
           stock_actual?: number;
           stock_minimo?: number;
           unidad_venta?: string;
@@ -646,6 +648,7 @@ export type Database = {
           nombre?: string;
           precio?: number;
           precio_libre?: boolean;
+          proveedor_id?: string | null;
           stock_actual?: number;
           stock_minimo?: number;
           unidad_venta?: string;
@@ -664,6 +667,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "comercios";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "productos_proveedor_comercio_fkey";
+            columns: ["proveedor_id", "comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "proveedores";
+            referencedColumns: ["id", "comercio_id"];
           },
         ];
       };
@@ -782,6 +792,47 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "productos";
             referencedColumns: ["id", "comercio_id"];
+          },
+        ];
+      };
+      proveedores: {
+        Row: {
+          activo: boolean;
+          comercio_id: string;
+          created_at: string;
+          id: string;
+          nombre: string;
+          nota: string | null;
+          telefono: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          activo?: boolean;
+          comercio_id: string;
+          created_at?: string;
+          id?: string;
+          nombre: string;
+          nota?: string | null;
+          telefono?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          activo?: boolean;
+          comercio_id?: string;
+          created_at?: string;
+          id?: string;
+          nombre?: string;
+          nota?: string | null;
+          telefono?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "proveedores_comercio_id_fkey";
+            columns: ["comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "comercios";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -1144,6 +1195,7 @@ export type Database = {
           p_precio: number;
           p_precio_anterior?: number;
           p_precio_libre?: boolean;
+          p_proveedor_id?: string;
           p_stock_minimo: number;
           p_unidad_venta: string;
         };
