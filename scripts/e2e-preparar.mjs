@@ -1,6 +1,7 @@
 // Prepara la base de pruebas (kiosko-demo-test) antes de correr Playwright:
 //   1. Borra lo que dejaron corridas anteriores: promos, combos y productos "E2E ...".
 //      Un producto E2E con movimientos de stock o ventas queda: no se borran.
+//      También los medios de pago de prueba sin uso: el comercio admite hasta 50.
 //   2. Deja el producto de stock-concurrencia con stock exactamente 1 y repone Coca-Cola y
 //      Bon o Bon, que consumen los tests de venta, promo y combo.
 //
@@ -111,6 +112,23 @@ async function main() {
     }
   }
 
+  // Los deja config.spec, desactivados. Uno que otra tabla todavía referencia se conserva.
+  const mediosPrueba = await run(
+    "medios de prueba",
+    db
+      .from("medios_pago")
+      .select("id, venta_pagos(id)")
+      .eq("comercio_id", comercioId)
+      .eq("activo", false)
+      .like("nombre", "Cuenta DNI %"),
+  );
+  let mediosBorrados = 0;
+  for (const medio of mediosPrueba.filter((m) => m.venta_pagos.length === 0)) {
+    const { error } = await db.from("medios_pago").delete().eq("id", medio.id);
+    if (!error) mediosBorrados += 1;
+    else if (error.code !== "23503") throw new Error(`medio: ${error.message}`);
+  }
+
   // 2. Stock que necesitan los tests.
   const categoria = await run(
     "categoría",
@@ -175,7 +193,7 @@ async function main() {
   console.log(
     `Base de test lista: ${promos.length} promos, ${combos.length} combos y ` +
       `${productosBorrados} productos E2E borrados (${productosConservados} con movimientos o ventas quedan); ` +
-      `${ajustes.length} ajustes de stock.`,
+      `${mediosBorrados} medios de prueba borrados; ${ajustes.length} ajustes de stock.`,
   );
 }
 
