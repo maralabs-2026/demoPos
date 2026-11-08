@@ -27,3 +27,60 @@ export const proveedorSchema = z.object({
 });
 
 export type ProveedorInput = z.input<typeof proveedorSchema>;
+
+// ---- Compras ----
+
+export const COMPRA_ITEMS_MAX = 200;
+const montoSchema = z.number().finite().min(0).max(9_999_999_999.99);
+
+export const compraItemSchema = z.object({
+  productoId: z.uuid(),
+  cantidad: z
+    .number({ error: "Escribí la cantidad" })
+    .int({ error: "La cantidad tiene que ser un número entero" })
+    .min(1, { error: "La cantidad tiene que ser mayor a 0" })
+    .max(100_000, { error: "La cantidad es demasiado grande" }),
+  costoLista: montoSchema,
+  bonificacionPct: z
+    .number()
+    .min(0, { error: "La bonificación va de 0 a 100" })
+    .max(100, { error: "La bonificación va de 0 a 100" }),
+  vencimiento: z.iso
+    .date({ error: "Revisá la fecha de vencimiento" })
+    .nullable(),
+});
+
+const pagoCompraSchema = z.discriminatedUnion("tipo", [
+  z.object({
+    tipo: z.literal("caja"),
+    cajaId: z.uuid({ error: "Elegí una caja" }),
+  }),
+  z.object({ tipo: z.literal("fuera") }),
+  z.object({
+    tipo: z.literal("por_pagar"),
+    vencimiento: z.iso
+      .date({ error: "Revisá el vencimiento del pago" })
+      .nullable(),
+  }),
+]);
+
+export const compraSchema = z.object({
+  proveedorId: z.uuid({ error: "Elegí un proveedor" }),
+  comprobante: z
+    .string()
+    .trim()
+    .max(60, { error: "El comprobante es demasiado largo" }),
+  items: z
+    .array(compraItemSchema)
+    .min(1, { error: "Agregá al menos un producto" })
+    .max(COMPRA_ITEMS_MAX, { error: "La compra tiene demasiados productos" })
+    .refine(
+      (items) => new Set(items.map((i) => i.productoId)).size === items.length,
+      {
+        error: "Un producto aparece dos veces",
+      },
+    ),
+  pago: pagoCompraSchema,
+});
+
+export type CompraInput = z.input<typeof compraSchema>;

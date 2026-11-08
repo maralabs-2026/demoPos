@@ -170,7 +170,7 @@ export async function getMovimientosCaja(
 export type Gasto = {
   id: string;
   descripcion: string;
-  tipo: "fijo" | "variable";
+  tipo: "fijo" | "variable" | "mercaderia";
   monto: number;
   vencimiento: string | null;
   estado: "por_pagar" | "pagado" | "anulado";

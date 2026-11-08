@@ -3,8 +3,10 @@ export {
   cambiarActivoProveedor,
   crearProveedor,
   editarProveedor,
+  registrarCompra,
 } from "./actions";
-export { getProveedores } from "./queries";
-export type { Proveedor } from "./queries";
-export { proveedorSchema } from "./schemas";
-export type { ProveedorInput } from "./schemas";
+export type { CompraRegistrada, CostoQueSubio } from "./actions";
+export { getCompras, getProveedores } from "./queries";
+export type { Compra, Proveedor } from "./queries";
+export { compraSchema, proveedorSchema } from "./schemas";
+export type { CompraInput, ProveedorInput } from "./schemas";

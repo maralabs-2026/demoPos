@@ -5,6 +5,7 @@ const TABS = [
   { href: "/stock", label: "Stock" },
   { href: "/stock/reposicion", label: "Reposición" },
   { href: "/stock/auditoria", label: "Auditoría" },
+  { href: "/stock/compras", label: "Compras" },
   { href: "/stock/proveedores", label: "Proveedores" },
 ];
 

@@ -5,7 +5,12 @@ import { z } from "zod";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { getAuthProfile, type Rol, type SessionProfile } from "@/modules/auth";
-import { proveedorSchema, type ProveedorInput } from "./schemas";
+import {
+  compraSchema,
+  proveedorSchema,
+  type CompraInput,
+  type ProveedorInput,
+} from "./schemas";
 
 const ROLES: readonly Rol[] = ["dueno", "encargado"];
 const SIN_PERMISO = "Tu rol no puede administrar proveedores.";
@@ -94,4 +99,93 @@ export async function cambiarActivoProveedor(
   if (error) return errorDeEscritura(error.code);
   revalidar();
   return ok(null);
+}
+
+export type CostoQueSubio = {
+  nombre: string;
+  precio: number;
+  costoAnterior: number;
+  costoNuevo: number;
+};
+export type CompraRegistrada = {
+  compraId: string;
+  total: number;
+  suben: CostoQueSubio[];
+};
+
+type CompraRow = {
+  compra_id: string;
+  total: number;
+  suben: {
+    nombre: string;
+    precio: number;
+    costo_anterior: number;
+    costo_nuevo: number;
+  }[];
+};
+
+const ERRORES_COMPRA: Record<string, string> = {
+  [PG_INSUFFICIENT_PRIVILEGE]: "Tu rol no puede registrar compras.",
+  PV002: "Esa caja no existe o no se puede usar.",
+  PV005: "Un producto de la compra ya no existe. Recargá la pantalla.",
+  PV012: "Esa caja ya se cerró. Elegí otra forma de pago.",
+  PV016: "No se pudo registrar el pago de la compra.",
+  PV027: "Un servicio no lleva stock: sacalo de la compra.",
+  PV028:
+    "Revisá el proveedor, las cantidades y los costos: el total tiene que ser mayor a $ 0.",
+};
+
+// Stock, costos, ítems y gasto en una sola transacción (registrar_compra, 0035).
+export async function registrarCompra(
+  input: CompraInput,
+): Promise<ActionResult<CompraRegistrada>> {
+  const parsed = compraSchema.safeParse(input);
+  if (!parsed.success) {
+    return fail(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  }
+  const auth = await requireRol();
+  if (!auth.ok) return auth;
+
+  const { proveedorId, comprobante, items, pago } = parsed.data;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("registrar_compra", {
+    p_proveedor_id: proveedorId,
+    p_comprobante: comprobante,
+    p_items: items.map((i) => ({
+      producto_id: i.productoId,
+      cantidad: i.cantidad,
+      costo_lista: i.costoLista,
+      bonificacion_pct: i.bonificacionPct,
+      vencimiento: i.vencimiento,
+    })),
+    p_pago: pago.tipo,
+    p_caja_id: pago.tipo === "caja" ? pago.cajaId : undefined,
+    p_vencimiento:
+      pago.tipo === "por_pagar" ? (pago.vencimiento ?? undefined) : undefined,
+  });
+  if (error) {
+    return fail(
+      ERRORES_COMPRA[error.code] ??
+        "No se pudo registrar la compra. Probá de nuevo.",
+    );
+  }
+
+  const r = data as CompraRow;
+  revalidatePath("/stock/compras");
+  revalidatePath("/stock");
+  revalidatePath("/productos");
+  revalidatePath("/vender");
+  revalidatePath("/caja");
+  revalidatePath("/caja/gastos");
+  revalidatePath("/inicio");
+  return ok({
+    compraId: r.compra_id,
+    total: Number(r.total),
+    suben: r.suben.map((c) => ({
+      nombre: c.nombre,
+      precio: Number(c.precio),
+      costoAnterior: Number(c.costo_anterior),
+      costoNuevo: Number(c.costo_nuevo),
+    })),
+  });
 }
