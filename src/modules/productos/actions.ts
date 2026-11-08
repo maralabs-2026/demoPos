@@ -163,6 +163,7 @@ async function guardarProducto(
 export async function crearProducto(
   input: ProductoInput,
   stockInicial = 0,
+  vencimiento?: string,
 ): Promise<ActionResult<ProductoGuardado>> {
   const cantidad = stockInicialSchema.safeParse(stockInicial);
   if (!cantidad.success) {
@@ -178,6 +179,7 @@ export async function crearProducto(
     productoId: result.data.id,
     cantidad: cantidad.data,
     motivo: "Stock inicial",
+    vencimiento,
   });
   return ok({
     id: result.data.id,

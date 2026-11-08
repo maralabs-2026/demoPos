@@ -511,6 +511,7 @@ export type Database = {
           producto_id: string;
           tipo: string;
           usuario_id: string | null;
+          vencimiento: string | null;
           venta_id: string | null;
         };
         Insert: {
@@ -522,6 +523,7 @@ export type Database = {
           producto_id: string;
           tipo: string;
           usuario_id?: string | null;
+          vencimiento?: string | null;
           venta_id?: string | null;
         };
         Update: {
@@ -533,6 +535,7 @@ export type Database = {
           producto_id?: string;
           tipo?: string;
           usuario_id?: string | null;
+          vencimiento?: string | null;
           venta_id?: string | null;
         };
         Relationships: [
@@ -1220,6 +1223,7 @@ export type Database = {
         Returns: Json;
       };
       siguiente_codigo_interno: { Args: never; Returns: string };
+      vencimientos_proximos: { Args: never; Returns: Json };
     };
     Enums: {
       rol_usuario: "dueno" | "encargado" | "cajero";

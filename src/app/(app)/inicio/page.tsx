@@ -90,7 +90,8 @@ export default async function InicioPage() {
     inicio.reposicion === 0 &&
     inicio.cajasConDiferencia.length === 0 &&
     inicio.gastos.length === 0 &&
-    inicio.ventasSinConexion.length === 0;
+    inicio.ventasSinConexion.length === 0 &&
+    inicio.vencimientos.length === 0;
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-4 p-4 sm:p-6 lg:p-8">
@@ -189,6 +190,14 @@ export default async function InicioPage() {
                       {formatCurrency(v.total)}
                     </span>
                   }
+                />
+              ))}
+              {inicio.vencimientos.map((v) => (
+                <Pendiente
+                  key={`${v.productoId}-${v.vencimiento}`}
+                  href={`/stock?producto=${v.productoId}`}
+                  titulo={`${v.nombre}: ~${v.cantidad} ${v.unidadVenta}`}
+                  detalle={`${v.vencido ? "Venció" : "Vence"} el ${formatDate(v.vencimiento)}`}
                 />
               ))}
               {inicio.gastos.map((g) => (

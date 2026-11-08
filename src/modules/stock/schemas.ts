@@ -16,6 +16,13 @@ export const ingresoSchema = z.object({
     .max(200, "El detalle puede tener hasta 200 caracteres")
     .optional()
     .transform((v) => (v ? v : undefined)),
+  // Opcional: fecha de vencimiento de esta mercadería (AAAA-MM-DD). Vacía = sin fecha.
+  vencimiento: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ? v : undefined))
+    .pipe(z.iso.date({ error: "Revisá la fecha de vencimiento" }).optional()),
 });
 
 // La cantidad va siempre en positivo; `sentido` define si suma o resta.

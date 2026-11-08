@@ -24,6 +24,7 @@ export function MovimientoForm({
   const [sentido, setSentido] = useState<Sentido>("restar");
   const [cantidad, setCantidad] = useState("");
   const [motivo, setMotivo] = useState("");
+  const [vencimiento, setVencimiento] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -38,7 +39,12 @@ export function MovimientoForm({
     startTransition(async () => {
       const result =
         modo === "ingreso"
-          ? await registrarIngreso({ productoId, cantidad: n, motivo })
+          ? await registrarIngreso({
+              productoId,
+              cantidad: n,
+              motivo,
+              vencimiento,
+            })
           : await registrarAjuste({ productoId, sentido, cantidad: n, motivo });
       if (!result.ok) {
         setError(result.error);
@@ -46,6 +52,7 @@ export function MovimientoForm({
       }
       setCantidad("");
       setMotivo("");
+      setVencimiento("");
       onRegistrado(
         result.data.stockActual,
         modo === "ingreso" ? "Ingreso registrado" : "Ajuste registrado",
@@ -131,6 +138,18 @@ export function MovimientoForm({
           />
         </label>
       </div>
+
+      {modo === "ingreso" && (
+        <label className="block max-w-56 space-y-1 text-sm">
+          <span className="font-medium">Vence el (opcional)</span>
+          <Input
+            id="stock-vencimiento"
+            type="date"
+            value={vencimiento}
+            onChange={(e) => setVencimiento(e.target.value)}
+          />
+        </label>
+      )}
 
       <p
         className={cn(

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { LOGO_MAX_BYTES } from "@/lib/logo";
 import {
   comercioNombreSchema,
+  avisoVencimientoSchema,
   CORTE_DIA_MAX,
   corteDiaSchema,
   crearCategoriaSchema,
@@ -119,5 +120,18 @@ describe("corteDiaSchema", () => {
     expect(corteDiaSchema.safeParse({ horas: 5.5 }).success).toBe(false);
     expect(corteDiaSchema.safeParse({ horas: "6" }).success).toBe(false);
     expect(corteDiaSchema.safeParse({ horas: undefined }).success).toBe(false);
+  });
+});
+
+describe("avisoVencimientoSchema", () => {
+  it("acepta de 1 a 180 días enteros", () => {
+    expect(avisoVencimientoSchema.safeParse({ dias: 1 }).success).toBe(true);
+    expect(avisoVencimientoSchema.safeParse({ dias: 180 }).success).toBe(true);
+  });
+
+  it("rechaza fuera de rango, decimales y textos", () => {
+    for (const dias of [0, 181, 1.5, "30"]) {
+      expect(avisoVencimientoSchema.safeParse({ dias }).success).toBe(false);
+    }
   });
 });
