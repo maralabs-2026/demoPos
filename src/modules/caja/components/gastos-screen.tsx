@@ -20,6 +20,7 @@ import { PagarGastoDialog } from "./pagar-gasto-dialog";
 const TIPO_LABEL: Record<Gasto["tipo"], string> = {
   fijo: "Fijo",
   variable: "Variable",
+  mercaderia: "Mercadería",
 };
 
 function detalle(gasto: Gasto): string {
