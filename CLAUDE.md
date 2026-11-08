@@ -17,7 +17,7 @@ Prioridades en este orden:
 3. **Simplicidad.** Lo usa gente sin formación técnica desde el celular, la tablet o la PC.
 4. **Reutilizable.** Multi-tenant desde el día uno, configuración en datos, módulos separados.
 
-Lo que NO se construye en esta versión: facturación electrónica ARCA, Mercado Pago, cuenta corriente, multi-sucursal, e-commerce. Dejar los puntos de extensión, no implementarlos.
+Lo que NO se construye en esta versión: facturación electrónica ARCA, cuenta corriente, multi-sucursal, e-commerce. Mercado Pago entra solo para cobrar con QR (aprobado por el dueño el 2026-11-08, ver sección 3). Dejar los puntos de extensión, no implementarlos.
 
 ## 2. Stack (no cambiar sin aprobación)
 
@@ -64,6 +64,7 @@ src/
 - El stock se calcula como suma de movimientos, no como un campo que se sobreescribe. El campo `stock_actual` en productos es una caché que se actualiza por trigger.
 - Los precios se guardan en la venta al momento de vender (snapshot). Cambiar el precio de un producto no altera ventas pasadas.
 - Venta sin internet (aprobada por el dueño el 2026-11-06): una venta cobrada sin conexión se envía cuando vuelve la red con `registrar_venta_sin_conexion`, en una transacción y con un id generado en el dispositivo, así que reenviarla no la duplica. Se registra lo que se cobró (precio, promo y descuentos del momento) y con cualquier medio del comercio. Es la única excepción al stock: si no alcanza, la venta entra igual y el stock queda negativo, porque la mercadería ya se entregó. Queda marcada como sin conexión, con avisos si su precio no coincidía con el catálogo o si dejó stock negativo, para que el dueño la revise.
+- Cobro con QR de Mercado Pago (aprobado por el dueño el 2026-11-08): QR fijo impreso por caja, una orden por vez en cada QR y por el total de la venta, sin combinarlo con otros medios. No se ofrece sin internet. Un aviso de Mercado Pago nunca se cree: siempre se consulta la orden, y solo la service role aplica el resultado. Si pagó y el aviso no llega, el cajero confirma a mano y la venta queda marcada para que la revise el dueño. El reintegro al anular se hace por fuera, en Mercado Pago. El token vive en una variable de servidor, así que sirve para un solo comercio por despliegue.
 - Montos en `numeric(12,2)`, nunca `float`.
 - Una venta nunca se borra. Anularla la marca como anulada y, en la misma transacción, genera los movimientos de stock inversos y resuelve la plata: si su caja sigue abierta no hace falta movimiento, porque la venta anulada deja de sumar en el esperado; si ya se cerró, el efectivo sale con un retiro de la caja abierta de quien anula (sin caja abierta no se puede), los otros medios se devuelven por fuera y el cierre pasado no cambia.
   - Única excepción, ya usada: el 2026-11-06, antes de abrir al público y con autorización del dueño, se borraron en producción los datos de prueba (operación, catálogo y usuarios que no eran dueño), con respaldo previo fuera del repo. No se repite con datos reales.
@@ -174,7 +175,7 @@ Configuración del comercio (datos del ticket, medios de pago, categorías, usua
 
 ## 7. Puntos de extensión (dejar preparados, no implementar)
 
-- `venta_pagos.referencia_externa` y `medios_pago.tipo` (`efectivo | tarjeta | transferencia | qr | cuenta_corriente`) para integrar Mercado Pago después.
+- `venta_pagos.referencia_externa` y `medios_pago.tipo` (`efectivo | tarjeta | transferencia | qr | cuenta_corriente`), que usa el cobro con QR de Mercado Pago.
 - `ventas.comprobante_fiscal_id` nullable para ARCA.
 - `comercios` ya soporta N comercios; `perfiles` permitirá un usuario con varios comercios vía tabla intermedia (no crearla ahora).
 - Tabla `clientes` no se crea ahora; `ventas.cliente_id` nullable queda reservado.
