@@ -45,7 +45,7 @@ begin
    where comercio_id = comercio and codigo_barras = '7790010000154';
   select id, productos.precio into otro_producto, precio_otro from public.productos
    where comercio_id = comercio and id <> coca and productos.precio > 0
-   order by id limit 1;
+   and controla_stock order by id limit 1;
   select id into efectivo from public.medios_pago
    where comercio_id = comercio and tipo = 'efectivo' and activo order by orden limit 1;
   select id into tarjeta from public.medios_pago

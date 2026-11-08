@@ -331,6 +331,132 @@ export type Database = {
         };
         Relationships: [];
       };
+      compra_items: {
+        Row: {
+          bonificacion_pct: number;
+          cantidad: number;
+          comercio_id: string;
+          compra_id: string;
+          costo_lista: number;
+          costo_unitario: number;
+          id: string;
+          nombre: string;
+          producto_id: string;
+          subtotal: number;
+          vencimiento: string | null;
+        };
+        Insert: {
+          bonificacion_pct: number;
+          cantidad: number;
+          comercio_id: string;
+          compra_id: string;
+          costo_lista: number;
+          costo_unitario: number;
+          id?: string;
+          nombre: string;
+          producto_id: string;
+          subtotal: number;
+          vencimiento?: string | null;
+        };
+        Update: {
+          bonificacion_pct?: number;
+          cantidad?: number;
+          comercio_id?: string;
+          compra_id?: string;
+          costo_lista?: number;
+          costo_unitario?: number;
+          id?: string;
+          nombre?: string;
+          producto_id?: string;
+          subtotal?: number;
+          vencimiento?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "compra_items_comercio_id_fkey";
+            columns: ["comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "comercios";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "compra_items_compra_id_comercio_id_fkey";
+            columns: ["compra_id", "comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "compras";
+            referencedColumns: ["id", "comercio_id"];
+          },
+          {
+            foreignKeyName: "compra_items_producto_id_comercio_id_fkey";
+            columns: ["producto_id", "comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "productos";
+            referencedColumns: ["id", "comercio_id"];
+          },
+        ];
+      };
+      compras: {
+        Row: {
+          comercio_id: string;
+          comprobante: string | null;
+          created_at: string;
+          gasto_id: string;
+          id: string;
+          proveedor_id: string;
+          total: number;
+          usuario_id: string;
+        };
+        Insert: {
+          comercio_id: string;
+          comprobante?: string | null;
+          created_at?: string;
+          gasto_id: string;
+          id?: string;
+          proveedor_id: string;
+          total: number;
+          usuario_id: string;
+        };
+        Update: {
+          comercio_id?: string;
+          comprobante?: string | null;
+          created_at?: string;
+          gasto_id?: string;
+          id?: string;
+          proveedor_id?: string;
+          total?: number;
+          usuario_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "compras_comercio_id_fkey";
+            columns: ["comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "comercios";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "compras_gasto_id_fkey";
+            columns: ["gasto_id"];
+            isOneToOne: false;
+            referencedRelation: "gastos";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "compras_proveedor_id_comercio_id_fkey";
+            columns: ["proveedor_id", "comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "proveedores";
+            referencedColumns: ["id", "comercio_id"];
+          },
+          {
+            foreignKeyName: "compras_usuario_id_comercio_id_fkey";
+            columns: ["usuario_id", "comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "perfiles";
+            referencedColumns: ["id", "comercio_id"];
+          },
+        ];
+      };
       configuracion: {
         Row: {
           clave: string;
@@ -1223,6 +1349,17 @@ export type Database = {
       puede_administrar_usuario: {
         Args: { p_usuario_id: string };
         Returns: boolean;
+      };
+      registrar_compra: {
+        Args: {
+          p_caja_id?: string;
+          p_comprobante: string;
+          p_items: Json;
+          p_pago: string;
+          p_proveedor_id: string;
+          p_vencimiento?: string;
+        };
+        Returns: Json;
       };
       registrar_gasto: {
         Args: {
