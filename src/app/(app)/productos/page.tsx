@@ -1,3 +1,4 @@
+import { getProveedores } from "@/modules/proveedores";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { canAccess, getAuthProfile } from "@/modules/auth";
@@ -9,11 +10,13 @@ export const dynamic = "force-dynamic";
 export default async function ProductosPage() {
   // Todo en paralelo: la RLS de productos_costos ya le oculta los costos al cajero, así que se
   // pueden pedir sin esperar el perfil.
-  const [profile, productosResult, categoriasResult] = await Promise.all([
-    getAuthProfile(),
-    getProductos(undefined, true),
-    getCategorias(),
-  ]);
+  const [profile, productosResult, categoriasResult, proveedores] =
+    await Promise.all([
+      getAuthProfile(),
+      getProductos(undefined, true),
+      getCategorias(),
+      getProveedores(),
+    ]);
   const puedeGestionar =
     profile !== null && canAccess(profile.rol, "/productos/precios");
 
@@ -61,6 +64,7 @@ export default async function ProductosPage() {
           puedeCrearCategoria={profile?.rol === "dueno"}
           productos={productosResult.data}
           categorias={categoriasResult.data}
+          proveedores={proveedores.ok ? proveedores.data : []}
           puedeGestionar={puedeGestionar}
         />
       )}

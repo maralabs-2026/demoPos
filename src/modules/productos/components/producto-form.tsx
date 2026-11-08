@@ -56,6 +56,9 @@ function Seccion({
   );
 }
 
+// Se ofrecen los activos y, al editar, el que ya tenía aunque esté desactivado.
+export type ProveedorOpcion = { id: string; nombre: string; activo: boolean };
+
 function Campo({
   id,
   label,
@@ -83,6 +86,7 @@ type ProductoFormProps = {
   producto?: Producto;
   // Crear categorías es del dueño: el encargado no ve "+ Nueva".
   puedeCrearCategoria: boolean;
+  proveedores: ProveedorOpcion[];
   // `aviso`: el producto se guardó, pero algo posterior (foto o stock inicial) falló.
   onSuccess?: (aviso?: string) => void;
   onCancel?: () => void;
@@ -92,6 +96,7 @@ export function ProductoForm({
   categorias: categoriasIniciales,
   producto,
   puedeCrearCategoria,
+  proveedores,
   onSuccess,
   onCancel,
 }: ProductoFormProps) {
@@ -101,6 +106,7 @@ export function ProductoForm({
   );
   const [categorias, setCategorias] = useState(categoriasIniciales);
   const [categoriaId, setCategoriaId] = useState(producto?.categoriaId ?? "");
+  const [proveedorId, setProveedorId] = useState(producto?.proveedorId ?? "");
   const [nuevaCategoria, setNuevaCategoria] = useState<string | null>(null);
   const [creandoCategoria, setCreandoCategoria] = useState(false);
   const [costo, setCosto] = useState(montoAEditar(producto?.costo));
@@ -307,6 +313,7 @@ export function ProductoForm({
       stockMinimo: esServicio ? 0 : Number(stockMinimo),
       controlaStock: !esServicio,
       precioLibre,
+      proveedorId: proveedorId === "" ? null : proveedorId,
     };
 
     setGuardando(true);
@@ -546,6 +553,30 @@ export function ProductoForm({
               </div>
             )}
           </div>
+        </Seccion>
+
+        <Seccion titulo="Proveedor">
+          <Campo
+            id="producto-proveedor"
+            label="Proveedor habitual"
+            ayuda="Agrupa la reposición sugerida por proveedor."
+          >
+            <select
+              id="producto-proveedor"
+              value={proveedorId}
+              onChange={(event) => setProveedorId(event.target.value)}
+              className={selectClass}
+            >
+              <option value="">Sin proveedor</option>
+              {proveedores
+                .filter((p) => p.activo || p.id === producto?.proveedorId)
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombre}
+                  </option>
+                ))}
+            </select>
+          </Campo>
         </Seccion>
 
         <Seccion titulo="Precios y rentabilidad">
