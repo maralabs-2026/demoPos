@@ -1402,6 +1402,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      reporte_analisis: {
+        Args: { p_desde: string; p_hasta: string };
+        Returns: Json;
+      };
       reporte_ventas: {
         Args: {
           p_agrupar?: string;
