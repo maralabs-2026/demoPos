@@ -43,6 +43,24 @@ export type Inicio = {
     cajero: string;
     avisos: AvisoSinConexion[];
   }[];
+  // Lo vencido y lo que vence pronto, con la cantidad estimada (0033).
+  vencimientos: {
+    productoId: string;
+    nombre: string;
+    unidadVenta: string;
+    vencimiento: string;
+    cantidad: number;
+    vencido: boolean;
+  }[];
+};
+
+type VencimientoRow = {
+  producto_id: string;
+  nombre: string;
+  unidad_venta: string;
+  vencimiento: string;
+  cantidad: number;
+  vencido: boolean;
 };
 
 export type AvisoSinConexion = "precio" | "stock";
@@ -93,7 +111,7 @@ type InicioRow = {
 
 export async function getInicio(): Promise<ActionResult<Inicio>> {
   const supabase = await createClient();
-  const [{ data, error }, aRevisar] = await Promise.all([
+  const [{ data, error }, aRevisar, proximos] = await Promise.all([
     supabase.rpc("inicio_resumen"),
     supabase
       .from("ventas")
@@ -107,8 +125,10 @@ export async function getInicio(): Promise<ActionResult<Inicio>> {
       .order("created_at", { ascending: false })
       .limit(VENTAS_A_REVISAR_MAX)
       .overrideTypes<VentaARevisarRow[], { merge: false }>(),
+    supabase.rpc("vencimientos_proximos"),
   ]);
-  if (error || aRevisar.error) return fail("No se pudo armar el inicio.");
+  if (error || aRevisar.error || proximos.error)
+    return fail("No se pudo armar el inicio.");
 
   const r = data as InicioRow;
   return ok({
@@ -143,6 +163,14 @@ export async function getInicio(): Promise<ActionResult<Inicio>> {
       total: Number(v.total),
       cajero: v.cajero?.nombre ?? "Otro usuario",
       avisos: v.avisos_sin_conexion,
+    })),
+    vencimientos: (proximos.data as VencimientoRow[]).map((v) => ({
+      productoId: v.producto_id,
+      nombre: v.nombre,
+      unidadVenta: v.unidad_venta,
+      vencimiento: v.vencimiento,
+      cantidad: Number(v.cantidad),
+      vencido: v.vencido,
     })),
   });
 }
