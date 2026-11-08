@@ -5,5 +5,9 @@ export { getMovimientos, getProductosAContar } from "./queries";
 export type { Movimiento, ProductoAContar, TipoMovimiento } from "./queries";
 export { ajusteSchema, auditoriaSchema, ingresoSchema } from "./schemas";
 export type { AjusteInput, AuditoriaInput, IngresoInput } from "./schemas";
-export { reposicionComoTexto, sugerirReposicion } from "./reposicion";
-export type { LineaReposicion } from "./reposicion";
+export {
+  agruparPorProveedor,
+  reposicionComoTexto,
+  sugerirReposicion,
+} from "./reposicion";
+export type { LineaReposicion, PedidoProveedor } from "./reposicion";
