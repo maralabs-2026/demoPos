@@ -4,9 +4,10 @@ import { SectionTabs } from "@/components/section-tabs";
 const TABS = [
   { href: "/reportes", label: "Reportes" },
   { href: "/reportes/ventas", label: "Ventas" },
+  { href: "/reportes/analisis", label: "Análisis" },
 ];
 
-// Las dos pestañas son para dueño y encargado. Cada página valida su acceso con requireRol.
+// Las pestañas son para dueño y encargado. Cada página valida su acceso con requireRol.
 export default function ReportesLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
