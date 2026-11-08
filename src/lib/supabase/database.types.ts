@@ -612,6 +612,7 @@ export type Database = {
           id: string;
           nombre: string;
           precio: number;
+          precio_libre: boolean;
           stock_actual: number;
           stock_minimo: number;
           unidad_venta: string;
@@ -626,6 +627,7 @@ export type Database = {
           id?: string;
           nombre: string;
           precio: number;
+          precio_libre?: boolean;
           stock_actual?: number;
           stock_minimo?: number;
           unidad_venta?: string;
@@ -640,6 +642,7 @@ export type Database = {
           id?: string;
           nombre?: string;
           precio?: number;
+          precio_libre?: boolean;
           stock_actual?: number;
           stock_minimo?: number;
           unidad_venta?: string;
@@ -1137,6 +1140,7 @@ export type Database = {
           p_nombre: string;
           p_precio: number;
           p_precio_anterior?: number;
+          p_precio_libre?: boolean;
           p_stock_minimo: number;
           p_unidad_venta: string;
         };
