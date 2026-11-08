@@ -698,6 +698,7 @@ export type Database = {
       mp_cobros: {
         Row: {
           comercio_id: string;
+          confirmado_por: string | null;
           creado_por: string;
           created_at: string;
           estado: string;
@@ -707,9 +708,11 @@ export type Database = {
           order_id: string | null;
           punto_id: string;
           updated_at: string;
+          venta_id: string | null;
         };
         Insert: {
           comercio_id: string;
+          confirmado_por?: string | null;
           creado_por: string;
           created_at?: string;
           estado?: string;
@@ -719,9 +722,11 @@ export type Database = {
           order_id?: string | null;
           punto_id: string;
           updated_at?: string;
+          venta_id?: string | null;
         };
         Update: {
           comercio_id?: string;
+          confirmado_por?: string | null;
           creado_por?: string;
           created_at?: string;
           estado?: string;
@@ -731,6 +736,7 @@ export type Database = {
           order_id?: string | null;
           punto_id?: string;
           updated_at?: string;
+          venta_id?: string | null;
         };
         Relationships: [
           {
@@ -738,6 +744,13 @@ export type Database = {
             columns: ["comercio_id"];
             isOneToOne: false;
             referencedRelation: "comercios";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mp_cobros_confirmado_por_fkey";
+            columns: ["confirmado_por"];
+            isOneToOne: false;
+            referencedRelation: "perfiles";
             referencedColumns: ["id"];
           },
           {
@@ -752,6 +765,13 @@ export type Database = {
             columns: ["punto_id", "comercio_id"];
             isOneToOne: false;
             referencedRelation: "mp_puntos";
+            referencedColumns: ["id", "comercio_id"];
+          },
+          {
+            foreignKeyName: "mp_cobros_venta_comercio_fkey";
+            columns: ["venta_id", "comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "ventas";
             referencedColumns: ["id", "comercio_id"];
           },
         ];
@@ -1227,6 +1247,7 @@ export type Database = {
           estado: string;
           id: string;
           motivo_anulacion: string | null;
+          qr_manual: boolean;
           revisada_at: string | null;
           revisada_por: string | null;
           sin_conexion: boolean;
@@ -1247,6 +1268,7 @@ export type Database = {
           estado?: string;
           id?: string;
           motivo_anulacion?: string | null;
+          qr_manual?: boolean;
           revisada_at?: string | null;
           revisada_por?: string | null;
           sin_conexion?: boolean;
@@ -1267,6 +1289,7 @@ export type Database = {
           estado?: string;
           id?: string;
           motivo_anulacion?: string | null;
+          qr_manual?: boolean;
           revisada_at?: string | null;
           revisada_por?: string | null;
           sin_conexion?: boolean;
@@ -1391,6 +1414,10 @@ export type Database = {
       cerrar_caja: {
         Args: { p_caja_id: string; p_conteos: Json; p_nota?: string };
         Returns: Json;
+      };
+      confirmar_mp_cobro_manual: {
+        Args: { p_cobro_id: string };
+        Returns: string;
       };
       corte_dia_comercial: { Args: never; Returns: string };
       crear_combo: {
