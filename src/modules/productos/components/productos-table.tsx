@@ -21,7 +21,7 @@ import { eliminarProducto } from "../actions";
 import type { Categoria, Producto } from "../queries";
 import { calcularMargen } from "../schemas";
 import { EtiquetasDialog } from "./etiquetas-dialog";
-import { ProductoForm } from "./producto-form";
+import { ProductoForm, type ProveedorOpcion } from "./producto-form";
 
 function StockCell({ producto }: { producto: Producto }) {
   if (!producto.controlaStock) {
@@ -53,6 +53,7 @@ type ProductosTableProps = {
   puedeGestionar: boolean;
   // Solo el dueño crea categorías desde el formulario.
   puedeCrearCategoria: boolean;
+  proveedores: ProveedorOpcion[];
 };
 
 export function ProductosTable({
@@ -60,6 +61,7 @@ export function ProductosTable({
   categorias,
   puedeGestionar,
   puedeCrearCategoria,
+  proveedores,
 }: ProductosTableProps) {
   const [busqueda, setBusqueda] = useState("");
   const [formulario, setFormulario] = useState<Producto | "nuevo" | null>(null);
@@ -161,6 +163,7 @@ export function ProductosTable({
                 categorias={categorias}
                 producto={formulario === "nuevo" ? undefined : formulario}
                 puedeCrearCategoria={puedeCrearCategoria}
+                proveedores={proveedores}
                 onSuccess={cerrarFormulario}
                 onCancel={() => setFormulario(null)}
               />

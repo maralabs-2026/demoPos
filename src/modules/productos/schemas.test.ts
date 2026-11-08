@@ -309,6 +309,7 @@ describe("validarCsvProductos", () => {
             // La importación no marca servicios: entran controlando stock.
             controlaStock: true,
             precioLibre: false,
+            proveedorId: null,
           },
         },
       ],

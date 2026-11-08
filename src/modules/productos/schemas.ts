@@ -45,6 +45,8 @@ export const productoSchema = z.object({
   controlaStock: z.boolean().default(true),
   // Precio al cobrar (0032): quien vende escribe el monto; el precio queda como sugerido.
   precioLibre: z.boolean().default(false),
+  // Proveedor habitual (0034); agrupa la reposición. null = sin proveedor.
+  proveedorId: z.uuid().nullable().default(null),
 });
 
 export type ProductoInput = z.input<typeof productoSchema>;

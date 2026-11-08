@@ -1,15 +1,27 @@
 import { Card } from "@/components/ui/card";
 import { requireRol } from "@/modules/auth";
 import { getProductos } from "@/modules/productos";
-import { reposicionComoTexto, sugerirReposicion } from "@/modules/stock";
+import { getProveedores } from "@/modules/proveedores";
+import {
+  agruparPorProveedor,
+  reposicionComoTexto,
+  sugerirReposicion,
+} from "@/modules/stock";
 import { ReposicionAcciones } from "@/modules/stock/components/reposicion-acciones";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReposicionPage() {
   const profile = await requireRol("/stock/reposicion");
-  const productos = await getProductos();
+  const [productos, proveedores] = await Promise.all([
+    getProductos(),
+    getProveedores(),
+  ]);
   const lineas = productos.ok ? sugerirReposicion(productos.data) : [];
+  const pedidos = agruparPorProveedor(
+    lineas,
+    proveedores.ok ? proveedores.data : [],
+  );
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-4 p-4 sm:p-6">
@@ -31,14 +43,23 @@ export default async function ReposicionPage() {
         </p>
       )}
 
-      {lineas.length > 0 && (
-        <>
+      {pedidos.map((pedido) => (
+        <section
+          key={pedido.proveedorId ?? "sin-proveedor"}
+          aria-label={`Pedido: ${pedido.nombre}`}
+          className="flex flex-col gap-3"
+        >
+          <h2 className="font-display text-lg font-bold">{pedido.nombre}</h2>
           <ReposicionAcciones
-            texto={reposicionComoTexto(lineas, profile.comercio)}
+            texto={reposicionComoTexto(pedido.lineas, profile.comercio)}
+            telefono={pedido.telefono}
           />
           <Card className="gap-1 p-5">
-            <ul aria-label="Productos a reponer" className="flex flex-col">
-              {lineas.map((linea) => (
+            <ul
+              aria-label={`Productos a reponer: ${pedido.nombre}`}
+              className="flex flex-col"
+            >
+              {pedido.lineas.map((linea) => (
                 <li
                   key={linea.id}
                   className="flex items-start justify-between gap-3 border-b border-border py-2.5 text-sm last:border-0"
@@ -58,8 +79,8 @@ export default async function ReposicionPage() {
               ))}
             </ul>
           </Card>
-        </>
-      )}
+        </section>
+      ))}
     </main>
   );
 }
