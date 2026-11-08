@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { auditoriaSchema } from "./schemas";
-import { reposicionComoTexto, sugerirReposicion } from "./reposicion";
+import {
+  agruparPorProveedor,
+  reposicionComoTexto,
+  sugerirReposicion,
+} from "./reposicion";
 
 const producto = (
   nombre: string,
@@ -68,5 +72,40 @@ describe("auditoriaSchema", () => {
     expect(
       auditoriaSchema.safeParse({ categoriaId: id, conteos: [] }).success,
     ).toBe(false);
+  });
+});
+
+describe("agruparPorProveedor", () => {
+  const linea = (nombre: string, proveedorId: string | null) => ({
+    id: nombre,
+    nombre,
+    stockActual: 0,
+    stockMinimo: 1,
+    cantidad: 2,
+    proveedorId,
+  });
+  const proveedores = [
+    { id: "b", nombre: "Zeta", telefono: null },
+    { id: "a", nombre: "Alfa", telefono: "5493511234567" },
+  ];
+
+  it("arma un pedido por proveedor, por nombre, y al final lo que no tiene", () => {
+    const pedidos = agruparPorProveedor(
+      [linea("1", "b"), linea("2", null), linea("3", "a"), linea("4", "a")],
+      proveedores,
+    );
+    expect(pedidos.map((p) => p.nombre)).toEqual([
+      "Alfa",
+      "Zeta",
+      "Sin proveedor",
+    ]);
+    expect(pedidos[0].lineas.map((l) => l.nombre)).toEqual(["3", "4"]);
+    expect(pedidos[0].telefono).toBe("5493511234567");
+  });
+
+  it("sin lista de proveedores, todo queda sin proveedor", () => {
+    const pedidos = agruparPorProveedor([linea("1", "b")], []);
+    expect(pedidos).toHaveLength(1);
+    expect(pedidos[0].proveedorId).toBeNull();
   });
 });

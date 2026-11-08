@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toaster";
 import { enlaceWhatsApp } from "@/lib/whatsapp";
 
-export function ReposicionAcciones({ texto }: { texto: string }) {
+export function ReposicionAcciones({
+  texto,
+  telefono,
+}: {
+  texto: string;
+  // Con teléfono, WhatsApp abre el chat del proveedor; sin él, pide elegir el contacto.
+  telefono?: string | null;
+}) {
   async function copiar() {
     try {
       await navigator.clipboard.writeText(texto);
@@ -22,13 +29,13 @@ export function ReposicionAcciones({ texto }: { texto: string }) {
         Copiá la lista
       </Button>
       <a
-        href={enlaceWhatsApp(texto)}
+        href={enlaceWhatsApp(texto, telefono)}
         target="_blank"
         rel="noopener noreferrer"
         className="flex h-10 items-center justify-center gap-2 rounded-full border border-input text-sm font-semibold transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
         <MessageCircle aria-hidden="true" className="size-4" />
-        Compartí por WhatsApp
+        {telefono ? "Mandá el pedido por WhatsApp" : "Compartí por WhatsApp"}
       </a>
     </div>
   );
