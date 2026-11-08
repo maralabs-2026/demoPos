@@ -41,6 +41,7 @@ export default async function VentaDetallePage({
     cajero,
     anulacion,
     sinConexion,
+    qrManual,
   } = result.data;
   const textos = ticket.ok ? ticket.data : { titulo: "", leyenda: "", pie: "" };
 
@@ -62,6 +63,7 @@ export default async function VentaDetallePage({
             {sinConexion && (
               <Badge variant="warning">Cobrada sin conexión</Badge>
             )}
+            {qrManual && <Badge variant="warning">QR confirmado a mano</Badge>}
             {estado === "anulada" && (
               <Badge variant="destructive">Anulada</Badge>
             )}
@@ -134,6 +136,22 @@ export default async function VentaDetallePage({
           </div>
         )}
 
+        {qrManual && (
+          <div className="flex flex-col gap-1">
+            <CardEyebrow>Cobro con QR</CardEyebrow>
+            <p className="text-sm">
+              El cajero confirmó el pago a mano, sin aviso de Mercado Pago.
+              Controlá que la plata haya entrado.
+            </p>
+            {qrManual.revisada && (
+              <p className="text-xs text-muted-foreground">
+                Revisada por {qrManual.revisada.por} ·{" "}
+                {formatDateTime(qrManual.revisada.fecha)}
+              </p>
+            )}
+          </div>
+        )}
+
         {anulacion && (
           <div className="flex flex-col gap-1">
             <CardEyebrow>Anulación</CardEyebrow>
@@ -152,6 +170,12 @@ export default async function VentaDetallePage({
             <MarcarRevisada ventaId={venta.ventaId} />
           </div>
         )}
+
+      {qrManual && !qrManual.revisada && (
+        <div className="print:hidden">
+          <MarcarRevisada ventaId={venta.ventaId} />
+        </div>
+      )}
 
       {estado === "completada" && (
         <>

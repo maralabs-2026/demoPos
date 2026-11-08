@@ -91,6 +91,8 @@ export default async function InicioPage() {
     inicio.cajasConDiferencia.length === 0 &&
     inicio.gastos.length === 0 &&
     inicio.ventasSinConexion.length === 0 &&
+    inicio.ventasQrManual.length === 0 &&
+    inicio.cobrosSinVenta.length === 0 &&
     inicio.vencimientos.length === 0;
 
   return (
@@ -188,6 +190,36 @@ export default async function InicioPage() {
                   destacado={
                     <span className="text-sm font-semibold tabular-nums">
                       {formatCurrency(v.total)}
+                    </span>
+                  }
+                />
+              ))}
+              {inicio.ventasQrManual.map((v) => (
+                <Pendiente
+                  key={v.ventaId}
+                  href={`/reportes/ventas/${v.ventaId}`}
+                  titulo={`QR confirmado a mano por ${v.cajero}`}
+                  detalle={`${formatDateTime(v.fecha)} · controlá que haya entrado`}
+                  destacado={
+                    <span className="text-sm font-semibold tabular-nums">
+                      {formatCurrency(v.total)}
+                    </span>
+                  }
+                />
+              ))}
+              {inicio.cobrosSinVenta.map((c) => (
+                <Pendiente
+                  key={c.id}
+                  href="/reportes/ventas"
+                  titulo={
+                    c.conError
+                      ? "Cobro con QR por un monto distinto"
+                      : "Cobro con QR sin venta registrada"
+                  }
+                  detalle={`${formatDateTime(c.fecha)} · revisalo en Mercado Pago`}
+                  destacado={
+                    <span className="text-sm font-semibold tabular-nums">
+                      {formatCurrency(c.monto)}
                     </span>
                   }
                 />
