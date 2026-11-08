@@ -5,9 +5,10 @@ const TABS = [
   { href: "/stock", label: "Stock" },
   { href: "/stock/reposicion", label: "Reposición" },
   { href: "/stock/auditoria", label: "Auditoría" },
+  { href: "/stock/proveedores", label: "Proveedores" },
 ];
 
-// Las tres pestañas son para dueño y encargado. Cada página valida su acceso con requireRol.
+// Las pestañas son para dueño y encargado. Cada página valida su acceso con requireRol.
 export default function StockLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
