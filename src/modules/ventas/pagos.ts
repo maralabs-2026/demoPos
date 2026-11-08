@@ -23,6 +23,7 @@ export type PagoVenta = {
   medioPagoId: string;
   monto: number;
   recibido?: number;
+  referenciaExterna?: string;
 };
 
 export type PagosResueltos =

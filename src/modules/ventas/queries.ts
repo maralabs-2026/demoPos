@@ -75,6 +75,8 @@ export type VentaDetalle = {
   estado: VentaResumen["estado"];
   cajero: string;
   anulacion: { fecha: string; por: string; motivo: string } | null;
+  // Confirmada a mano en un cobro con QR (0038): la revisa el dueño o el encargado.
+  qrManual: { revisada: { fecha: string; por: string } | null } | null;
   // Solo si se cobró sin conexión (0028); revisada, cuando el dueño o el encargado la marcaron (0030).
   sinConexion: {
     avisos: ("precio" | "stock")[];
@@ -94,6 +96,7 @@ type VentaDetalleRow = {
   anulador: Persona;
   revisor: Persona;
   sin_conexion: boolean;
+  qr_manual: boolean;
   avisos_sin_conexion: ("precio" | "stock")[];
   revisada_at: string | null;
   venta_items: {
@@ -117,7 +120,7 @@ export async function getVenta(
     .select(
       `id, created_at, total, descuento, estado, anulada_at, motivo_anulacion, ${CAJERO},
        anulador:perfiles!ventas_anulada_por_comercio_fkey(nombre),
-       sin_conexion, avisos_sin_conexion, revisada_at,
+       sin_conexion, qr_manual, avisos_sin_conexion, revisada_at,
        revisor:perfiles!ventas_revisada_por_comercio_fkey(nombre),
        venta_items(nombre, cantidad, precio_unitario, descuento, promocion_nombre, subtotal),
        venta_pagos(vuelto, medios_pago(nombre, tipo))`,
@@ -158,6 +161,16 @@ export async function getVenta(
           fecha: data.anulada_at,
           por: data.anulador?.nombre ?? "Otro usuario",
           motivo: data.motivo_anulacion ?? "",
+        }
+      : null,
+    qrManual: data.qr_manual
+      ? {
+          revisada: data.revisada_at
+            ? {
+                fecha: data.revisada_at,
+                por: data.revisor?.nombre ?? "Otro usuario",
+              }
+            : null,
         }
       : null,
     sinConexion: data.sin_conexion

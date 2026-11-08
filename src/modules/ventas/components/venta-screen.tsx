@@ -55,6 +55,7 @@ import {
   type LineaCobrada,
 } from "../sin-conexion";
 import { AvisoSinConexion } from "./aviso-sin-conexion";
+import { CobroQr, type ConfigQr } from "./cobro-qr";
 import { ComprobanteView } from "./comprobante-view";
 
 // Si el cobro online no responde en este tiempo, la venta pasa a la cola sin conexión con el mismo
@@ -194,7 +195,10 @@ export function VentaScreen({
   horaServidorMs,
   ticketTextos,
   logoUrl,
+  qr,
 }: {
+  // null: sin Mercado Pago conectado o sin QR activos; el medio QR se cobra como cualquier otro.
+  qr: ConfigQr | null;
   ticketTextos: TicketTextos;
   logoUrl: string | null;
   cajaId: string;
@@ -211,6 +215,10 @@ export function VentaScreen({
 }) {
   const router = useRouter();
   const [productos, setProductos] = useState(productosIniciales);
+  const [cobroQr, setCobroQr] = useState<{
+    ventaId: string;
+    pago: PagoVenta;
+  } | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState(TODAS);
@@ -558,6 +566,26 @@ export function VentaScreen({
 
     const ventaId = crypto.randomUUID();
     const pagos = resueltos.pagos;
+
+    const conQr = qr
+      ? pagos.filter(
+          (p) => mediosPago.find((m) => m.id === p.medioPagoId)?.tipo === "qr",
+        )
+      : [];
+    if (conQr.length > 0) {
+      if (pagos.length > 1) {
+        setError("El QR cobra el total de la venta: no se combina.");
+        return;
+      }
+      if (!navigator.onLine) {
+        setError("Sin internet no se puede cobrar con QR. Elegí otro medio.");
+        return;
+      }
+      setError(null);
+      setCobroQr({ ventaId, pago: conQr[0] });
+      return;
+    }
+
     startTransition(async () => {
       let result: Awaited<ReturnType<typeof registrarVenta>> | null = null;
       if (navigator.onLine) {
@@ -566,12 +594,7 @@ export function VentaScreen({
             registrarVenta({
               ventaId,
               cajaId,
-              items: cart.map((i) => ({
-                productoId: i.productoId,
-                cantidad: i.cantidad,
-                descuentoPct: i.descuentoPct,
-                ...(i.precioLibre ? { precio: i.precio } : {}),
-              })),
+              items: itemsDeVenta(),
               descuentoPct: descuentoTotalPct,
               // Los montos suman el total de la pantalla: si un precio cambió en la base,
               // registrar_venta lo rechaza.
@@ -611,6 +634,45 @@ export function VentaScreen({
         `${formatCurrency(result.data.total)} · ${result.data.medioPagoNombre}`,
       );
     });
+  }
+
+  function itemsDeVenta() {
+    return cart.map((i) => ({
+      productoId: i.productoId,
+      cantidad: i.cantidad,
+      descuentoPct: i.descuentoPct,
+      ...(i.precioLibre ? { precio: i.precio } : {}),
+    }));
+  }
+
+  // El pago ya entró: reintentar usa el mismo id de venta y no la duplica. Nunca va a la cola sin
+  // conexión, porque la orden se vincula al registrar la venta. Devuelve el error, o null si cerró.
+  async function registrarConQr(orderId: string): Promise<string | null> {
+    if (!cobroQr) return "El cobro ya no está disponible.";
+    let result: Awaited<ReturnType<typeof registrarVenta>>;
+    try {
+      result = await conLimite(
+        registrarVenta({
+          ventaId: cobroQr.ventaId,
+          cajaId,
+          items: itemsDeVenta(),
+          descuentoPct: descuentoTotalPct,
+          pagos: [{ ...cobroQr.pago, referenciaExterna: orderId }],
+        }),
+        ESPERA_COBRO_MS,
+      );
+    } catch {
+      return "Revisá la conexión y probá de nuevo.";
+    }
+    if (!result.ok) return result.error;
+
+    setCobroQr(null);
+    terminarVenta(result.data, false);
+    toast.success(
+      "Venta registrada",
+      `${formatCurrency(result.data.total)} · ${result.data.medioPagoNombre}`,
+    );
+    return null;
   }
 
   // Lo que se cobró, línea por línea, con el mismo cálculo que muestra el ticket.
@@ -681,7 +743,7 @@ export function VentaScreen({
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (comprobante) return;
+      if (comprobante || cobroQr) return;
       if (e.key === "Escape" && panel) {
         setPanel(null);
       } else if (e.key === "F2") {
@@ -721,6 +783,7 @@ export function VentaScreen({
     pagosCombinados,
     busqueda,
     comprobante,
+    cobroQr,
     isPending,
     panel,
   ]);
@@ -1435,6 +1498,14 @@ export function VentaScreen({
             <ChevronRight data-icon="inline-end" />
           </Button>
         </div>
+      )}
+      {qr && cobroQr && (
+        <CobroQr
+          monto={cobroQr.pago.monto}
+          config={qr}
+          onCobrado={registrarConQr}
+          onCerrar={() => setCobroQr(null)}
+        />
       )}
     </div>
   );

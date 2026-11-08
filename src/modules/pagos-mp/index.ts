@@ -3,3 +3,9 @@ export { firmaValida } from "./firma";
 export { sincronizarOrden } from "./sincronizar";
 export { getPuntosQr } from "./queries";
 export type { PuntoQr } from "./queries";
+export {
+  cancelarCobroQr,
+  confirmarCobroQrManual,
+  consultarCobroQr,
+  iniciarCobroQr,
+} from "./actions";
