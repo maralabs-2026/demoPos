@@ -92,3 +92,29 @@ describe("cantidadConSigno", () => {
     ).toBe(3);
   });
 });
+
+describe("vencimiento en ingresoSchema", () => {
+  const ingreso = {
+    productoId: "4b9a2d3f-6c8e-4f0a-9b7c-2d3e4f5a6b7c",
+    cantidad: 3,
+  };
+
+  it("es opcional y vacío queda sin fecha", () => {
+    const vacio = ingresoSchema.safeParse({ ...ingreso, vencimiento: "" });
+    expect(vacio.success && vacio.data.vencimiento).toBeUndefined();
+    expect(ingresoSchema.safeParse(ingreso).success).toBe(true);
+  });
+
+  it("acepta una fecha y rechaza lo que no lo es", () => {
+    const ok = ingresoSchema.safeParse({
+      ...ingreso,
+      vencimiento: "2026-12-31",
+    });
+    expect(ok.success && ok.data.vencimiento).toBe("2026-12-31");
+    for (const vencimiento of ["31/12/2026", "2026-13-01", "mañana"]) {
+      expect(ingresoSchema.safeParse({ ...ingreso, vencimiento }).success).toBe(
+        false,
+      );
+    }
+  });
+});

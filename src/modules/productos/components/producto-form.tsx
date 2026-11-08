@@ -113,6 +113,7 @@ export function ProductoForm({
     producto?.unidadVenta ?? "unidad",
   );
   const [stockInicial, setStockInicial] = useState("0");
+  const [vencimientoInicial, setVencimientoInicial] = useState("");
   // Servicio (0031): se vende sin controlar stock, como una carga de celular o una fotocopia.
   const [esServicio, setEsServicio] = useState(
     producto ? !producto.controlaStock : false,
@@ -315,7 +316,11 @@ export function ProductoForm({
             precio: producto.precio,
             costo: producto.costo,
           })
-        : await crearProducto(input, esServicio ? 0 : cantidadInicial);
+        : await crearProducto(
+            input,
+            esServicio ? 0 : cantidadInicial,
+            vencimientoInicial,
+          );
 
       if (!result.ok) {
         setError(result.error);
@@ -689,6 +694,22 @@ export function ProductoForm({
                       </Button>
                     ))}
                   </div>
+                </Campo>
+              )}
+
+              {!producto && (
+                <Campo id="producto-vencimiento" label="Vence el (opcional)">
+                  <Input
+                    id="producto-vencimiento"
+
+                    type="date"
+
+                    value={vencimientoInicial}
+
+                    onChange={(event) =>
+                      setVencimientoInicial(event.target.value)
+                    }
+                  />
                 </Campo>
               )}
 

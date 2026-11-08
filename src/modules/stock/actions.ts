@@ -28,6 +28,7 @@ type NuevoMovimiento = {
   tipo: "ingreso" | "ajuste";
   cantidad: number;
   motivo: string | undefined;
+  vencimiento?: string;
 };
 
 async function insertarMovimiento(
@@ -72,6 +73,7 @@ async function insertarMovimiento(
     cantidad: mov.cantidad,
     motivo: mov.motivo ?? null,
     usuario_id: user.id,
+    vencimiento: mov.vencimiento ?? null,
   });
   if (error) {
     // Otra venta o ajuste pudo bajar el stock entre la lectura y el insert.
