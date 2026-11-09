@@ -256,6 +256,7 @@ export function VentaScreen({
     if (pendiente) {
       focoPrecioRef.current = null;
       if (!window.matchMedia(ESCRITORIO).matches) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- el panel depende del ancho real de la pantalla
         setPanel("carrito");
         return;
       }
@@ -295,6 +296,7 @@ export function VentaScreen({
   // Combos y promos: mismo cálculo que registrar_venta (0013 y 0014). Primero los combos sobre el
   // ticket completo; después, la promo de mayor descuento sobre las unidades que no usó un combo.
   // La vigencia usa la hora del servidor: el reloj de la PC del kiosco puede estar desfasado.
+  // eslint-disable-next-line react-hooks/purity -- la vigencia de las promos se evalúa con la hora de cada render
   const ahora = ahoraEnCordoba(new Date(Date.now() + desfaseRelojMs));
   const combosPorLinea = aplicarCombos(
     cart.map((i) => ({
@@ -700,6 +702,7 @@ export function VentaScreen({
       ventaId,
       cajaId,
       // Hora del servidor: el reloj del dispositivo puede estar desfasado.
+      // eslint-disable-next-line react-hooks/purity -- se ejecuta al cobrar, no durante el render
       fecha: new Date(Date.now() + desfaseRelojMs),
       lineas,
       descuentoTotal: totales.descuentoTotal,

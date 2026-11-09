@@ -55,6 +55,7 @@ function useTokenValues(tokens: readonly string[]): Record<string, string> {
   const [values, setValues] = useState<Record<string, string>>({});
   useEffect(() => {
     const style = getComputedStyle(document.documentElement);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- los tokens solo se leen del CSS ya aplicado
     setValues(
       Object.fromEntries(
         tokens.map((t) => [t, style.getPropertyValue(`--${t}`).trim()]),

@@ -107,6 +107,7 @@ export default async function VenderPage() {
         mediosPago={mediosPagoResult.data}
         promos={promosResult.data}
         combos={combosResult.data}
+        // eslint-disable-next-line react-hooks/purity -- componente de servidor: la hora se toma una vez por pedido
         horaServidorMs={Date.now()}
         ticketTextos={
           // Sin los textos, el ticket igual se imprime con los datos de la venta: no frena el cobro.

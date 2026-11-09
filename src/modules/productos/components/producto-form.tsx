@@ -157,6 +157,7 @@ export function ProductoForm({
   const [tactil, setTactil] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- matchMedia no existe en el servidor
     setTactil(window.matchMedia("(pointer: coarse)").matches);
   }, []);
   const formRef = useRef<HTMLFormElement>(null);

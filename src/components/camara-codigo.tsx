@@ -73,7 +73,9 @@ export function CamaraCodigo({
   const [error, setError] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const onCodigoRef = useRef(onCodigo);
-  onCodigoRef.current = onCodigo;
+  useEffect(() => {
+    onCodigoRef.current = onCodigo;
+  }, [onCodigo]);
 
   // El botón aparece solo si el navegador puede usar una cámara.
   useEffect(() => {
@@ -95,6 +97,7 @@ export function CamaraCodigo({
     let stream: MediaStream | null = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let pendiente: string | null = null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- el estado refleja el arranque de la cámara, un sistema externo
     setEstado("iniciando");
     setError("");
 
