@@ -81,16 +81,18 @@ export function CobroQr({
   const cobrado = useRef(false);
 
   const registrar = useRef<(orden: string) => Promise<void>>(async () => {});
-  registrar.current = async (orden: string) => {
-    setOrderId(orden);
-    setMensaje(null);
-    setFase("registrando");
-    const error = await onCobrado(orden);
-    if (error) {
-      setMensaje(error);
-      setFase("reintentar");
-    }
-  };
+  useEffect(() => {
+    registrar.current = async (orden: string) => {
+      setOrderId(orden);
+      setMensaje(null);
+      setFase("registrando");
+      const error = await onCobrado(orden);
+      if (error) {
+        setMensaje(error);
+        setFase("reintentar");
+      }
+    };
+  });
 
   useEffect(() => {
     if (fase !== "iniciando" || !puntoId || iniciado.current) return;

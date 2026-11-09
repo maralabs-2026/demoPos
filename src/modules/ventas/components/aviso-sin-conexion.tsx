@@ -65,6 +65,7 @@ function useColaVentas(cajaId: string) {
   }, [cajaId, refrescar]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- navigator.onLine no existe en el servidor
     setEnLinea(navigator.onLine);
     void refrescar().then(enviar);
     const alVolver = () => {
