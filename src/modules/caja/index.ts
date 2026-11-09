@@ -4,6 +4,7 @@ export {
   anularGasto,
   cerrarCaja,
   pagarGasto,
+  registrarAjusteCaja,
   registrarGasto,
   registrarMovimiento,
 } from "./actions";

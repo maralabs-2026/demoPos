@@ -6,6 +6,23 @@ const DUENO: readonly Rol[] = ["dueno"];
 
 export const GUIAS_ADMINISTRACION: readonly Guia[] = [
   {
+    id: "ajuste-caja",
+    seccion: "administracion",
+    titulo: "Ajustá una caja abierta",
+    resumen:
+      "Para corregir el efectivo esperado de una caja que sigue abierta.",
+    palabras: ["corregir", "diferencia", "arqueo", "efectivo", "error"],
+    ruta: "/caja",
+    roles: DUENO,
+    pasos: [
+      "Entrá a Caja, en «Retiros e ingresos». Si la caja es de otra persona, tocá «Operá esta caja».",
+      "Elegí «Retiro» para restar o «Ingreso» para sumar.",
+      "Escribí el monto y el motivo, y marcá «Es un ajuste de caja».",
+      "Tocá «Registrá el ajuste».",
+    ],
+    nota: "Solo lo puede hacer el dueño. No se edita ni se borra, y una caja cerrada no se ajusta.",
+  },
+  {
     id: "crear-usuario",
     seccion: "administracion",
     titulo: "Creá un usuario",

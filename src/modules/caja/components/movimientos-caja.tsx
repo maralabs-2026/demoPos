@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
-import { registrarMovimiento } from "../actions";
+import { registrarAjusteCaja, registrarMovimiento } from "../actions";
 import type { MovimientoCaja } from "../queries";
 import { MOTIVO_MOVIMIENTO_MAX, registrarMovimientoSchema } from "../schemas";
 import { MovimientosLista } from "./movimientos-lista";
@@ -23,14 +23,17 @@ const TIPOS: { value: Tipo; label: string }[] = [
 export function MovimientosCaja({
   cajaId,
   movimientos,
+  puedeAjustar,
 }: {
   cajaId: string;
   movimientos: MovimientoCaja[];
+  puedeAjustar: boolean;
 }) {
   const router = useRouter();
   const [tipo, setTipo] = useState<Tipo>("retiro");
   const [monto, setMonto] = useState<number | null>(null);
   const [motivo, setMotivo] = useState("");
+  const [esAjuste, setEsAjuste] = useState(false);
   // Cambia al registrar para vaciar el campo de monto, que guarda lo escrito.
   const [montoKey, setMontoKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -53,13 +56,16 @@ export function MovimientosCaja({
     setError(null);
 
     startTransition(async () => {
-      const result = await registrarMovimiento(parsed.data);
+      const result = esAjuste
+        ? await registrarAjusteCaja(parsed.data)
+        : await registrarMovimiento(parsed.data);
       if (!result.ok) {
         setError(result.error);
         return;
       }
       setMonto(null);
       setMotivo("");
+      setEsAjuste(false);
       setMontoKey((key) => key + 1);
       router.refresh();
     });
@@ -119,6 +125,18 @@ export function MovimientosCaja({
           />
         </div>
 
+        {puedeAjustar && (
+          <label className="flex items-center gap-2 text-sm font-semibold">
+            <input
+              type="checkbox"
+              className="size-4"
+              checked={esAjuste}
+              onChange={(e) => setEsAjuste(e.target.checked)}
+            />
+            Es un ajuste de caja
+          </label>
+        )}
+
         {error && (
           <p role="alert" className="text-sm font-medium text-destructive">
             {error}
@@ -128,9 +146,11 @@ export function MovimientosCaja({
         <Button type="submit" variant="outline" disabled={isPending}>
           {isPending
             ? "Registrando..."
-            : tipo === "retiro"
-              ? "Registrá el retiro"
-              : "Registrá el ingreso"}
+            : esAjuste
+              ? "Registrá el ajuste"
+              : tipo === "retiro"
+                ? "Registrá el retiro"
+                : "Registrá el ingreso"}
         </Button>
       </form>
 

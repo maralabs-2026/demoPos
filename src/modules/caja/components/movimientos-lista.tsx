@@ -17,8 +17,12 @@ export function MovimientosLista({
           <div className="flex min-w-0 flex-col gap-0.5 text-sm">
             <p className="font-semibold break-words">{movimiento.motivo}</p>
             <p className="text-xs text-muted-foreground">
-              {movimiento.tipo === "retiro" ? "Retiro" : "Ingreso"} ·{" "}
-              {movimiento.autor} · {formatDateTime(movimiento.createdAt)}
+              {movimiento.esAjuste
+                ? "Ajuste"
+                : movimiento.tipo === "retiro"
+                  ? "Retiro"
+                  : "Ingreso"}{" "}
+              · {movimiento.autor} · {formatDateTime(movimiento.createdAt)}
             </p>
           </div>
           <p className="shrink-0 text-sm font-semibold tabular-nums">

@@ -19,7 +19,7 @@ export default async function CerrarCajaDeOtroPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireRol("/caja/cerrar");
+  const profile = await requireRol("/caja/cerrar");
   const { id } = await params;
   if (!UUID.test(id)) notFound();
 
@@ -46,6 +46,7 @@ export default async function CerrarCajaDeOtroPage({
         <MovimientosCaja
           cajaId={cajaResult.data.id}
           movimientos={movimientosResult.data}
+          puedeAjustar={profile.rol === "dueno"}
         />
       )}
       {cajaResult.ok && cajaResult.data && mediosResult.ok && (
