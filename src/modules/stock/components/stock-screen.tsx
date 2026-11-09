@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import type { Producto } from "@/modules/productos";
@@ -12,10 +13,12 @@ const MAX_RESULTADOS = 8;
 export function StockScreen({
   productos,
   productoSeleccionadoId,
+  volverHref,
   historial,
 }: {
   productos: Producto[];
   productoSeleccionadoId: string | null;
+  volverHref: string | null;
   historial: ReactNode;
 }) {
   const router = useRouter();
@@ -69,6 +72,14 @@ export function StockScreen({
 
   return (
     <div className="space-y-6">
+      {volverHref && (
+        <Link
+          href={volverHref}
+          className="inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4"
+        >
+          Volver a faltantes
+        </Link>
+      )}
       <form onSubmit={handleBuscarSubmit} className="max-w-md space-y-2">
         <Input
           ref={inputRef}

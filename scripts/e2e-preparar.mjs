@@ -16,6 +16,7 @@ import { createClient } from "@supabase/supabase-js";
 const TEST_URL = "https://nxpvhfyilruileakhldq.supabase.co"; // kiosko-demo-test
 const COMERCIO = "Kiosko Demo";
 const STOCK1 = "9990000000999";
+const FALTANTE = "9990000000888"; // productos-faltantes: stock 2, mínimo 5
 const REPONER = ["7790010000154", "7790010000017"]; // Coca-Cola y Bon o Bon
 const MOTIVO = "Fixture e2e";
 
@@ -156,19 +157,36 @@ async function main() {
     ),
   );
 
+  await run(
+    "producto faltante",
+    db.from("productos").upsert(
+      {
+        comercio_id: comercioId,
+        categoria_id: categoria.id,
+        nombre: "Producto e2e (faltante)",
+        codigo_barras: FALTANTE,
+        precio: 100,
+        unidad_venta: "unidad",
+        stock_minimo: 5,
+      },
+      { onConflict: "comercio_id,codigo_barras", ignoreDuplicates: true },
+    ),
+  );
+
+  const STOCK_EXACTO = { [STOCK1]: 1, [FALTANTE]: 2 };
   const productos = await run(
     "stock actual",
     db
       .from("productos")
       .select("id, nombre, codigo_barras, stock_actual")
       .eq("comercio_id", comercioId)
-      .in("codigo_barras", [STOCK1, ...REPONER]),
+      .in("codigo_barras", [STOCK1, FALTANTE, ...REPONER]),
   );
   const ajustes = productos
     .map((p) => {
-      const objetivo = p.codigo_barras === STOCK1 ? 1 : 50;
-      const faltan = objetivo - p.stock_actual;
-      const ajustar = p.codigo_barras === STOCK1 ? faltan !== 0 : faltan > 0;
+      const exacto = STOCK_EXACTO[p.codigo_barras];
+      const faltan = (exacto ?? 50) - p.stock_actual;
+      const ajustar = exacto !== undefined ? faltan !== 0 : faltan > 0;
       return ajustar
         ? {
             comercio_id: comercioId,
@@ -184,9 +202,9 @@ async function main() {
   if (ajustes.length > 0) {
     await run("ajustes de stock", db.from("movimientos_stock").insert(ajustes));
   }
-  if (productos.length !== REPONER.length + 1) {
+  if (productos.length !== REPONER.length + 2) {
     throw new Error(
-      `se esperaban ${REPONER.length + 1} productos del fixture y hay ${productos.length}`,
+      `se esperaban ${REPONER.length + 2} productos del fixture y hay ${productos.length}`,
     );
   }
 
