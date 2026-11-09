@@ -1,6 +1,7 @@
 import type { AppRoute, Rol } from "@/modules/auth";
 
-export type SeccionAyuda = "mostrador" | "mercaderia";
+export type SeccionAyuda =
+  "mostrador" | "mercaderia" | "negocio" | "administracion";
 
 export interface Guia {
   id: string;

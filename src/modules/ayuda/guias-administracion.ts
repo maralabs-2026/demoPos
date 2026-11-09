@@ -1,0 +1,121 @@
+import type { Rol } from "@/modules/auth";
+import type { Guia } from "./buscar";
+
+const GESTION: readonly Rol[] = ["dueno", "encargado"];
+const DUENO: readonly Rol[] = ["dueno"];
+
+export const GUIAS_ADMINISTRACION: readonly Guia[] = [
+  {
+    id: "crear-usuario",
+    seccion: "administracion",
+    titulo: "Creá un usuario",
+    resumen: "Para que un empleado entre con su propio acceso.",
+    palabras: ["empleado", "alta", "cajero", "encargado", "rol", "cuenta"],
+    ruta: "/usuarios",
+    roles: GESTION,
+    pasos: [
+      "Entrá a Usuarios y tocá «Creá un usuario».",
+      "Completá el nombre y el correo, y elegí el rol.",
+      "Escribí una contraseña temporal o tocá «Generá una».",
+      "Tocá «Creá el usuario» y pasale la contraseña: la va a cambiar en su primer ingreso.",
+    ],
+    nota: "El encargado solo administra cajeros.",
+  },
+  {
+    id: "blanquear-contrasena",
+    seccion: "administracion",
+    titulo: "Blanqueá una contraseña",
+    resumen: "Cuando alguien se la olvidó.",
+    palabras: ["olvido", "clave", "recuperar", "acceso", "entrar"],
+    ruta: "/usuarios",
+    roles: GESTION,
+    pasos: [
+      "Entrá a Usuarios y buscá a la persona.",
+      "Tocá «Blanqueá» y definí una contraseña temporal.",
+      "Tocá «Confirmá el blanqueo» y pasásela: la va a cambiar en su próximo ingreso.",
+    ],
+    nota: "El encargado solo puede blanquear a cajeros.",
+  },
+  {
+    id: "desactivar-usuario",
+    seccion: "administracion",
+    titulo: "Desactivá un usuario",
+    resumen: "Cuando alguien deja de trabajar en el comercio.",
+    palabras: ["baja", "borrar", "eliminar", "quitar", "renuncia", "reactivar"],
+    ruta: "/usuarios",
+    roles: GESTION,
+    pasos: [
+      "Entrá a Usuarios y buscá a la persona.",
+      "Tocá «Desactivá» y confirmá con «Desactivar».",
+      "Si vuelve, tocá «Reactivá».",
+    ],
+    nota: "Un usuario no se borra: pierde el acceso y su historial queda. Nadie puede modificarse a sí mismo.",
+  },
+  {
+    id: "datos-comercio",
+    seccion: "administracion",
+    titulo: "Cambiá el nombre o el logo",
+    resumen: "Se ven en el menú y en el ticket impreso.",
+    palabras: ["marca", "imagen", "kiosco", "foto", "config"],
+    ruta: "/config",
+    roles: DUENO,
+    pasos: [
+      "Entrá a Config.",
+      "Escribí el nombre del comercio y tocá «Guardá el nombre».",
+      "Para el logo, elegí la imagen y tocá «Subí el logo».",
+    ],
+  },
+  {
+    id: "textos-ticket",
+    seccion: "administracion",
+    titulo: "Cambiá los textos del ticket",
+    resumen: "El título, la leyenda y el saludo final.",
+    palabras: ["comprobante", "pie", "leyenda", "impresion", "config"],
+    ruta: "/config",
+    roles: DUENO,
+    pasos: [
+      "En Config, entrá a Ticket.",
+      "Completá el título, la leyenda y el pie.",
+      "Tocá «Guardá el ticket».",
+    ],
+  },
+  {
+    id: "medios-pago",
+    seccion: "administracion",
+    titulo: "Administrá los medios de pago",
+    resumen: "Agregá, renombrá o dejá de ofrecer uno.",
+    palabras: [
+      "tarjeta",
+      "debito",
+      "credito",
+      "efectivo",
+      "desactivar",
+      "config",
+    ],
+    ruta: "/config",
+    roles: DUENO,
+    pasos: [
+      "En Config, entrá a Pagos.",
+      "Para sumar uno, tocá «Agregá un medio», completá el nombre y el tipo, y tocá «Guardá el medio».",
+      "Para cambiarle el nombre, tocá «Renombrá».",
+      "Para dejar de ofrecerlo al cobrar, tocá «Desactivá».",
+    ],
+    nota: "Un medio no se borra, porque las ventas pasadas lo usan. Siempre queda un efectivo activo, y el tipo no cambia si ya tiene pagos.",
+  },
+  {
+    id: "categorias",
+    seccion: "administracion",
+    titulo: "Administrá las categorías",
+    resumen: "Para ordenar los productos.",
+    palabras: ["rubro", "grupo", "familia", "eliminar", "config"],
+    ruta: "/config",
+    roles: DUENO,
+    pasos: [
+      "En Config, entrá a Categorías.",
+      "Para sumar una, tocá «Agregá una categoría», escribí el nombre y tocá «Guardá la categoría».",
+      "Para cambiarle el nombre, tocá «Renombrá».",
+      "Para quitarla, tocá «Eliminá».",
+    ],
+    nota: "Una categoría con productos o promociones no se puede eliminar.",
+  },
+];

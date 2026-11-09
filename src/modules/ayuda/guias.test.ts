@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { buscarGuias } from "./buscar";
 import { getGuiasParaRol } from "./guias";
@@ -23,11 +25,37 @@ describe("getGuiasParaRol", () => {
     expect(texto("cajero")).not.toMatch(/costo|margen|ganancia|reporte/i);
   });
 
-  it("a dueño y encargado les da mostrador y mercadería", () => {
+  it("a dueño y encargado les da todas las secciones", () => {
     for (const rol of ["dueno", "encargado"] as const) {
       const secciones = new Set(getGuiasParaRol(rol).map((g) => g.seccion));
-      expect(secciones).toEqual(new Set(["mostrador", "mercaderia"]));
+      expect(secciones).toEqual(
+        new Set(["mostrador", "mercaderia", "negocio", "administracion"]),
+      );
     }
+  });
+
+  it("la configuración es solo para el dueño", () => {
+    const ruta = (rol: "dueno" | "encargado") =>
+      getGuiasParaRol(rol).map((g) => g.ruta);
+    expect(ruta("dueno")).toContain("/config");
+    expect(ruta("encargado")).not.toContain("/config");
+  });
+
+  // Si cambia el texto de un botón, este test avisa qué guía quedó vieja.
+  it("cada texto citado entre « » existe en la interfaz", () => {
+    const interfaz = readdirSync("src", { recursive: true, encoding: "utf8" })
+      .filter((f) => /\.tsx?$/.test(f) && !/[\\/]ayuda[\\/]/.test(f))
+      .map((f) => readFileSync(join("src", f), "utf8"))
+      .join(" ")
+      .replace(/\s+/g, " ");
+
+    const citas = JSON.stringify(getGuiasParaRol("dueno")).matchAll(
+      /«([^»]+)»/g,
+    );
+    const faltantes = [...citas]
+      .map((cita) => cita[1])
+      .filter((texto) => !interfaz.includes(texto));
+    expect(faltantes).toEqual([]);
   });
 
   it("no repite ids", () => {

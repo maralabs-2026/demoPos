@@ -111,7 +111,7 @@ test.describe("Ayuda en 360 px", () => {
 
     // Busca en el HTML completo: tampoco puede llegar en los datos de la página.
     expect(await page.content()).not.toMatch(
-      /Registrá una compra|auditoría de stock|margen|ganancia/i,
+      /Registrá una compra|auditoría de stock|Anulá una venta|Creá un usuario|margen|ganancia/i,
     );
     await sinScrollHorizontal(page);
 
