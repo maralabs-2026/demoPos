@@ -49,7 +49,7 @@ export default async function CajaPage() {
         <MovimientosCaja
           cajaId={cajaResult.data.id}
           movimientos={movimientosResult.data}
-          puedeAjustar={profile.rol === "dueno"}
+          esDueno={profile.rol === "dueno"}
         />
       )}
 

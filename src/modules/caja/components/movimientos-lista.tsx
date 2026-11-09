@@ -22,7 +22,10 @@ export function MovimientosLista({
                 : movimiento.tipo === "retiro"
                   ? "Retiro"
                   : "Ingreso"}{" "}
-              · {movimiento.autor} · {formatDateTime(movimiento.createdAt)}
+              · {movimiento.autor}
+              {movimiento.autorizadoPor &&
+                ` · autorizó ${movimiento.autorizadoPor}`}{" "}
+              · {formatDateTime(movimiento.createdAt)}
             </p>
           </div>
           <p className="shrink-0 text-sm font-semibold tabular-nums">

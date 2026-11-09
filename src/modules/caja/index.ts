@@ -3,6 +3,7 @@ export {
   abrirCaja,
   anularGasto,
   cerrarCaja,
+  generarCodigoAjuste,
   pagarGasto,
   registrarAjusteCaja,
   registrarGasto,
@@ -35,16 +36,20 @@ export {
   abrirCajaSchema,
   cerrarCajaSchema,
   DESCRIPCION_GASTO_MAX,
+  generarCodigoAjusteSchema,
   MOTIVO_MOVIMIENTO_MAX,
   NOTA_CIERRE_MAX,
   pagarGastoSchema,
+  registrarAjusteSchema,
   registrarGastoSchema,
   registrarMovimientoSchema,
 } from "./schemas";
 export type {
   AbrirCajaInput,
   CerrarCajaInput,
+  GenerarCodigoAjusteInput,
   PagarGastoInput,
+  RegistrarAjusteInput,
   RegistrarGastoInput,
   RegistrarMovimientoInput,
 } from "./schemas";

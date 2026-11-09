@@ -129,6 +129,8 @@ export type MovimientoCaja = {
   esAjuste: boolean;
   // El cajero no puede leer el perfil de otro: si lo cargó el dueño, llega sin nombre.
   autor: string;
+  // Un ajuste cargado con código: el dueño que lo autorizó. null si no hizo falta código.
+  autorizadoPor: string | null;
 };
 
 type MovimientoRow = {
@@ -138,7 +140,9 @@ type MovimientoRow = {
   motivo: string;
   created_at: string;
   es_ajuste: boolean;
+  autorizado_por: string | null;
   autor: Persona;
+  autorizador: Persona;
 };
 
 // Los retiros e ingresos de una caja, del más nuevo al más viejo. Muestran solo lo cargado, nunca
@@ -150,7 +154,7 @@ export async function getMovimientosCaja(
   const { data, error } = await supabase
     .from("caja_movimientos")
     .select(
-      "id, tipo, monto, motivo, created_at, es_ajuste, autor:perfiles!caja_movimientos_usuario_id_comercio_id_fkey(nombre)",
+      "id, tipo, monto, motivo, created_at, es_ajuste, autorizado_por, autor:perfiles!caja_movimientos_usuario_id_comercio_id_fkey(nombre), autorizador:perfiles!caja_movimientos_autorizado_por_fkey(nombre)",
     )
     .eq("caja_id", cajaId)
     .order("created_at", { ascending: false })
@@ -166,6 +170,10 @@ export async function getMovimientosCaja(
       createdAt: m.created_at,
       esAjuste: m.es_ajuste,
       autor: m.autor?.nombre ?? "Otro usuario",
+      // Solo el dueño genera códigos: si el cajero no puede leer su perfil, se nombra el rol.
+      autorizadoPor: m.autorizado_por
+        ? (m.autorizador?.nombre ?? "el dueño")
+        : null,
     })),
   );
 }
