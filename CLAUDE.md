@@ -68,6 +68,7 @@ src/
 - Montos en `numeric(12,2)`, nunca `float`.
 - Una venta nunca se borra. Anularla la marca como anulada y, en la misma transacción, genera los movimientos de stock inversos y resuelve la plata: si su caja sigue abierta no hace falta movimiento, porque la venta anulada deja de sumar en el esperado; si ya se cerró, el efectivo sale con un retiro de la caja abierta de quien anula (sin caja abierta no se puede), los otros medios se devuelven por fuera y el cierre pasado no cambia.
   - Única excepción, ya usada: el 2026-11-06, antes de abrir al público y con autorización del dueño, se borraron en producción los datos de prueba (operación, catálogo y usuarios que no eran dueño), con respaldo previo fuera del repo. No se repite con datos reales.
+  - Segunda excepción: el 2026-11-09, con autorización del dueño y antes de la primera venta real, se borraron en producción la única caja (con su cierre), un retiro y 2 ventas de prueba, con respaldo previo fuera del repo y el stock recalculado desde los movimientos.
 - Las promociones aplicadas se guardan en la venta (snapshot), igual que los precios: cambiar o pausar una promo no altera ventas pasadas.
 - Retiros, ingresos y gastos pagados con la caja son movimientos de esa caja. Efectivo esperado al cierre = fondo inicial + ventas en efectivo + ingresos − retiros.
 - Un retiro o ingreso no se edita ni se borra: un error se compensa con el movimiento contrario. No se limita a lo que hay en el cajón, porque eso revelaría el esperado. Dueño y encargado pueden registrarlos en la caja de otro.
