@@ -226,6 +226,38 @@ describe("ventaSinConexionSchema", () => {
   });
 });
 
+// Si Zod validara cada elemento antes del tope, habría un error por elemento.
+describe("topes antes de validar cada elemento", () => {
+  const invalidos = (largo: number) =>
+    Array.from({ length: largo }, () => null);
+  const mensajes = (input: unknown) =>
+    registrarVentaSchema.safeParse(input).error?.issues.map((i) => i.message);
+
+  it("corta con un solo error si hay demasiados ítems", () => {
+    expect(
+      mensajes({ ...venta, items: invalidos(ITEMS_VENTA_MAX + 1) }),
+    ).toEqual(["La venta puede tener hasta 200 productos distintos"]);
+  });
+
+  it("corta con un solo error si hay demasiados pagos", () => {
+    expect(
+      mensajes({ ...venta, pagos: invalidos(PAGOS_VENTA_MAX + 1) }),
+    ).toEqual(["La venta puede tener hasta 20 pagos"]);
+  });
+
+  it("corta sin fallar en una venta sin conexión con demasiados ítems", () => {
+    const result = ventaSinConexionSchema.safeParse({
+      ventaId: "6d1c4f5b-8e0a-4b2c-9d9e-4f5a6b7c8d9e",
+      cajaId: CAJA,
+      fecha: "2026-11-06T22:15:00.000-03:00",
+      items: invalidos(ITEMS_VENTA_MAX + 1),
+      pagos: venta.pagos,
+      descuento: 0,
+    });
+    expect(result.error?.issues).toHaveLength(1);
+  });
+});
+
 describe("precio al cobrar en registrarVentaSchema", () => {
   it("acepta un precio positivo y lo deja opcional", () => {
     const conPrecio = {

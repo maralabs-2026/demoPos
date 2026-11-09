@@ -71,6 +71,17 @@ describe("cerrarCajaSchema", () => {
     ).toBe("El cierre puede tener hasta 50 medios de pago");
   });
 
+  it("corta con un solo error si hay demasiados conteos, sin validar cada uno", () => {
+    expect(
+      cerrarCajaSchema
+        .safeParse({
+          ...valido,
+          conteos: Array.from({ length: CONTEOS_CIERRE_MAX + 1 }, () => null),
+        })
+        .error?.issues.map((i) => i.message),
+    ).toEqual(["El cierre puede tener hasta 50 medios de pago"]);
+  });
+
   it("recorta la nota y limita su largo", () => {
     expect(
       cerrarCajaSchema.parse({ ...valido, nota: "  Faltó cambio  " }).nota,
