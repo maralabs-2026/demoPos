@@ -12,6 +12,8 @@ import { buscarGuias, type Guia, type SeccionAyuda } from "../buscar";
 const SECCIONES: { id: SeccionAyuda; titulo: string }[] = [
   { id: "mostrador", titulo: "Mostrador" },
   { id: "mercaderia", titulo: "Mercadería" },
+  { id: "negocio", titulo: "Control del negocio" },
+  { id: "administracion", titulo: "Administración" },
 ];
 
 export function AyudaScreen({ guias }: { guias: readonly Guia[] }) {
