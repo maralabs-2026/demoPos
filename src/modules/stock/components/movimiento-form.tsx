@@ -65,7 +65,7 @@ export function MovimientoForm({
       <div
         role="tablist"
         aria-label="Tipo de movimiento"
-        className="flex gap-2"
+        className="flex flex-wrap gap-2"
       >
         {(["ingreso", "ajuste"] as const).map((m) => (
           <Button

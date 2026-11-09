@@ -29,3 +29,4 @@ export {
   stockInicialSchema,
 } from "./schemas";
 export type { ActualizarPreciosInput, ProductoInput } from "./schemas";
+export { parseFiltroStock } from "./stock-filtro";

@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Search, Tag, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { PackagePlus, Search, Tag, Trash2 } from "lucide-react";
 import { FotoProducto } from "@/components/foto-producto";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,15 +21,23 @@ import { formatCurrency, formatPercent } from "@/lib/currency";
 import { eliminarProducto } from "../actions";
 import type { Categoria, Producto } from "../queries";
 import { calcularMargen } from "../schemas";
+import {
+  contarPorFiltroStock,
+  estadoStock,
+  parseFiltroStock,
+  pasaFiltroStock,
+  type FiltroStock,
+} from "../stock-filtro";
 import { EtiquetasDialog } from "./etiquetas-dialog";
 import { ProductoForm, type ProveedorOpcion } from "./producto-form";
 
 function StockCell({ producto }: { producto: Producto }) {
-  if (!producto.controlaStock) {
+  const estado = estadoStock(producto);
+  if (estado === "servicio") {
     return <Badge>Servicio</Badge>;
   }
   const stock = `${producto.stockActual} ${producto.unidadVenta}`;
-  if (producto.stockActual <= 0) {
+  if (estado === "sin_stock") {
     return (
       <Badge variant="destructive" dot>
         Sin stock
@@ -36,7 +45,7 @@ function StockCell({ producto }: { producto: Producto }) {
     );
   }
   // Bajo mínimo en rojo, como pide la Fase D (no naranja).
-  if (producto.stockActual < producto.stockMinimo) {
+  if (estado === "bajo_minimo") {
     return (
       <Badge variant="destructive" dot className="whitespace-normal">
         {stock} · bajo mínimo
@@ -51,6 +60,13 @@ function StockCell({ producto }: { producto: Producto }) {
 // ::before para que no exista en la vista de escritorio.
 const DATO_TARJETA =
   "max-xl:flex max-xl:min-w-0 max-xl:flex-col max-xl:items-start max-xl:gap-0.5 max-xl:p-0 max-xl:text-left max-xl:before:text-xs max-xl:before:font-normal max-xl:before:text-muted-foreground";
+
+const OPCIONES_FILTRO_STOCK: { filtro: FiltroStock; etiqueta: string }[] = [
+  { filtro: "todos", etiqueta: "Todos" },
+  { filtro: "faltantes", etiqueta: "Faltantes" },
+  { filtro: "sin_stock", etiqueta: "Sin stock" },
+  { filtro: "bajo_minimo", etiqueta: "Bajo mínimo" },
+];
 
 type ProductosTableProps = {
   productos: Producto[];
@@ -75,22 +91,38 @@ export function ProductosTable({
   const [eliminando, setEliminando] = useState<string | null>(null);
   const [etiquetas, setEtiquetas] = useState<Producto | null>(null);
   const router = useRouter();
+  // El filtro vive en la URL: sigue puesto al volver de cargar stock.
+  const filtroStock = parseFiltroStock(useSearchParams().get("stock"));
 
   const filtrados = useMemo(() => {
     const term = busqueda.trim().toLowerCase();
-    if (!term) return productos;
     return productos.filter(
       (producto) =>
-        producto.nombre.toLowerCase().includes(term) ||
-        producto.codigoBarras.includes(term),
+        pasaFiltroStock(producto, filtroStock) &&
+        (!term ||
+          producto.nombre.toLowerCase().includes(term) ||
+          producto.codigoBarras.includes(term)),
     );
-  }, [productos, busqueda]);
+  }, [productos, busqueda, filtroStock]);
 
-  // Misma regla que StockCell: sin stock o bajo mínimo. Un servicio nunca alerta.
-  const conAlerta = productos.filter(
-    (p) =>
-      p.controlaStock && (p.stockActual <= 0 || p.stockActual < p.stockMinimo),
-  ).length;
+  const cantidades = useMemo(
+    () => contarPorFiltroStock(productos),
+    [productos],
+  );
+  const conAlerta = cantidades.faltantes;
+
+  // replaceState y no router.replace: filtrar no necesita volver a pedir el catálogo.
+  function cambiarFiltroStock(filtro: FiltroStock) {
+    const params = new URLSearchParams(window.location.search);
+    if (filtro === "todos") params.delete("stock");
+    else params.set("stock", filtro);
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      query ? `${window.location.pathname}?${query}` : window.location.pathname,
+    );
+  }
 
   function cerrarFormulario(aviso?: string) {
     setError(aviso ?? "");
@@ -141,11 +173,23 @@ export function ProductosTable({
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {conAlerta > 0 && (
-            <Badge variant="destructive" dot>
-              {conAlerta === 1
-                ? "1 producto con stock bajo"
-                : `${conAlerta} productos con stock bajo`}
-            </Badge>
+            <button
+              type="button"
+              aria-pressed={filtroStock === "faltantes"}
+              title="Ver solo los productos con faltantes"
+              className="inline-flex min-h-11 cursor-pointer items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring xl:min-h-0"
+              onClick={() =>
+                cambiarFiltroStock(
+                  filtroStock === "faltantes" ? "todos" : "faltantes",
+                )
+              }
+            >
+              <Badge variant="destructive" dot>
+                {conAlerta === 1
+                  ? "1 producto con stock bajo"
+                  : `${conAlerta} productos con stock bajo`}
+              </Badge>
+            </button>
           )}
           {puedeGestionar && (
             <Button onClick={() => setFormulario("nuevo")}>
@@ -154,6 +198,31 @@ export function ProductosTable({
           )}
         </div>
       </div>
+
+      {(conAlerta > 0 || filtroStock !== "todos") && (
+        <div
+          role="group"
+          aria-label="Filtrar por stock"
+          className="flex flex-wrap gap-2"
+        >
+          {OPCIONES_FILTRO_STOCK.map(({ filtro, etiqueta }) => (
+            <Button
+              key={filtro}
+              size="sm"
+              variant={filtroStock === filtro ? "default" : "outline"}
+              aria-pressed={filtroStock === filtro}
+              className="max-xl:h-11"
+              onClick={() =>
+                cambiarFiltroStock(filtro === filtroStock ? "todos" : filtro)
+              }
+            >
+              {filtro === "todos"
+                ? etiqueta
+                : `${etiqueta} (${cantidades[filtro]})`}
+            </Button>
+          ))}
+        </div>
+      )}
 
       {puedeGestionar && (
         <Dialog
@@ -262,7 +331,25 @@ export function ProductosTable({
                   </TableCell>
                   {puedeGestionar && (
                     <TableCell className="max-xl:order-6 max-xl:col-span-2 max-xl:p-0">
-                      <div className="flex gap-2 max-xl:[&_button]:h-11">
+                      <div className="flex gap-2 max-xl:flex-wrap max-xl:[&_button]:h-11">
+                        {filtroStock !== "todos" && (
+                          <Link
+                            href={`/stock?producto=${producto.id}&desde=${filtroStock}`}
+                            className={buttonVariants({
+                              size: "sm",
+                              className:
+                                "max-xl:h-11 max-xl:basis-full xl:size-8 xl:px-0",
+                            })}
+                            aria-label="Sumar stock"
+                            title="Sumar stock"
+                          >
+                            <PackagePlus
+                              aria-hidden="true"
+                              className="max-xl:hidden"
+                            />
+                            <span className="xl:hidden">Sumar stock</span>
+                          </Link>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
@@ -317,7 +404,9 @@ export function ProductosTable({
                   colSpan={puedeGestionar ? 7 : 4}
                   className="py-10 text-center whitespace-normal text-muted-foreground max-xl:block"
                 >
-                  No se encontraron productos.
+                  {filtroStock !== "todos" && !busqueda.trim()
+                    ? "No hay productos con este filtro."
+                    : "No se encontraron productos."}
                 </TableCell>
               </TableRow>
             )}
