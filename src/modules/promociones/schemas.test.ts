@@ -79,3 +79,33 @@ describe("comboSchema", () => {
     ).toBe("Un combo puede tener hasta 20 productos");
   });
 });
+
+// Si Zod validara cada elemento antes del tope, habría un error por elemento.
+describe("topes antes de validar cada elemento", () => {
+  const invalidos = (largo: number) =>
+    Array.from({ length: largo }, () => null);
+
+  it("corta con un solo error si una promo trae demasiados días", () => {
+    expect(
+      promocionSchema
+        .safeParse({ ...promo, dias: invalidos(DIAS_MAX + 1) })
+        .error?.issues.map((i) => i.message),
+    ).toEqual(["Elegí hasta 7 días"]);
+  });
+
+  it("corta con un solo error si un combo trae demasiados días", () => {
+    expect(
+      comboSchema
+        .safeParse({ ...combo, dias: invalidos(DIAS_MAX + 1) })
+        .error?.issues.map((i) => i.message),
+    ).toEqual(["Elegí hasta 7 días"]);
+  });
+
+  it("corta con un solo error si un combo trae demasiados productos", () => {
+    expect(
+      comboSchema
+        .safeParse({ ...combo, items: invalidos(ITEMS_COMBO_MAX + 1) })
+        .error?.issues.map((i) => i.message),
+    ).toEqual(["Un combo puede tener hasta 20 productos"]);
+  });
+});
