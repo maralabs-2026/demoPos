@@ -20,7 +20,23 @@ export const GUIAS_ADMINISTRACION: readonly Guia[] = [
       "Escribí el monto y el motivo, y marcá «Es un ajuste de caja».",
       "Tocá «Registrá el ajuste».",
     ],
-    nota: "Solo lo puede hacer el dueño. No se edita ni se borra, y una caja cerrada no se ajusta.",
+    nota: "Solo el dueño ajusta sin código. No se edita ni se borra, y una caja cerrada no se ajusta.",
+  },
+  {
+    id: "codigo-ajuste",
+    seccion: "administracion",
+    titulo: "Autorizá un ajuste a distancia",
+    resumen:
+      "Generá un código para que el encargado o el cajero cargue un ajuste.",
+    palabras: ["codigo", "clave", "permiso", "autorizar", "remoto", "pin"],
+    ruta: "/caja",
+    roles: DUENO,
+    pasos: [
+      "Entrá a Caja, buscá la caja en «Otras cajas abiertas» y tocá «Operá esta caja».",
+      "En «Código de ajuste», escribí el monto máximo y tocá «Generá el código».",
+      "Pasale los 6 números a quien está en esa caja.",
+    ],
+    nota: "Vence a los 10 minutos y sirve una sola vez. Si generás otro, el anterior deja de servir.",
   },
   {
     id: "crear-usuario",

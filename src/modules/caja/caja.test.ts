@@ -5,8 +5,10 @@ import {
   cerrarCajaSchema,
   CONTEOS_CIERRE_MAX,
   DESCRIPCION_GASTO_MAX,
+  generarCodigoAjusteSchema,
   MOTIVO_MOVIMIENTO_MAX,
   NOTA_CIERRE_MAX,
+  registrarAjusteSchema,
   registrarGastoSchema,
   registrarMovimientoSchema,
 } from "./schemas";
@@ -136,6 +138,74 @@ describe("registrarMovimientoSchema", () => {
           .success,
       ).toBe(false);
     }
+  });
+});
+
+describe("registrarAjusteSchema", () => {
+  const ajuste = {
+    cajaId: CAJA,
+    tipo: "retiro",
+    monto: 500,
+    motivo: "Faltante de cambio",
+  };
+
+  it("acepta el ajuste del dueño sin código y el de otro con 6 números", () => {
+    expect(
+      registrarAjusteSchema.safeParse({ ...ajuste, codigo: null }).success,
+    ).toBe(true);
+    expect(
+      registrarAjusteSchema.parse({ ...ajuste, codigo: " 048213 " }).codigo,
+    ).toBe("048213");
+  });
+
+  it.each([
+    ["vacío", ""],
+    ["corto", "12345"],
+    ["largo", "1234567"],
+    ["con letras", "12a456"],
+  ])("rechaza un código %s", (_, codigo) => {
+    expect(registrarAjusteSchema.safeParse({ ...ajuste, codigo }).success).toBe(
+      false,
+    );
+  });
+
+  it("valida el monto y el motivo igual que un movimiento", () => {
+    expect(
+      registrarAjusteSchema.safeParse({ ...ajuste, monto: 0, codigo: null })
+        .success,
+    ).toBe(false);
+    expect(
+      registrarAjusteSchema.safeParse({ ...ajuste, motivo: " ", codigo: null })
+        .success,
+    ).toBe(false);
+  });
+});
+
+describe("generarCodigoAjusteSchema", () => {
+  it("acepta un monto máximo positivo con hasta dos decimales", () => {
+    expect(
+      generarCodigoAjusteSchema.safeParse({ cajaId: CAJA, montoMax: 1500.5 })
+        .success,
+    ).toBe(true);
+  });
+
+  it.each([
+    ["faltante", undefined],
+    ["cero", 0],
+    ["negativo", -10],
+    ["con más de dos decimales", 1.234],
+    ["demasiado alto", 10_000_000_000],
+  ])("rechaza un monto máximo %s", (_, montoMax) => {
+    expect(
+      generarCodigoAjusteSchema.safeParse({ cajaId: CAJA, montoMax }).success,
+    ).toBe(false);
+  });
+
+  it("rechaza una caja que no es un uuid", () => {
+    expect(
+      generarCodigoAjusteSchema.safeParse({ cajaId: "caja-1", montoMax: 100 })
+        .success,
+    ).toBe(false);
   });
 });
 

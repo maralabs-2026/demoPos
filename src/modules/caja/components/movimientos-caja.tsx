@@ -8,7 +8,11 @@ import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
 import { registrarAjusteCaja, registrarMovimiento } from "../actions";
 import type { MovimientoCaja } from "../queries";
-import { MOTIVO_MOVIMIENTO_MAX, registrarMovimientoSchema } from "../schemas";
+import {
+  MOTIVO_MOVIMIENTO_MAX,
+  registrarAjusteSchema,
+  registrarMovimientoSchema,
+} from "../schemas";
 import { MovimientosLista } from "./movimientos-lista";
 
 type Tipo = MovimientoCaja["tipo"];
@@ -19,21 +23,22 @@ const TIPOS: { value: Tipo; label: string }[] = [
 ];
 
 // Efectivo que sale o entra del cajón durante el turno. Un error no se edita: se compensa con el
-// movimiento contrario.
+// movimiento contrario. Un ajuste lo carga el dueño, o cualquiera con un código que generó el dueño.
 export function MovimientosCaja({
   cajaId,
   movimientos,
-  puedeAjustar,
+  esDueno,
 }: {
   cajaId: string;
   movimientos: MovimientoCaja[];
-  puedeAjustar: boolean;
+  esDueno: boolean;
 }) {
   const router = useRouter();
   const [tipo, setTipo] = useState<Tipo>("retiro");
   const [monto, setMonto] = useState<number | null>(null);
   const [motivo, setMotivo] = useState("");
   const [esAjuste, setEsAjuste] = useState(false);
+  const [codigo, setCodigo] = useState("");
   // Cambia al registrar para vaciar el campo de monto, que guarda lo escrito.
   const [montoKey, setMontoKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -43,22 +48,30 @@ export function MovimientosCaja({
     e.preventDefault();
     if (isPending) return;
 
-    const parsed = registrarMovimientoSchema.safeParse({
-      cajaId,
-      tipo,
-      monto: monto ?? undefined,
-      motivo,
-    });
-    if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Datos inválidos");
-      return;
+    const datos = { cajaId, tipo, monto: monto ?? undefined, motivo };
+    let enviar: () => ReturnType<typeof registrarMovimiento>;
+    if (esAjuste) {
+      const parsed = registrarAjusteSchema.safeParse({
+        ...datos,
+        codigo: esDueno ? null : codigo,
+      });
+      if (!parsed.success) {
+        setError(parsed.error.issues[0]?.message ?? "Datos inválidos");
+        return;
+      }
+      enviar = () => registrarAjusteCaja(parsed.data);
+    } else {
+      const parsed = registrarMovimientoSchema.safeParse(datos);
+      if (!parsed.success) {
+        setError(parsed.error.issues[0]?.message ?? "Datos inválidos");
+        return;
+      }
+      enviar = () => registrarMovimiento(parsed.data);
     }
     setError(null);
 
     startTransition(async () => {
-      const result = esAjuste
-        ? await registrarAjusteCaja(parsed.data)
-        : await registrarMovimiento(parsed.data);
+      const result = await enviar();
       if (!result.ok) {
         setError(result.error);
         return;
@@ -66,6 +79,7 @@ export function MovimientosCaja({
       setMonto(null);
       setMotivo("");
       setEsAjuste(false);
+      setCodigo("");
       setMontoKey((key) => key + 1);
       router.refresh();
     });
@@ -125,16 +139,34 @@ export function MovimientosCaja({
           />
         </div>
 
-        {puedeAjustar && (
-          <label className="flex items-center gap-2 text-sm font-semibold">
-            <input
-              type="checkbox"
-              className="size-4"
-              checked={esAjuste}
-              onChange={(e) => setEsAjuste(e.target.checked)}
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={esAjuste}
+            onChange={(e) => setEsAjuste(e.target.checked)}
+          />
+          Es un ajuste de caja
+        </label>
+
+        {esAjuste && !esDueno && (
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="ajuste-codigo" className="text-sm font-semibold">
+              Código del dueño
+            </label>
+            <Input
+              id="ajuste-codigo"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              placeholder="6 números"
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ""))}
             />
-            Es un ajuste de caja
-          </label>
+            <p className="text-xs text-muted-foreground">
+              Pedíselo al dueño: vence a los 10 minutos y sirve una sola vez.
+            </p>
+          </div>
         )}
 
         {error && (

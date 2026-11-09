@@ -6,6 +6,7 @@ import {
   getMovimientosCaja,
 } from "@/modules/caja";
 import { CerrarCajaForm } from "@/modules/caja/components/cerrar-caja-form";
+import { CodigoAjuste } from "@/modules/caja/components/codigo-ajuste";
 import { MovimientosCaja } from "@/modules/caja/components/movimientos-caja";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +47,13 @@ export default async function CerrarCajaDeOtroPage({
         <MovimientosCaja
           cajaId={cajaResult.data.id}
           movimientos={movimientosResult.data}
-          puedeAjustar={profile.rol === "dueno"}
+          esDueno={profile.rol === "dueno"}
+        />
+      )}
+      {cajaResult.ok && cajaResult.data && profile.rol === "dueno" && (
+        <CodigoAjuste
+          cajaId={cajaResult.data.id}
+          titular={cajaResult.data.titular}
         />
       )}
       {cajaResult.ok && cajaResult.data && mediosResult.ok && (

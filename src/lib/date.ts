@@ -16,6 +16,18 @@ export function formatDateTime(iso: string): string {
   return dateTimeFormatter.format(new Date(iso));
 }
 
+const timeFormatter = new Intl.DateTimeFormat("es-AR", {
+  timeZone: TIME_ZONE,
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+// "15:30"
+export function formatTime(iso: string): string {
+  return timeFormatter.format(new Date(iso));
+}
+
 // Una fecha sin hora ("2026-10-24") a "24/10/2026". No pasa por Date: no tiene zona horaria que
 // convertir, y hacerlo la correría un día.
 export function formatDate(fecha: string): string {
