@@ -69,6 +69,31 @@ export type RegistrarMovimientoInput = z.infer<
   typeof registrarMovimientoSchema
 >;
 
+// El dueño ajusta sin código (null); encargado y cajero, con el que les pasó el dueño.
+export const registrarAjusteSchema = registrarMovimientoSchema.extend({
+  codigo: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, { error: "El código tiene 6 números" })
+    .nullable(),
+});
+
+export type RegistrarAjusteInput = z.infer<typeof registrarAjusteSchema>;
+
+export const generarCodigoAjusteSchema = z.object({
+  cajaId: z.uuid({ error: "La caja no es válida" }),
+  montoMax: z
+    .number({ error: "Escribí el monto máximo" })
+    .finite({ error: "Escribí el monto máximo" })
+    .positive({ error: "El monto máximo tiene que ser mayor a cero" })
+    .max(MONTO_MAX, { error: "El monto máximo es demasiado alto" })
+    .multipleOf(0.01, { error: "Usá hasta dos decimales" }),
+});
+
+export type GenerarCodigoAjusteInput = z.infer<
+  typeof generarCodigoAjusteSchema
+>;
+
 export const DESCRIPCION_GASTO_MAX = 150;
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;

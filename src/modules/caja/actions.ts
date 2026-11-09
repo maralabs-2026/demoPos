@@ -8,12 +8,16 @@ import { getCajaAbierta, type CajaAbierta } from "./queries";
 import {
   abrirCajaSchema,
   cerrarCajaSchema,
+  generarCodigoAjusteSchema,
   pagarGastoSchema,
+  registrarAjusteSchema,
   registrarGastoSchema,
   registrarMovimientoSchema,
   type AbrirCajaInput,
   type CerrarCajaInput,
+  type GenerarCodigoAjusteInput,
   type PagarGastoInput,
+  type RegistrarAjusteInput,
   type RegistrarGastoInput,
   type RegistrarMovimientoInput,
 } from "./schemas";
@@ -25,6 +29,8 @@ const PV_CONTEO_INVALIDO = "PV014";
 const PV_MOVIMIENTO_INVALIDO = "PV015";
 const PV_GASTO_INVALIDO = "PV016";
 const PV_GASTO_YA_RESUELTO = "PV017";
+const PV_SIN_CODIGO = "PV019";
+const PV_MONTO_NO_AUTORIZADO = "PV020";
 const PG_SIN_PERMISO = "42501";
 
 function errorDeGasto(code: string | undefined, porDefecto: string): string {
@@ -134,23 +140,33 @@ export async function anularGasto(
   return ok({ devuelto: data === true });
 }
 
+function errorDeMovimiento(code: string | undefined): string {
+  switch (code) {
+    case PG_SIN_PERMISO:
+      return "No tenés permiso para hacer esto.";
+    case PV_CAJA_INVALIDA:
+      return "Esta caja no existe o no podés operar sobre ella.";
+    case PV_CAJA_CERRADA:
+      return "Esta caja ya está cerrada.";
+    case PV_MOVIMIENTO_INVALIDO:
+      return "El movimiento no es válido. Revisá el monto y el motivo.";
+    case PV_SIN_CODIGO:
+      return "No hay un código vigente para esta caja. Pedile uno nuevo al dueño.";
+    case PV_MONTO_NO_AUTORIZADO:
+      return "El monto supera lo que autorizó el dueño.";
+    default:
+      return "No se pudo registrar el movimiento. Probá de nuevo.";
+  }
+}
+
+function revalidarCaja(cajaId: string) {
+  revalidatePath("/caja");
+  revalidatePath(`/caja/cerrar/${cajaId}`);
+}
+
 // Retiro o ingreso de efectivo durante el turno. Entra en el esperado del cierre.
 export async function registrarMovimiento(
   input: RegistrarMovimientoInput,
-): Promise<ActionResult<null>> {
-  return guardarMovimiento(input, false);
-}
-
-// Igual que un retiro o un ingreso, pero marcado como ajuste. Solo el dueño: lo controla la base.
-export async function registrarAjusteCaja(
-  input: RegistrarMovimientoInput,
-): Promise<ActionResult<null>> {
-  return guardarMovimiento(input, true);
-}
-
-async function guardarMovimiento(
-  input: RegistrarMovimientoInput,
-  esAjuste: boolean,
 ): Promise<ActionResult<null>> {
   const parsed = registrarMovimientoSchema.safeParse(input);
   if (!parsed.success) {
@@ -161,34 +177,80 @@ async function guardarMovimiento(
   }
 
   const supabase = await createClient();
-  const args = {
+  const { error } = await supabase.rpc("registrar_movimiento_caja", {
     p_caja_id: parsed.data.cajaId,
     p_tipo: parsed.data.tipo,
     p_monto: parsed.data.monto,
     p_motivo: parsed.data.motivo,
-  };
-  const { error } = esAjuste
-    ? await supabase.rpc("registrar_ajuste_caja", args)
-    : await supabase.rpc("registrar_movimiento_caja", args);
+  });
+  if (error) return fail(errorDeMovimiento(error.code));
 
-  if (error) {
-    switch (error.code) {
-      case PG_SIN_PERMISO:
-        return fail("Solo el dueño puede ajustar una caja.");
-      case PV_CAJA_INVALIDA:
-        return fail("Esta caja no existe o no podés operar sobre ella.");
-      case PV_CAJA_CERRADA:
-        return fail("Esta caja ya está cerrada.");
-      case PV_MOVIMIENTO_INVALIDO:
-        return fail("El movimiento no es válido. Revisá el monto y el motivo.");
-      default:
-        return fail("No se pudo registrar el movimiento. Probá de nuevo.");
-    }
+  revalidarCaja(parsed.data.cajaId);
+  return ok(null);
+}
+
+// Un retiro o ingreso marcado como ajuste. El dueño lo carga sin código; encargado y cajero, con
+// el código que les pasó el dueño. Los permisos y el código los controla la base.
+export async function registrarAjusteCaja(
+  input: RegistrarAjusteInput,
+): Promise<ActionResult<null>> {
+  const parsed = registrarAjusteSchema.safeParse(input);
+  if (!parsed.success) {
+    return fail(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  }
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
   }
 
-  revalidatePath("/caja");
-  revalidatePath(`/caja/cerrar/${parsed.data.cajaId}`);
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("registrar_ajuste_caja", {
+    p_caja_id: parsed.data.cajaId,
+    p_tipo: parsed.data.tipo,
+    p_monto: parsed.data.monto,
+    p_motivo: parsed.data.motivo,
+    p_codigo: parsed.data.codigo ?? undefined,
+  });
+  if (error) return fail(errorDeMovimiento(error.code));
+  // Sin error y sin id: el código no era correcto (la base guarda el intento).
+  if (!data) {
+    return fail(
+      "El código no es correcto. Revisalo con el dueño: con 5 errores deja de servir.",
+    );
+  }
+
+  revalidarCaja(parsed.data.cajaId);
   return ok(null);
+}
+
+// Solo el dueño: un código de 6 números para que otro cargue un ajuste en esta caja. Se muestra
+// una sola vez; en la base queda cifrado.
+export async function generarCodigoAjuste(
+  input: GenerarCodigoAjusteInput,
+): Promise<ActionResult<{ codigo: string; venceAt: string }>> {
+  const parsed = generarCodigoAjusteSchema.safeParse(input);
+  if (!parsed.success) {
+    return fail(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  }
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("generar_codigo_ajuste", {
+    p_caja_id: parsed.data.cajaId,
+    p_monto_max: parsed.data.montoMax,
+  });
+  const generado = data?.[0];
+  if (error || !generado) {
+    return fail(
+      error?.code === PG_SIN_PERMISO
+        ? "Solo el dueño genera códigos de ajuste."
+        : error
+          ? errorDeMovimiento(error.code)
+          : "No se pudo generar el código. Probá de nuevo.",
+    );
+  }
+  return ok({ codigo: generado.codigo, venceAt: generado.vence_at });
 }
 
 // Cierra con el conteo por medio de pago: cerrar_caja calcula el esperado y la diferencia en la

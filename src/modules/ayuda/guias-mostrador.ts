@@ -140,6 +140,22 @@ export const GUIAS_MOSTRADOR: readonly Guia[] = [
     nota: "Un movimiento no se edita ni se borra. Si te equivocás, cargá el contrario.",
   },
   {
+    id: "ajuste-con-codigo",
+    seccion: "mostrador",
+    titulo: "Cargá un ajuste con el código del dueño",
+    resumen: "Cuando el dueño te autoriza a corregir el efectivo de la caja.",
+    palabras: ["codigo", "clave", "permiso", "corregir", "diferencia", "dueño"],
+    ruta: "/caja",
+    roles: ["encargado", "cajero"],
+    pasos: [
+      "Pedile al dueño el código de 6 números para tu caja.",
+      "Entrá a Caja, en «Retiros e ingresos», y elegí «Retiro» o «Ingreso».",
+      "Escribí el monto y el motivo, marcá «Es un ajuste de caja» y escribí el «Código del dueño».",
+      "Tocá «Registrá el ajuste».",
+    ],
+    nota: "El código vence a los 10 minutos, sirve una sola vez y solo hasta el monto que autorizó el dueño.",
+  },
+  {
     id: "cerrar-caja",
     seccion: "mostrador",
     titulo: "Cerrá la caja",

@@ -68,8 +68,83 @@ export type Database = {
           },
         ];
       };
+      caja_codigos_ajuste: {
+        Row: {
+          anulado_at: string | null;
+          caja_id: string;
+          codigo_hash: string;
+          comercio_id: string;
+          creado_por: string;
+          created_at: string;
+          id: string;
+          intentos: number;
+          monto_max: number;
+          usado_at: string | null;
+          usado_por: string | null;
+          vence_at: string;
+        };
+        Insert: {
+          anulado_at?: string | null;
+          caja_id: string;
+          codigo_hash: string;
+          comercio_id: string;
+          creado_por: string;
+          created_at?: string;
+          id?: string;
+          intentos?: number;
+          monto_max: number;
+          usado_at?: string | null;
+          usado_por?: string | null;
+          vence_at: string;
+        };
+        Update: {
+          anulado_at?: string | null;
+          caja_id?: string;
+          codigo_hash?: string;
+          comercio_id?: string;
+          creado_por?: string;
+          created_at?: string;
+          id?: string;
+          intentos?: number;
+          monto_max?: number;
+          usado_at?: string | null;
+          usado_por?: string | null;
+          vence_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "caja_codigos_ajuste_caja_id_comercio_id_fkey";
+            columns: ["caja_id", "comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "cajas";
+            referencedColumns: ["id", "comercio_id"];
+          },
+          {
+            foreignKeyName: "caja_codigos_ajuste_comercio_id_fkey";
+            columns: ["comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "comercios";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "caja_codigos_ajuste_creado_por_comercio_id_fkey";
+            columns: ["creado_por", "comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "perfiles";
+            referencedColumns: ["id", "comercio_id"];
+          },
+          {
+            foreignKeyName: "caja_codigos_ajuste_usado_por_comercio_id_fkey";
+            columns: ["usado_por", "comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "perfiles";
+            referencedColumns: ["id", "comercio_id"];
+          },
+        ];
+      };
       caja_movimientos: {
         Row: {
+          autorizado_por: string | null;
           caja_id: string;
           comercio_id: string;
           created_at: string;
@@ -82,6 +157,7 @@ export type Database = {
           venta_id: string | null;
         };
         Insert: {
+          autorizado_por?: string | null;
           caja_id: string;
           comercio_id: string;
           created_at?: string;
@@ -94,6 +170,7 @@ export type Database = {
           venta_id?: string | null;
         };
         Update: {
+          autorizado_por?: string | null;
           caja_id?: string;
           comercio_id?: string;
           created_at?: string;
@@ -106,6 +183,13 @@ export type Database = {
           venta_id?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "caja_movimientos_autorizado_por_fkey";
+            columns: ["autorizado_por", "comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "perfiles";
+            referencedColumns: ["id", "comercio_id"];
+          },
           {
             foreignKeyName: "caja_movimientos_caja_id_comercio_id_fkey";
             columns: ["caja_id", "comercio_id"];
@@ -1456,6 +1540,13 @@ export type Database = {
         Returns: undefined;
       };
       gasto_validar_rol: { Args: never; Returns: undefined };
+      generar_codigo_ajuste: {
+        Args: { p_caja_id: string; p_monto_max: number };
+        Returns: {
+          codigo: string;
+          vence_at: string;
+        }[];
+      };
       guardar_producto: {
         Args: {
           p_categoria_id: string;
@@ -1500,6 +1591,7 @@ export type Database = {
       registrar_ajuste_caja: {
         Args: {
           p_caja_id: string;
+          p_codigo?: string;
           p_monto: number;
           p_motivo: string;
           p_tipo: string;
