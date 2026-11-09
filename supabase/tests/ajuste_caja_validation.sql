@@ -1,5 +1,5 @@
 -- Validación del ajuste de caja (0039).
--- Necesita las migraciones hasta 0039 y el seed base (comercio "Kiosko Demo").
+-- Necesita las migraciones hasta 0039 (desde 0040, el caso a espera PV019) y el seed base (comercio "Kiosko Demo").
 --
 --   supabase db query --linked -f supabase/tests/ajuste_caja_validation.sql
 --
@@ -22,7 +22,7 @@ declare
   valor numeric;
   ok text[] := '{}';
 begin
-  if to_regprocedure('public.registrar_ajuste_caja(uuid, text, numeric, text)') is null then
+  if to_regproc('public.registrar_ajuste_caja') is null then
     raise exception 'FAIL: falta registrar_ajuste_caja (aplicar la migración 0039)';
   end if;
 
@@ -58,14 +58,15 @@ begin
     from public.medios_pago m
    where m.comercio_id = comercio and m.activo;
 
-  -- (a) Encargado y cajero no ajustan, ni siquiera el cajero en su propia caja.
+  -- (a) Encargado y cajero no ajustan, ni siquiera el cajero en su propia caja. Desde 0040 lo
+  -- hacen solo con un código del dueño: sin código vigente, PV019.
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims',
     json_build_object('sub', encargado, 'role', 'authenticated')::text, true);
   begin
     perform public.registrar_ajuste_caja(caja, 'ingreso', 10, 'Motivo');
     raise exception 'FAIL (a): el encargado ajustó';
-  exception when insufficient_privilege then
+  exception when sqlstate 'PV019' then
     null;
   end;
   perform set_config('request.jwt.claims',
@@ -73,7 +74,7 @@ begin
   begin
     perform public.registrar_ajuste_caja(caja, 'ingreso', 10, 'Motivo');
     raise exception 'FAIL (a): el cajero ajustó';
-  exception when insufficient_privilege then
+  exception when sqlstate 'PV019' then
     null;
   end;
   execute 'reset role';
