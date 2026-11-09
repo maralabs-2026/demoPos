@@ -1,6 +1,7 @@
 import {
   Boxes,
   ChartColumn,
+  CircleHelp,
   LayoutDashboard,
   Package,
   Settings,
@@ -42,6 +43,7 @@ const USUARIOS: NavLink = {
   icon: Users,
 };
 const CONFIG: NavLink = { href: "/config", label: "Config", icon: Settings };
+const AYUDA: NavLink = { href: "/ayuda", label: "Ayuda", icon: CircleHelp };
 const MI_PERFIL: NavLink = { href: "/perfil", label: "Mi perfil", icon: User };
 
 const TODOS: readonly Rol[] = ["dueno", "encargado", "cajero"];
@@ -69,6 +71,7 @@ export const ROUTE_ROLES = {
   "/reportes/analisis": ["dueno", "encargado"],
   "/usuarios": ["dueno", "encargado"],
   "/config": ["dueno"],
+  "/ayuda": TODOS,
   "/perfil": TODOS,
 } as const satisfies Record<string, readonly Rol[]>;
 
@@ -87,6 +90,7 @@ const LINKS: readonly NavLink[] = [
   REPORTES,
   USUARIOS,
   CONFIG,
+  AYUDA,
   MI_PERFIL,
 ];
 

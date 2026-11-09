@@ -11,7 +11,7 @@ function shape(rol: "dueno" | "encargado" | "cajero"): string[] {
 }
 
 describe("getNavLinks", () => {
-  it("dueño ve los 9 accesos", () => {
+  it("dueño ve los 10 accesos", () => {
     expect(shape("dueno")).toEqual([
       "/inicio|Inicio",
       "/vender|Vender",
@@ -21,6 +21,7 @@ describe("getNavLinks", () => {
       "/reportes|Reportes",
       "/usuarios|Usuarios",
       "/config|Config",
+      "/ayuda|Ayuda",
       "/perfil|Mi perfil",
     ]);
   });
@@ -34,6 +35,7 @@ describe("getNavLinks", () => {
       "/stock|Stock",
       "/reportes|Reportes",
       "/usuarios|Usuarios",
+      "/ayuda|Ayuda",
       "/perfil|Mi perfil",
     ]);
   });
@@ -43,6 +45,7 @@ describe("getNavLinks", () => {
       "/vender|Vender",
       "/caja|Caja",
       "/productos|Productos",
+      "/ayuda|Ayuda",
       "/perfil|Mi perfil",
     ]);
   });
@@ -65,12 +68,14 @@ describe("getMobileNav", () => {
       "/reportes",
       "/usuarios",
       "/config",
+      "/ayuda",
       "/perfil",
     ]);
     expect(hrefs(getMobileNav("encargado").mas)).toEqual([
       "/stock",
       "/reportes",
       "/usuarios",
+      "/ayuda",
       "/perfil",
     ]);
   });
@@ -81,6 +86,7 @@ describe("getMobileNav", () => {
       "/vender",
       "/caja",
       "/productos",
+      "/ayuda",
       "/perfil",
     ]);
     expect(cajero.mas).toEqual([]);
