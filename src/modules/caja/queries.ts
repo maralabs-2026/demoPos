@@ -126,6 +126,7 @@ export type MovimientoCaja = {
   monto: number;
   motivo: string;
   createdAt: string;
+  esAjuste: boolean;
   // El cajero no puede leer el perfil de otro: si lo cargó el dueño, llega sin nombre.
   autor: string;
 };
@@ -136,6 +137,7 @@ type MovimientoRow = {
   monto: number;
   motivo: string;
   created_at: string;
+  es_ajuste: boolean;
   autor: Persona;
 };
 
@@ -148,7 +150,7 @@ export async function getMovimientosCaja(
   const { data, error } = await supabase
     .from("caja_movimientos")
     .select(
-      "id, tipo, monto, motivo, created_at, autor:perfiles!caja_movimientos_usuario_id_comercio_id_fkey(nombre)",
+      "id, tipo, monto, motivo, created_at, es_ajuste, autor:perfiles!caja_movimientos_usuario_id_comercio_id_fkey(nombre)",
     )
     .eq("caja_id", cajaId)
     .order("created_at", { ascending: false })
@@ -162,6 +164,7 @@ export async function getMovimientosCaja(
       monto: Number(m.monto),
       motivo: m.motivo,
       createdAt: m.created_at,
+      esAjuste: m.es_ajuste,
       autor: m.autor?.nombre ?? "Otro usuario",
     })),
   );

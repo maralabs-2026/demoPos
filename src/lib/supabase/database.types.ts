@@ -73,6 +73,7 @@ export type Database = {
           caja_id: string;
           comercio_id: string;
           created_at: string;
+          es_ajuste: boolean;
           id: string;
           monto: number;
           motivo: string;
@@ -84,6 +85,7 @@ export type Database = {
           caja_id: string;
           comercio_id: string;
           created_at?: string;
+          es_ajuste?: boolean;
           id?: string;
           monto: number;
           motivo: string;
@@ -95,6 +97,7 @@ export type Database = {
           caja_id?: string;
           comercio_id?: string;
           created_at?: string;
+          es_ajuste?: boolean;
           id?: string;
           monto?: number;
           motivo?: string;
@@ -1493,6 +1496,15 @@ export type Database = {
       puede_administrar_usuario: {
         Args: { p_usuario_id: string };
         Returns: boolean;
+      };
+      registrar_ajuste_caja: {
+        Args: {
+          p_caja_id: string;
+          p_monto: number;
+          p_motivo: string;
+          p_tipo: string;
+        };
+        Returns: string;
       };
       registrar_compra: {
         Args: {

@@ -15,7 +15,7 @@ import { formatDateTime } from "@/lib/date";
 export const dynamic = "force-dynamic";
 
 export default async function CajaPage() {
-  await requireRol("/caja");
+  const profile = await requireRol("/caja");
 
   const [cajaResult, otrasResult] = await Promise.all([
     getCajaAbierta(),
@@ -49,6 +49,7 @@ export default async function CajaPage() {
         <MovimientosCaja
           cajaId={cajaResult.data.id}
           movimientos={movimientosResult.data}
+          puedeAjustar={profile.rol === "dueno"}
         />
       )}
 

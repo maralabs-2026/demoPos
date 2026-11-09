@@ -138,6 +138,20 @@ export async function anularGasto(
 export async function registrarMovimiento(
   input: RegistrarMovimientoInput,
 ): Promise<ActionResult<null>> {
+  return guardarMovimiento(input, false);
+}
+
+// Igual que un retiro o un ingreso, pero marcado como ajuste. Solo el dueño: lo controla la base.
+export async function registrarAjusteCaja(
+  input: RegistrarMovimientoInput,
+): Promise<ActionResult<null>> {
+  return guardarMovimiento(input, true);
+}
+
+async function guardarMovimiento(
+  input: RegistrarMovimientoInput,
+  esAjuste: boolean,
+): Promise<ActionResult<null>> {
   const parsed = registrarMovimientoSchema.safeParse(input);
   if (!parsed.success) {
     return fail(parsed.error.issues[0]?.message ?? "Datos inválidos");
@@ -147,15 +161,20 @@ export async function registrarMovimiento(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("registrar_movimiento_caja", {
+  const args = {
     p_caja_id: parsed.data.cajaId,
     p_tipo: parsed.data.tipo,
     p_monto: parsed.data.monto,
     p_motivo: parsed.data.motivo,
-  });
+  };
+  const { error } = esAjuste
+    ? await supabase.rpc("registrar_ajuste_caja", args)
+    : await supabase.rpc("registrar_movimiento_caja", args);
 
   if (error) {
     switch (error.code) {
+      case PG_SIN_PERMISO:
+        return fail("Solo el dueño puede ajustar una caja.");
       case PV_CAJA_INVALIDA:
         return fail("Esta caja no existe o no podés operar sobre ella.");
       case PV_CAJA_CERRADA:
