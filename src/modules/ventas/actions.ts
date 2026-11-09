@@ -132,6 +132,8 @@ async function mensajeSinStock(productoId: string): Promise<string> {
 
 // Cierra la venta con registrar_venta: cabecera, ítems, pagos y movimientos de stock en una
 // sola transacción (sección 3 de CLAUDE.md). Precios y total salen de la base, nunca del cliente.
+const PV_COBRO_QR_INVALIDO = "PV032";
+
 export async function registrarVenta(
   input: RegistrarVentaInput,
 ): Promise<ActionResult<Comprobante>> {
@@ -160,11 +162,16 @@ export async function registrarVenta(
       medio_pago_id: p.medioPagoId,
       monto: p.monto,
       ...(p.recibido !== undefined ? { recibido: p.recibido } : {}),
+      ...(p.referenciaExterna
+        ? { referencia_externa: p.referenciaExterna }
+        : {}),
     })),
   });
 
   if (error) {
     switch (error.code) {
+      case PV_COBRO_QR_INVALIDO:
+        return fail("Ese cobro con QR ya se usó o no coincide con la venta.");
       case PG_NOT_AUTHENTICATED:
         return fail("Tu sesión venció. Volvé a ingresar.");
       case PG_INSUFFICIENT_PRIVILEGE:

@@ -38,6 +38,7 @@ export const pagoVentaSchema = z.object({
   medioPagoId: z.string().uuid(),
   monto: montoSchema,
   recibido: montoSchema.optional(),
+  referenciaExterna: z.string().min(1).max(100).optional(),
 });
 
 // Topes contra entradas absurdas, muy por encima de una venta real. El carrito junta por

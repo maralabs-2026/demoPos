@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { fail, ok, type ActionResult } from "@/lib/result";
 
-const API = "https://api.mercadopago.com/v1/orders";
+const API_REAL = "https://api.mercadopago.com";
+// El simulador de los tests e2e nunca reemplaza a la API real en producción.
+const apiOrdenes = () =>
+  `${process.env.VERCEL_ENV === "production" ? API_REAL : (process.env.MERCADOPAGO_API_URL ?? API_REAL)}/v1/orders`;
 const TIMEOUT_MS = 10_000;
 
 // Solo servidor: la variable no lleva el prefijo NEXT_PUBLIC_.
@@ -34,7 +37,7 @@ async function pedir(
 
   let respuesta: Response;
   try {
-    respuesta = await fetch(`${API}${ruta}`, {
+    respuesta = await fetch(`${apiOrdenes()}${ruta}`, {
       ...init,
       cache: "no-store",
       signal: AbortSignal.timeout(TIMEOUT_MS),

@@ -17,11 +17,23 @@ export default defineConfig({
     baseURL: "http://localhost:3000",
     trace: CI ? "retain-on-failure" : "off",
   },
-  webServer: {
-    // En CI se prueba el build de producción (next start), más estable que el dev server.
-    command: CI ? "npm run start" : "npm run dev",
-    url: "http://localhost:3000/login",
-    reuseExistingServer: !CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      // Reemplaza a la API de Mercado Pago; ver e2e/mp-falso.mjs.
+      command: "node e2e/mp-falso.mjs",
+      url: "http://127.0.0.1:4010/health",
+      reuseExistingServer: !CI,
+    },
+    {
+      // En CI se prueba el build de producción (next start), más estable que el dev server.
+      command: CI ? "npm run start" : "npm run dev",
+      url: "http://localhost:3000/login",
+      reuseExistingServer: !CI,
+      timeout: 120_000,
+      env: {
+        MERCADOPAGO_ACCESS_TOKEN: "token-e2e",
+        MERCADOPAGO_API_URL: "http://127.0.0.1:4010",
+      },
+    },
+  ],
 });

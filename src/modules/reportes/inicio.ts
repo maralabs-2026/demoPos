@@ -43,6 +43,18 @@ export type Inicio = {
     cajero: string;
     avisos: AvisoSinConexion[];
   }[];
+  ventasQrManual: {
+    ventaId: string;
+    fecha: string;
+    total: number;
+    cajero: string;
+  }[];
+  cobrosSinVenta: {
+    id: string;
+    fecha: string;
+    monto: number;
+    conError: boolean;
+  }[];
   // Lo vencido y lo que vence pronto, con la cantidad estimada (0033).
   vencimientos: {
     productoId: string;
@@ -67,6 +79,8 @@ export type AvisoSinConexion = "precio" | "stock";
 
 // Hasta cuántas muestra el inicio: el resto aparece cuando se revisan las primeras.
 const VENTAS_A_REVISAR_MAX = 20;
+const COBRO_SIN_VENTA_MARGEN_MS = 5 * 60_000;
+const COBRO_SIN_VENTA_VENTANA_MS = 30 * 24 * 60 * 60_000;
 
 type VentaARevisarRow = {
   id: string;
@@ -111,23 +125,61 @@ type InicioRow = {
 
 export async function getInicio(): Promise<ActionResult<Inicio>> {
   const supabase = await createClient();
-  const [{ data, error }, aRevisar, proximos] = await Promise.all([
-    supabase.rpc("inicio_resumen"),
-    supabase
-      .from("ventas")
-      .select(
-        "id, created_at, total, avisos_sin_conexion, cajero:perfiles!ventas_usuario_id_comercio_id_fkey(nombre)",
-      )
-      .eq("sin_conexion", true)
-      .eq("estado", "completada")
-      .is("revisada_at", null)
-      .not("avisos_sin_conexion", "eq", "{}")
-      .order("created_at", { ascending: false })
-      .limit(VENTAS_A_REVISAR_MAX)
-      .overrideTypes<VentaARevisarRow[], { merge: false }>(),
-    supabase.rpc("vencimientos_proximos"),
-  ]);
-  if (error || aRevisar.error || proximos.error)
+  const ahora = Date.now();
+  const [{ data, error }, aRevisar, proximos, qrManual, cobrosSueltos] =
+    await Promise.all([
+      supabase.rpc("inicio_resumen"),
+      supabase
+        .from("ventas")
+        .select(
+          "id, created_at, total, avisos_sin_conexion, cajero:perfiles!ventas_usuario_id_comercio_id_fkey(nombre)",
+        )
+        .eq("sin_conexion", true)
+        .eq("estado", "completada")
+        .is("revisada_at", null)
+        .not("avisos_sin_conexion", "eq", "{}")
+        .order("created_at", { ascending: false })
+        .limit(VENTAS_A_REVISAR_MAX)
+        .overrideTypes<VentaARevisarRow[], { merge: false }>(),
+      supabase.rpc("vencimientos_proximos"),
+      supabase
+        .from("ventas")
+        .select(
+          "id, created_at, total, cajero:perfiles!ventas_usuario_id_comercio_id_fkey(nombre)",
+        )
+        .eq("qr_manual", true)
+        .eq("estado", "completada")
+        .is("revisada_at", null)
+        .order("created_at", { ascending: false })
+        .limit(VENTAS_A_REVISAR_MAX)
+        .overrideTypes<
+          Omit<VentaARevisarRow, "avisos_sin_conexion">[],
+          { merge: false }
+        >(),
+      // Con margen, para no avisar de un cobro que el cajero todavía está registrando.
+      supabase
+        .from("mp_cobros")
+        .select("id, created_at, monto, estado")
+        .in("estado", ["aprobado", "confirmado_manual", "error"])
+        .is("venta_id", null)
+        .lt(
+          "created_at",
+          new Date(ahora - COBRO_SIN_VENTA_MARGEN_MS).toISOString(),
+        )
+        .gt(
+          "created_at",
+          new Date(ahora - COBRO_SIN_VENTA_VENTANA_MS).toISOString(),
+        )
+        .order("created_at", { ascending: false })
+        .limit(VENTAS_A_REVISAR_MAX),
+    ]);
+  if (
+    error ||
+    aRevisar.error ||
+    proximos.error ||
+    qrManual.error ||
+    cobrosSueltos.error
+  )
     return fail("No se pudo armar el inicio.");
 
   const r = data as InicioRow;
@@ -163,6 +215,18 @@ export async function getInicio(): Promise<ActionResult<Inicio>> {
       total: Number(v.total),
       cajero: v.cajero?.nombre ?? "Otro usuario",
       avisos: v.avisos_sin_conexion,
+    })),
+    ventasQrManual: (qrManual.data ?? []).map((v) => ({
+      ventaId: v.id,
+      fecha: v.created_at,
+      total: Number(v.total),
+      cajero: v.cajero?.nombre ?? "Otro usuario",
+    })),
+    cobrosSinVenta: (cobrosSueltos.data ?? []).map((c) => ({
+      id: c.id,
+      fecha: c.created_at,
+      monto: Number(c.monto),
+      conError: c.estado === "error",
     })),
     vencimientos: (proximos.data as VencimientoRow[]).map((v) => ({
       productoId: v.producto_id,

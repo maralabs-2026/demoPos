@@ -8,6 +8,14 @@ import {
 } from "@/modules/config";
 import { getCombos, getPromociones } from "@/modules/promociones/queries";
 import { getProductos } from "@/modules/productos";
+import {
+  cancelarCobroQr,
+  confirmarCobroQrManual,
+  consultarCobroQr,
+  getPuntosQr,
+  iniciarCobroQr,
+  isMercadoPagoConfigured,
+} from "@/modules/pagos-mp";
 import { VentaScreen } from "@/modules/ventas/components/venta-screen";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +30,7 @@ export default async function VenderPage() {
     promosResult,
     combosResult,
     ticketResult,
+    puntosResult,
   ] = await Promise.all([
     getAuthProfile(),
     getCajaAbierta(),
@@ -31,6 +40,7 @@ export default async function VenderPage() {
     getPromociones(),
     getCombos(),
     getTicketConfig(),
+    getPuntosQr(),
   ]);
   // Dueño y encargado sin tope; el cajero, hasta lo que diga la configuración.
   const descuentoMaxPct =
@@ -71,9 +81,26 @@ export default async function VenderPage() {
     );
   }
 
+  const puntosActivos = puntosResult.ok
+    ? puntosResult.data.filter((p) => p.activo)
+    : [];
+  const qr =
+    isMercadoPagoConfigured() && puntosActivos.length > 0
+      ? {
+          puntos: puntosActivos.map(({ id, nombre }) => ({ id, nombre })),
+          acciones: {
+            iniciar: iniciarCobroQr,
+            consultar: consultarCobroQr,
+            cancelar: cancelarCobroQr,
+            confirmar: confirmarCobroQrManual,
+          },
+        }
+      : null;
+
   return (
     <main className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
       <VentaScreen
+        qr={qr}
         cajaId={cajaResult.data.id}
         descuentoMaxPct={descuentoMaxPct}
         productosIniciales={productosResult.data}
