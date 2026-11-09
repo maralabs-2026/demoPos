@@ -1,5 +1,5 @@
 import { requireRol } from "@/modules/auth";
-import { getProductos } from "@/modules/productos";
+import { getProductos, parseFiltroStock } from "@/modules/productos";
 import { getMovimientos } from "@/modules/stock";
 import { HistorialMovimientos } from "@/modules/stock/components/historial-movimientos";
 import { StockScreen } from "@/modules/stock/components/stock-screen";
@@ -9,11 +9,13 @@ export const dynamic = "force-dynamic";
 export default async function StockPage({
   searchParams,
 }: {
-  searchParams: Promise<{ producto?: string }>;
+  searchParams: Promise<{ producto?: string; desde?: string }>;
 }) {
   await requireRol("/stock");
 
-  const { producto } = await searchParams;
+  const { producto, desde } = await searchParams;
+  // Se llega desde el filtro de faltantes de /productos: se ofrece volver al mismo filtro.
+  const filtroOrigen = parseFiltroStock(desde);
   const [productosResult, movimientosResult] = await Promise.all([
     getProductos(),
     producto ? getMovimientos(producto) : null,
@@ -33,6 +35,9 @@ export default async function StockPage({
           // Un servicio (0031) no lleva stock: no se le cargan ingresos ni ajustes.
           productos={productosResult.data.filter((p) => p.controlaStock)}
           productoSeleccionadoId={producto ?? null}
+          volverHref={
+            filtroOrigen === "todos" ? null : `/productos?stock=${filtroOrigen}`
+          }
           historial={
             movimientosResult === null ? null : movimientosResult.ok ? (
               <HistorialMovimientos movimientos={movimientosResult.data} />

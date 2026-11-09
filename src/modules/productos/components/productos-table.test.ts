@@ -1,10 +1,15 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Producto } from "../queries";
 import { ProductosTable } from "./productos-table";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+const url = vi.hoisted(() => ({ query: "" }));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(url.query),
+}));
 vi.mock("../actions", () => ({ eliminarProducto: vi.fn() }));
 vi.mock("./producto-form", () => ({ ProductoForm: () => null }));
 vi.mock("./etiquetas-dialog", () => ({ EtiquetasDialog: () => null }));
@@ -26,10 +31,10 @@ const producto: Producto = {
   fotoUrl: null,
 };
 
-function render(puedeGestionar: boolean) {
+function render(puedeGestionar: boolean, productos = [producto]) {
   return renderToStaticMarkup(
     createElement(ProductosTable, {
-      productos: [producto],
+      productos,
       categorias: [],
       puedeGestionar,
       puedeCrearCategoria: false,
@@ -57,5 +62,31 @@ describe("ProductosTable", () => {
     expect(html).toMatch(/Editar/);
     expect(html).toMatch(/Etiquetas/);
     expect(html).toMatch(/Eliminar/);
+  });
+
+  describe("con el filtro de faltantes", () => {
+    const faltante = { ...producto, stockActual: 1 };
+
+    beforeEach(() => {
+      url.query = "stock=faltantes";
+    });
+    afterEach(() => {
+      url.query = "";
+    });
+
+    it("quien gestiona puede sumar stock", () => {
+      expect(render(true, [faltante])).toContain("Sumar stock");
+    });
+
+    it("el cajero ve el filtro pero no puede sumar stock", () => {
+      const html = render(false, [faltante]);
+
+      expect(html).toContain("Faltantes (1)");
+      expect(html).not.toContain("Sumar stock");
+    });
+
+    it("oculta lo que tiene stock suficiente", () => {
+      expect(render(true, [producto])).not.toContain("Coca-Cola");
+    });
   });
 });
