@@ -21,7 +21,7 @@ Lo que NO se construye en esta versión: facturación electrónica ARCA, cuenta 
 
 ## 2. Stack (no cambiar sin aprobación)
 
-- Next.js 15 (App Router, Server Actions, TypeScript estricto)
+- Next.js 16 (App Router, Server Actions, TypeScript estricto)
 - Supabase: Postgres, Auth, RLS, Storage
 - Tailwind CSS + shadcn/ui
 - Zod para validación en cliente y servidor

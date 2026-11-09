@@ -25,7 +25,7 @@ export async function createClient() {
             );
           } catch {
             // Called from a Server Component: cookies are read-only there.
-            // Session refresh is handled by middleware once auth exists (Fase 2).
+            // Session refresh is handled by the proxy once auth exists (Fase 2).
           }
         },
       },
