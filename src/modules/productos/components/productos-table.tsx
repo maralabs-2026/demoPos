@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, Tag, Trash2 } from "lucide-react";
 import { FotoProducto } from "@/components/foto-producto";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,13 +38,19 @@ function StockCell({ producto }: { producto: Producto }) {
   // Bajo mínimo en rojo, como pide la Fase D (no naranja).
   if (producto.stockActual < producto.stockMinimo) {
     return (
-      <Badge variant="destructive" dot>
+      <Badge variant="destructive" dot className="whitespace-normal">
         {stock} · bajo mínimo
       </Badge>
     );
   }
   return <span className="tabular-nums">{stock}</span>;
 }
+
+// Debajo de xl no entran las columnas (la barra lateral ocupa 240 px): cada fila es una tarjeta.
+// Es la misma tabla con otro CSS: una sola copia de cada producto en el DOM. El rótulo va en
+// ::before para que no exista en la vista de escritorio.
+const DATO_TARJETA =
+  "max-xl:flex max-xl:min-w-0 max-xl:flex-col max-xl:items-start max-xl:gap-0.5 max-xl:p-0 max-xl:text-left max-xl:before:text-xs max-xl:before:font-normal max-xl:before:text-muted-foreground";
 
 type ProductosTableProps = {
   productos: Producto[];
@@ -185,12 +191,12 @@ export function ProductosTable({
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-card">
-        <Table>
-          <TableHeader>
+      <div className="overflow-x-auto rounded-xl border border-border bg-card max-xl:overflow-x-visible max-xl:rounded-none max-xl:border-0 max-xl:bg-transparent">
+        <Table className="max-xl:block">
+          <TableHeader className="max-xl:sr-only">
             <TableRow className="hover:bg-transparent">
               <TableHead>Producto</TableHead>
-              <TableHead className="hidden sm:table-cell">Categoría</TableHead>
+              <TableHead className="hidden xl:table-cell">Categoría</TableHead>
               {puedeGestionar && (
                 <TableHead className="text-right">Costo</TableHead>
               )}
@@ -202,13 +208,16 @@ export function ProductosTable({
               {puedeGestionar && <TableHead>Acciones</TableHead>}
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="max-xl:flex max-xl:flex-col max-xl:gap-3">
             {filtrados.map((producto) => {
               const margen = calcularMargen(producto.costo, producto.precio);
 
               return (
-                <TableRow key={producto.id}>
-                  <TableCell className="whitespace-normal">
+                <TableRow
+                  key={producto.id}
+                  className="max-xl:grid max-xl:grid-cols-2 max-xl:gap-x-3 max-xl:gap-y-3 max-xl:rounded-xl max-xl:border! max-xl:border-border max-xl:bg-card max-xl:p-3 max-xl:hover:bg-card"
+                >
+                  <TableCell className="whitespace-normal max-xl:order-1 max-xl:col-span-2 max-xl:p-0">
                     <div className="flex items-center gap-3">
                       <FotoProducto
                         src={producto.fotoUrl}
@@ -222,33 +231,42 @@ export function ProductosTable({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden text-muted-foreground sm:table-cell">
+                  <TableCell className="hidden whitespace-normal text-muted-foreground xl:table-cell">
                     {producto.categoriaNombre ?? "—"}
                   </TableCell>
                   {puedeGestionar && (
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell
+                      className={`text-right tabular-nums max-xl:order-4 max-xl:before:content-['Costo'] ${DATO_TARJETA}`}
+                    >
                       {producto.costo === null
                         ? "—"
                         : formatCurrency(producto.costo)}
                     </TableCell>
                   )}
-                  <TableCell className="text-right font-semibold tabular-nums">
+                  <TableCell
+                    className={`text-right font-semibold tabular-nums max-xl:order-2 max-xl:text-lg max-xl:before:content-['Precio'] ${DATO_TARJETA}`}
+                  >
                     {formatCurrency(producto.precio)}
                   </TableCell>
                   {puedeGestionar && (
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell
+                      className={`text-right tabular-nums max-xl:order-5 max-xl:before:content-['Margen'] ${DATO_TARJETA}`}
+                    >
                       {formatPercent(margen)}
                     </TableCell>
                   )}
-                  <TableCell className="text-right">
+                  <TableCell
+                    className={`text-right max-xl:order-3 max-xl:whitespace-normal max-xl:before:content-['Stock'] ${DATO_TARJETA}`}
+                  >
                     <StockCell producto={producto} />
                   </TableCell>
                   {puedeGestionar && (
-                    <TableCell>
-                      <div className="flex gap-2">
+                    <TableCell className="max-xl:order-6 max-xl:col-span-2 max-xl:p-0">
+                      <div className="flex gap-2 max-xl:[&_button]:h-11">
                         <Button
                           size="sm"
                           variant="outline"
+                          className="max-xl:flex-1"
                           onClick={() => setFormulario(producto)}
                         >
                           Editar
@@ -256,19 +274,36 @@ export function ProductosTable({
                         <Button
                           size="sm"
                           variant="outline"
+                          aria-label="Etiquetas"
+                          title="Etiquetas"
+                          className="xl:size-8 xl:px-0"
                           onClick={() => setEtiquetas(producto)}
                         >
-                          Etiquetas
+                          <Tag aria-hidden="true" className="max-xl:hidden" />
+                          <span className="xl:hidden">Etiquetas</span>
                         </Button>
                         <Button
                           size="sm"
                           variant="destructive"
+                          aria-label={
+                            eliminando === producto.id
+                              ? "Eliminando..."
+                              : "Eliminar"
+                          }
+                          title="Eliminar"
+                          className="xl:size-8 xl:px-0"
                           disabled={eliminando !== null}
                           onClick={() => void handleDelete(producto)}
                         >
-                          {eliminando === producto.id
-                            ? "Eliminando..."
-                            : "Eliminar"}
+                          <Trash2
+                            aria-hidden="true"
+                            className="max-xl:hidden"
+                          />
+                          <span className="xl:hidden">
+                            {eliminando === producto.id
+                              ? "Eliminando..."
+                              : "Eliminar"}
+                          </span>
                         </Button>
                       </div>
                     </TableCell>
@@ -277,10 +312,10 @@ export function ProductosTable({
               );
             })}
             {filtrados.length === 0 && (
-              <TableRow>
+              <TableRow className="max-xl:block max-xl:border-0">
                 <TableCell
                   colSpan={puedeGestionar ? 7 : 4}
-                  className="py-10 text-center text-muted-foreground"
+                  className="py-10 text-center whitespace-normal text-muted-foreground max-xl:block"
                 >
                   No se encontraron productos.
                 </TableCell>
