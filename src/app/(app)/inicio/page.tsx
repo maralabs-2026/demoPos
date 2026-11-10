@@ -28,6 +28,8 @@ const ACTIVIDAD: Record<TipoActividad, string> = {
   cierre: "Caja cerrada",
   retiro: "Retiro",
   ingreso: "Ingreso",
+  ajuste_retiro: "Ajuste (retiro)",
+  ajuste_ingreso: "Ajuste (ingreso)",
   gasto: "Gasto pagado",
 };
 
@@ -266,7 +268,9 @@ export default async function InicioPage() {
                         {a.detalle ? `: ${a.detalle}` : ""}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {a.usuario} · {formatDateTime(a.fecha)}
+                        {a.usuario}
+                        {a.autorizo && ` · autorizó ${a.autorizo}`} ·{" "}
+                        {formatDateTime(a.fecha)}
                       </span>
                     </span>
                     {a.monto !== null && (
