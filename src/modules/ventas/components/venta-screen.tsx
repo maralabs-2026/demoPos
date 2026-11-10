@@ -1431,7 +1431,10 @@ export function VentaScreen({
         >
           <div className="flex items-baseline justify-between border-b border-border pb-2 text-sm text-muted-foreground tabular-nums">
             <span>Artículos</span>
-            <span className="font-semibold text-foreground">
+            <span
+              data-testid="articulos-venta"
+              className="font-semibold text-foreground"
+            >
               {cantidadItems}
             </span>
           </div>
