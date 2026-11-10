@@ -56,9 +56,7 @@ test("precio al cobrar: se escribe el monto al vender y queda guardado", async (
   await precio.press("Enter");
   await expect(buscar).toBeFocused();
   const ticket = page.getByLabel("Ticket");
-  await expect(
-    ticket.getByRole("button", { name: /Cobrá \$ 1\.500/ }),
-  ).toBeVisible();
+  await expect(ticket.getByTestId("total-venta")).toHaveText(/\$ 1\.500/);
   await page.getByLabel("Monto recibido").fill("1500");
   await page.keyboard.press("F2");
   await expect(

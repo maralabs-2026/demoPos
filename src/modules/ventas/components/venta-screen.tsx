@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeftRight,
@@ -14,12 +15,13 @@ import {
   ShoppingBag,
   Split,
   Tag,
+  Trash2,
   TriangleAlert,
   UserRound,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardEyebrow } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { CategoryTabs } from "@/components/ui/category-tabs";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
@@ -831,9 +833,9 @@ export function VentaScreen({
       <section
         aria-label="Catálogo"
         inert={panel !== null}
-        className="flex min-w-0 flex-[999_1_560px] flex-col gap-3"
+        className="flex min-w-0 flex-[999_1_560px] flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-8rem)] lg:gap-0 lg:overflow-hidden lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:shadow-[0_1px_2px_rgba(15,23,42,0.06)]"
       >
-        <div className="relative">
+        <div className="relative lg:m-4 lg:mb-0">
           <Search
             aria-hidden="true"
             className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground"
@@ -850,7 +852,7 @@ export function VentaScreen({
                 handleBuscarSubmit();
               }
             }}
-            className="h-13 rounded-xl border-primary pr-12 pl-12 text-base sm:pr-20 shadow-[0_0_0_3px_var(--accent)] md:text-base"
+            className="h-12 rounded-xl border-primary pr-12 pl-12 text-base shadow-[0_0_0_3px_var(--accent)] sm:pr-20 md:text-base"
           />
           <span className="absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-1 text-muted-foreground">
             <CamaraCodigo onCodigo={(codigo) => handleBuscarSubmit(codigo)} />
@@ -863,20 +865,24 @@ export function VentaScreen({
         {error && !panel && (
           <p
             role="alert"
-            className="flex items-center gap-2 rounded-lg bg-destructive-soft px-4 py-3 text-sm font-medium text-destructive"
+            className="flex items-center gap-2 rounded-lg bg-destructive-soft px-4 py-3 text-sm font-medium text-destructive lg:mx-4 lg:mt-3"
           >
             <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
             {error}
           </p>
         )}
 
-        <CategoryTabs
-          items={categorias.map((c) => ({ value: c, label: c }))}
-          value={categoria}
-          onValueChange={setCategoria}
-        />
+        <div className="lg:mt-4 lg:border-y lg:border-border lg:px-4 lg:py-3">
+          <CategoryTabs
+            items={categorias.map((c) => ({ value: c, label: c }))}
+            value={categoria}
+            onValueChange={setCategoria}
+            // En escritorio, píldoras sueltas con borde, como chips.
+            className="lg:gap-2 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:[&>button]:h-9 lg:[&>button]:border lg:[&>button]:border-border lg:[&>button]:px-4 lg:[&>button]:text-sm lg:[&>button[aria-pressed=true]]:border-foreground lg:[&>button[aria-pressed=false]]:text-foreground lg:[&>button[aria-pressed=false]]:hover:bg-muted"
+          />
+        </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(176px,1fr))]">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(176px,1fr))] lg:min-h-0 lg:flex-1 lg:auto-rows-max lg:content-start lg:overflow-y-auto lg:bg-muted lg:p-4">
           {catalogo.map((producto) => {
             const sinStock = disponible(producto) <= 0;
             const enTicket =
@@ -893,7 +899,7 @@ export function VentaScreen({
                   enfocarBusqueda();
                 }}
                 className={cn(
-                  "relative flex min-w-0 flex-col gap-1.5 rounded-2xl border border-border bg-card p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-colors hover:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
+                  "relative flex min-w-0 flex-col gap-1.5 rounded-2xl border border-border bg-card p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-colors hover:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none lg:gap-1 lg:overflow-hidden lg:p-0",
                   enTicket > 0 &&
                     "border-primary ring-1 ring-primary hover:border-primary",
                   sinStock && "cursor-not-allowed opacity-55",
@@ -902,11 +908,12 @@ export function VentaScreen({
                 <FotoProducto
                   src={producto.fotoUrl}
                   entera
-                  className="mb-1 h-28 w-full lg:h-32"
+                  className="mb-1 h-28 w-full lg:mb-2 lg:h-[104px] lg:rounded-none lg:border-b lg:border-border lg:p-2"
                 />
                 <span className="absolute top-2 right-2 hidden lg:block">
                   <StockChip producto={producto} />
                 </span>
+                {/* En escritorio, el texto va con margen propio: la foto ocupa el ancho de la tarjeta. */}
                 {enTicket > 0 && (
                   <span className="absolute top-2 right-2 grid size-7 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground tabular-nums lg:right-auto lg:left-2">
                     <span className="sr-only">En el ticket: </span>
@@ -914,25 +921,25 @@ export function VentaScreen({
                   </span>
                 )}
                 {producto.categoriaNombre && (
-                  <span className="hidden text-[11px] font-bold tracking-wide text-muted-foreground uppercase lg:block">
+                  <span className="hidden truncate px-3 text-[11px] font-bold tracking-wide text-muted-foreground uppercase lg:block">
                     {producto.categoriaNombre}
                   </span>
                 )}
-                <span className="line-clamp-2 min-h-[38px] text-sm leading-[19px] font-semibold">
+                <span className="line-clamp-2 min-h-[38px] text-sm leading-[19px] font-semibold lg:px-3 lg:uppercase">
                   {producto.nombre}
                 </span>
-                <span className="hidden font-mono text-xs text-muted-foreground lg:block">
+                <span className="hidden truncate px-3 font-mono text-xs text-muted-foreground lg:block">
                   {producto.codigoBarras}
                 </span>
-                <span className="mt-0.5 flex items-center justify-between gap-2 lg:items-end">
-                  <span className="font-display text-lg leading-[22px] font-extrabold tabular-nums">
+                <span className="mt-0.5 flex items-center justify-between gap-2 lg:mt-2 lg:items-center lg:border-t lg:border-border lg:px-3 lg:py-2.5">
+                  <span className="font-display text-lg leading-[22px] font-extrabold tabular-nums lg:text-xl">
                     {formatCurrency(producto.precio, { decimals: 0 })}
                   </span>
                   <StockCorto producto={producto} />
                   <span
                     aria-hidden="true"
                     className={cn(
-                      "hidden size-8 place-items-center rounded-lg lg:grid",
+                      "hidden size-9 place-items-center rounded-[10px] lg:grid",
                       sinStock
                         ? "bg-muted text-muted-foreground"
                         : "bg-primary text-primary-foreground",
@@ -968,7 +975,7 @@ export function VentaScreen({
         role={panel ? "dialog" : undefined}
         aria-modal={panel ? true : undefined}
         className={cn(
-          "w-full min-w-0 gap-2.5 p-4 lg:static lg:flex lg:max-h-none lg:max-w-[460px] lg:flex-[1_1_360px] lg:overflow-visible lg:rounded-xl",
+          "w-full min-w-0 gap-2.5 p-4 lg:static lg:flex lg:max-h-none lg:min-h-[calc(100dvh-8rem)] lg:max-w-[460px] lg:flex-[1_1_360px] lg:overflow-visible lg:rounded-2xl",
           panel
             ? "fixed inset-x-0 bottom-0 z-50 max-h-[88dvh] overflow-y-auto rounded-t-3xl rounded-b-none pb-[calc(1rem+env(safe-area-inset-bottom))]"
             : "hidden",
@@ -982,16 +989,20 @@ export function VentaScreen({
             <span className="hidden lg:inline">Ticket en curso</span>
           </h2>
           <span className="flex items-center gap-2">
-            <span
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isPending || cart.length === 0}
+              onClick={cancelarVenta}
               className={cn(
-                "text-xs text-muted-foreground",
-                panel === "cobro" && "hidden lg:inline",
+                "text-muted-foreground",
+                panel === "cobro" && "hidden lg:inline-flex",
               )}
             >
-              {cantidadItems === 1
-                ? "1 artículo"
-                : `${cantidadItems} artículos`}
-            </span>
+              <Trash2 data-icon="inline-start" />
+              Vaciar
+              <KeyHint>F4</KeyHint>
+            </Button>
             {panel && (
               <Button
                 ref={cerrarPanelRef}
@@ -1033,11 +1044,27 @@ export function VentaScreen({
         )}
 
         {cart.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-6 text-center text-sm text-muted-foreground">
-            <span className="grid size-12 place-items-center rounded-full bg-muted">
-              <ScanBarcode aria-hidden="true" className="size-6" />
-            </span>
-            Escaneá o tocá un producto para empezar la venta.
+          <div className="flex flex-col items-center gap-2 border-y border-border py-8 text-center lg:flex-1 lg:justify-center">
+            {logoUrl ? (
+              // Logo del comercio en grises, como en el ticket impreso. Decorativo: el texto explica.
+              <Image
+                unoptimized
+                src={logoUrl}
+                alt=""
+                width={64}
+                height={64}
+                className="mb-1 size-16 rounded-xl object-contain opacity-40 grayscale"
+              />
+            ) : (
+              <span className="mb-1 grid size-16 place-items-center rounded-xl bg-muted text-muted-foreground">
+                <ScanBarcode aria-hidden="true" className="size-8" />
+              </span>
+            )}
+            <p className="text-sm font-bold">Carrito vacío</p>
+            <p className="max-w-56 text-xs text-muted-foreground">
+              Escaneá un código o tocá un producto del catálogo para sumarlo al
+              ticket.
+            </p>
           </div>
         ) : (
           <ul
@@ -1163,6 +1190,8 @@ export function VentaScreen({
           className={cn(
             "flex flex-col gap-2.5",
             panel === "carrito" && "hidden lg:flex",
+            // Sin productos, en escritorio el ticket muestra solo el carrito vacío.
+            cart.length === 0 && "lg:hidden",
           )}
         >
           {pagosCombinados === null ? (
@@ -1396,10 +1425,19 @@ export function VentaScreen({
 
         <div
           className={cn(
-            "flex flex-col gap-1 rounded-2xl border border-border bg-muted px-4 py-3",
+            "flex flex-col gap-1 rounded-2xl border border-border bg-card px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.06)]",
             panel === "cobro" && "hidden lg:flex",
           )}
         >
+          <div className="flex items-baseline justify-between border-b border-border pb-2 text-sm text-muted-foreground tabular-nums">
+            <span>Artículos</span>
+            <span
+              data-testid="articulos-venta"
+              className="font-semibold text-foreground"
+            >
+              {cantidadItems}
+            </span>
+          </div>
           {descuentos > 0 && (
             <>
               <div className="flex items-baseline justify-between text-sm text-muted-foreground tabular-nums">
@@ -1412,9 +1450,12 @@ export function VentaScreen({
               </div>
             </>
           )}
-          <div className="flex items-baseline justify-between gap-3">
-            <CardEyebrow>Total</CardEyebrow>
-            <p className="font-display text-[36px] leading-[40px] font-extrabold tracking-[-0.02em] tabular-nums">
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <span className="text-sm text-muted-foreground">Total</span>
+            <p
+              data-testid="total-venta"
+              className="font-display text-[36px] leading-[40px] font-extrabold tracking-[-0.02em] tabular-nums lg:text-[40px] lg:leading-[44px]"
+            >
               {formatCurrency(total)}
             </p>
           </div>
@@ -1436,32 +1477,16 @@ export function VentaScreen({
           </Button>
           <Button
             className={cn(
-              "h-12 w-full rounded-2xl text-[16px] shadow-[0_6px_16px_rgba(15,122,85,0.28)] disabled:shadow-none",
+              "h-14 w-full rounded-2xl text-[17px] shadow-[0_6px_16px_rgba(15,122,85,0.28)] disabled:shadow-none",
               panel === "carrito" && "hidden lg:inline-flex",
             )}
             variant="success"
             size="lg"
-            disabled={isPending}
+            disabled={isPending || cart.length === 0}
             onClick={cobrar}
           >
-            {isPending
-              ? "Cobrando..."
-              : total > 0
-                ? `Cobrá ${formatCurrency(total, { decimals: 0 })}`
-                : "Cobrá"}
+            {isPending ? "Cobrando..." : "Confirmá la venta"}
             <KeyHint>F2</KeyHint>
-          </Button>
-          <Button
-            className={cn(
-              "h-9 w-full",
-              panel === "cobro" && "hidden lg:inline-flex",
-            )}
-            variant="ghost"
-            disabled={isPending}
-            onClick={cancelarVenta}
-          >
-            Cancelá la venta
-            <KeyHint>F4</KeyHint>
           </Button>
         </div>
       </Card>

@@ -56,7 +56,7 @@ test("celular: toca un producto, abre el carrito y cobra desde el panel", async 
   await ticket.getByRole("button", { name: "Seguí al cobro" }).tap();
   await expect(ticket.getByText("Total a cobrar")).toBeVisible();
   await page.getByLabel("Monto recibido").fill("2500");
-  await ticket.getByRole("button", { name: /Cobrá \$ 2\.500/ }).tap();
+  await ticket.getByRole("button", { name: /Confirmá la venta/ }).tap();
 
   await expect(
     page.getByRole("heading", { name: "Venta cobrada" }),

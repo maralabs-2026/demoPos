@@ -17,3 +17,4 @@ export { requireRol } from "./guard";
 export { canAccess, ROUTE_ROLES } from "./navigation";
 export type { AppRoute } from "./navigation";
 export { ROL_LABELS, rolBadgeVariant } from "./roles";
+export { BotonMenu } from "./components/menu-lateral";

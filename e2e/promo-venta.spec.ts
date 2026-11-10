@@ -44,9 +44,7 @@ test("promo 2x1: dos Coca cobran $ 2.500 y el ticket muestra la promo", async ({
 
     const ticket = page.getByLabel("Ticket");
     await expect(ticket.getByText(`Promo: ${NOMBRE_PROMO}`)).toBeVisible();
-    await expect(
-      ticket.getByRole("button", { name: /Cobrá \$ 2\.500/ }),
-    ).toBeVisible();
+    await expect(ticket.getByTestId("total-venta")).toHaveText(/\$ 2\.500/);
 
     await page.getByLabel("Monto recibido").fill("2500");
     await page.keyboard.press("F2");
