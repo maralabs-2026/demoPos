@@ -86,7 +86,9 @@ test("cámara: lee el código en la venta y en el popup de producto", async ({
     .click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByRole("dialog")).toBeHidden({ timeout: 30_000 });
-  await expect(page.getByText("1 artículo")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId("articulos-venta")).toHaveText("1", {
+    timeout: 10_000,
+  });
   await page.keyboard.press("F4");
 
   expect(

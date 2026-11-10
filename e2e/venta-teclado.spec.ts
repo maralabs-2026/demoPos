@@ -20,8 +20,8 @@ test.describe("Venta solo con teclado", () => {
     // Acción 2: Enter agrega el producto al ticket.
     await buscar.press("Enter");
     await expect(
-      page.getByLabel("Ticket").getByText("1 artículo"),
-    ).toBeVisible();
+      page.getByLabel("Ticket").getByTestId("articulos-venta"),
+    ).toHaveText("1");
     // Acción 3: monto recibido justo.
     await page.getByLabel("Monto recibido").fill("2500");
     // Acción 4: F2 cobra.

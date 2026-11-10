@@ -73,7 +73,10 @@ test("configuración: ticket, medios de pago y categorías", async ({ page }) =>
   await repetido.getByLabel("Cerrar").click();
 
   await abrirCajaSiHaceFalta(page);
-  await expect(page.getByRole("button", { name: medio })).toBeAttached();
+  // Con el ticket vacío, en escritorio los medios de pago están ocultos: se buscan igual.
+  await expect(
+    page.getByRole("button", { name: medio, includeHidden: true }),
+  ).toBeAttached();
 
   await page.goto("/config/pagos");
   await page.waitForLoadState("networkidle");
