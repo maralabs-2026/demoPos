@@ -50,9 +50,7 @@ test("combo Coca + Bon o Bon: el ticket muestra el combo y cobra $ 3.500", async
     const ticket = page.getByLabel("Ticket");
     // El combo se muestra en las dos líneas que lo componen.
     await expect(ticket.getByText(`Promo: ${NOMBRE_COMBO}`)).toHaveCount(2);
-    await expect(
-      ticket.getByRole("button", { name: /Cobrá \$ 3\.500/ }),
-    ).toBeVisible();
+    await expect(ticket.getByTestId("total-venta")).toHaveText(/\$ 3\.500/);
 
     await page.getByLabel("Monto recibido").fill(String(PRECIO_COMBO));
     await page.keyboard.press("F2");

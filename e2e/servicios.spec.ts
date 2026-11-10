@@ -50,9 +50,7 @@ test("servicio: se vende sin stock, varias veces, y no entra en reposición ni e
     await buscar.press("Enter");
   }
   const ticket = page.getByLabel("Ticket");
-  await expect(
-    ticket.getByRole("button", { name: /Cobrá \$ 3\.000/ }),
-  ).toBeVisible();
+  await expect(ticket.getByTestId("total-venta")).toHaveText(/\$ 3\.000/);
   await page.getByLabel("Monto recibido").fill("3000");
   await page.keyboard.press("F2");
   await expect(

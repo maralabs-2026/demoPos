@@ -16,6 +16,7 @@ import {
   iniciarCobroQr,
   isMercadoPagoConfigured,
 } from "@/modules/pagos-mp";
+import { AccesosVenta } from "@/modules/ventas/components/accesos-venta";
 import { VentaScreen } from "@/modules/ventas/components/venta-screen";
 
 export const dynamic = "force-dynamic";
@@ -98,7 +99,8 @@ export default async function VenderPage() {
       : null;
 
   return (
-    <main className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+    <main className="flex flex-col gap-4 p-4 sm:p-6">
+      {profile && <AccesosVenta rol={profile.rol} />}
       <VentaScreen
         qr={qr}
         cajaId={cajaResult.data.id}
