@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -22,6 +22,7 @@ import {
 } from "@/modules/auth/navigation";
 import { ROL_LABELS, rolBadgeVariant } from "@/modules/auth/roles";
 import type { Rol, SessionProfile } from "@/modules/auth/session";
+import { esPantallaCompleta, useMenuLateral } from "./menu-lateral";
 
 function AppBrand({
   comercioNombre,
@@ -110,10 +111,51 @@ export function Navigation({ profile }: { profile: SessionProfile }) {
 
   const masActivo = mas.some((link) => link.href === activeHref);
 
+  // En el punto de venta la barra no queda fija: se abre encima con el botón Menú.
+  const flotante = esPantallaCompleta(pathname);
+  const { abiertoEn, setAbiertoEn } = useMenuLateral();
+  const menuAbierto = flotante && abiertoEn === pathname;
+  const asideRef = useRef<HTMLElement>(null);
+  const cerrarMenu = () => setAbiertoEn(null);
+
+  useEffect(() => {
+    if (!menuAbierto) return;
+    asideRef.current?.querySelector<HTMLElement>("a")?.focus();
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setAbiertoEn(null);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [menuAbierto, setAbiertoEn]);
+
   return (
     <>
-      {/* Escritorio: barra lateral fija */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar px-4 pt-7 pb-5 lg:flex">
+      {menuAbierto && (
+        <div
+          aria-hidden="true"
+          onClick={cerrarMenu}
+          className="fixed inset-0 z-40 hidden bg-foreground/40 lg:block"
+        />
+      )}
+
+      {/* Escritorio: barra lateral fija; en el punto de venta, panel que se abre encima. */}
+      <aside
+        ref={asideRef}
+        id="menu-lateral"
+        role={flotante ? "dialog" : undefined}
+        aria-modal={menuAbierto ? true : undefined}
+        aria-label={flotante ? "Menú" : undefined}
+        onClick={(e) => {
+          // Elegir una opción cierra el panel, también si es la pantalla actual.
+          if ((e.target as HTMLElement).closest("a")) cerrarMenu();
+        }}
+        className={cn(
+          "fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar px-4 pt-7 pb-5",
+          flotante
+            ? cn("z-50 shadow-xl", menuAbierto && "lg:flex")
+            : "z-40 lg:flex",
+        )}
+      >
         <div className="px-2">
           <AppBrand
             comercioNombre={comercioNombre}
