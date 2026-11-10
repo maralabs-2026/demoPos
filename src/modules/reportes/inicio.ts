@@ -2,7 +2,13 @@ import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
 
 export type TipoActividad =
-  "anulacion" | "cierre" | "retiro" | "ingreso" | "gasto";
+  | "anulacion"
+  | "cierre"
+  | "retiro"
+  | "ingreso"
+  | "ajuste_retiro"
+  | "ajuste_ingreso"
+  | "gasto";
 
 export type Inicio = {
   hoy: { ventas: number; total: number };
@@ -34,6 +40,8 @@ export type Inicio = {
     detalle: string | null;
     usuario: string;
     ref: string;
+    // Solo en un ajuste cargado con código: el dueño que lo autorizó.
+    autorizo: string | null;
   }[];
   // Cobradas sin conexión con avisos (0028) que nadie revisó todavía (0030).
   ventasSinConexion: {
@@ -120,6 +128,8 @@ type InicioRow = {
     detalle: string | null;
     usuario: string;
     ref: string;
+    // Solo en un ajuste cargado con código: el dueño que lo autorizó.
+    autorizo: string | null;
   }[];
 };
 
