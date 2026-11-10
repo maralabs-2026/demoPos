@@ -69,6 +69,12 @@ export const fotoProductoSchema = z.object({
     .mime([FOTO_TIPO], { error: "La foto no es válida" }),
 });
 
+// Desactivar o reactivar un producto (0042).
+export const cambiarActivoSchema = z.object({
+  id: z.uuid({ error: "El producto no es válido" }),
+  activo: z.boolean(),
+});
+
 // El tipo del archivo lo declara el cliente; esto mira el contenido real.
 export function esJpeg(bytes: Uint8Array): boolean {
   return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;

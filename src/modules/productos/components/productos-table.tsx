@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PackagePlus, Search, Tag, Trash2 } from "lucide-react";
+import { PackagePlus, RotateCcw, Search, Tag, Trash2 } from "lucide-react";
 import { FotoProducto } from "@/components/foto-producto";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency, formatPercent } from "@/lib/currency";
-import { eliminarProducto } from "../actions";
+import { cambiarProductoActivo, eliminarProducto } from "../actions";
 import type { Categoria, Producto } from "../queries";
 import { calcularMargen } from "../schemas";
 import {
@@ -88,27 +88,38 @@ export function ProductosTable({
   const [busqueda, setBusqueda] = useState("");
   const [formulario, setFormulario] = useState<Producto | "nuevo" | null>(null);
   const [error, setError] = useState("");
+  // Producto con una acción en curso (eliminar, desactivar o reactivar).
   const [eliminando, setEliminando] = useState<string | null>(null);
+  // Los desactivados (0042) se ven aparte, solo quien gestiona el catálogo.
+  const [verInactivos, setVerInactivos] = useState(false);
   const [etiquetas, setEtiquetas] = useState<Producto | null>(null);
   const router = useRouter();
   // El filtro vive en la URL: sigue puesto al volver de cargar stock.
   const filtroStock = parseFiltroStock(useSearchParams().get("stock"));
 
+  const activos = useMemo(
+    () => productos.filter((producto) => producto.activo),
+    [productos],
+  );
+  const inactivos = useMemo(
+    () =>
+      puedeGestionar ? productos.filter((producto) => !producto.activo) : [],
+    [productos, puedeGestionar],
+  );
+  const mostrandoInactivos = verInactivos && inactivos.length > 0;
+
   const filtrados = useMemo(() => {
     const term = busqueda.trim().toLowerCase();
-    return productos.filter(
+    return (mostrandoInactivos ? inactivos : activos).filter(
       (producto) =>
-        pasaFiltroStock(producto, filtroStock) &&
+        (mostrandoInactivos || pasaFiltroStock(producto, filtroStock)) &&
         (!term ||
           producto.nombre.toLowerCase().includes(term) ||
           producto.codigoBarras.includes(term)),
     );
-  }, [productos, busqueda, filtroStock]);
+  }, [activos, inactivos, mostrandoInactivos, busqueda, filtroStock]);
 
-  const cantidades = useMemo(
-    () => contarPorFiltroStock(productos),
-    [productos],
-  );
+  const cantidades = useMemo(() => contarPorFiltroStock(activos), [activos]);
   const conAlerta = cantidades.faltantes;
 
   // replaceState y no router.replace: filtrar no necesita volver a pedir el catálogo.
@@ -130,6 +141,7 @@ export function ProductosTable({
     router.refresh();
   }
 
+  // Si el producto tiene historia no se borra: se ofrece desactivarlo.
   async function handleDelete(producto: Producto) {
     if (!window.confirm(`¿Eliminar ${producto.nombre}?`)) return;
 
@@ -141,12 +153,43 @@ export function ProductosTable({
         setError(result.error);
         return;
       }
+      if (result.data.enUso) {
+        const desactivar = window.confirm(
+          `${producto.nombre} no se puede eliminar porque tiene ventas o movimientos de stock, o está en una promo o un combo.
+
+¿Querés desactivarlo? Deja de aparecer al vender y en la reposición, pero queda en el historial y lo podés reactivar.`,
+        );
+        if (!desactivar) return;
+        const desactivado = await cambiarProductoActivo(producto.id, false);
+        if (!desactivado.ok) {
+          setError(desactivado.error);
+          return;
+        }
+      }
       // Si el producto borrado estaba abierto en el formulario, se cierra.
       setFormulario((actual) =>
         actual !== null && actual !== "nuevo" && actual.id === producto.id
           ? null
           : actual,
       );
+      router.refresh();
+    } catch {
+      setError("No se pudo conectar. Revisá la conexión y probá de nuevo.");
+    } finally {
+      setEliminando(null);
+    }
+  }
+
+  async function handleReactivar(producto: Producto) {
+    setError("");
+    setEliminando(producto.id);
+    try {
+      const result = await cambiarProductoActivo(producto.id, true);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      if (inactivos.length === 1) setVerInactivos(false);
       router.refresh();
     } catch {
       setError("No se pudo conectar. Revisá la conexión y probá de nuevo.");
@@ -172,7 +215,18 @@ export function ProductosTable({
           />
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {conAlerta > 0 && (
+          {inactivos.length > 0 && (
+            <Button
+              variant={mostrandoInactivos ? "default" : "outline"}
+              aria-pressed={mostrandoInactivos}
+              onClick={() => setVerInactivos(!mostrandoInactivos)}
+            >
+              {mostrandoInactivos
+                ? "Ver activos"
+                : `Desactivados (${inactivos.length})`}
+            </Button>
+          )}
+          {!mostrandoInactivos && conAlerta > 0 && (
             <button
               type="button"
               aria-pressed={filtroStock === "faltantes"}
@@ -199,7 +253,7 @@ export function ProductosTable({
         </div>
       </div>
 
-      {(conAlerta > 0 || filtroStock !== "todos") && (
+      {!mostrandoInactivos && (conAlerta > 0 || filtroStock !== "todos") && (
         <div
           role="group"
           aria-label="Filtrar por stock"
@@ -293,7 +347,14 @@ export function ProductosTable({
                         className="size-10"
                       />
                       <div className="min-w-0">
-                        <div className="font-semibold">{producto.nombre}</div>
+                        <div className="font-semibold">
+                          {producto.nombre}
+                          {!producto.activo && (
+                            <Badge className="ml-2 align-middle">
+                              Desactivado
+                            </Badge>
+                          )}
+                        </div>
                         <div className="text-xs text-muted-foreground tabular-nums">
                           {producto.codigoBarras}
                         </div>
@@ -332,7 +393,7 @@ export function ProductosTable({
                   {puedeGestionar && (
                     <TableCell className="max-xl:order-6 max-xl:col-span-2 max-xl:p-0">
                       <div className="flex gap-2 max-xl:flex-wrap max-xl:[&_button]:h-11">
-                        {filtroStock !== "todos" && (
+                        {producto.activo && filtroStock !== "todos" && (
                           <Link
                             href={`/stock?producto=${producto.id}&desde=${filtroStock}`}
                             className={buttonVariants({
@@ -358,40 +419,60 @@ export function ProductosTable({
                         >
                           Editar
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          aria-label="Etiquetas"
-                          title="Etiquetas"
-                          className="xl:size-8 xl:px-0"
-                          onClick={() => setEtiquetas(producto)}
-                        >
-                          <Tag aria-hidden="true" className="max-xl:hidden" />
-                          <span className="xl:hidden">Etiquetas</span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          aria-label={
-                            eliminando === producto.id
-                              ? "Eliminando..."
-                              : "Eliminar"
-                          }
-                          title="Eliminar"
-                          className="xl:size-8 xl:px-0"
-                          disabled={eliminando !== null}
-                          onClick={() => void handleDelete(producto)}
-                        >
-                          <Trash2
-                            aria-hidden="true"
-                            className="max-xl:hidden"
-                          />
-                          <span className="xl:hidden">
+                        {producto.activo ? (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              aria-label="Etiquetas"
+                              title="Etiquetas"
+                              className="xl:size-8 xl:px-0"
+                              onClick={() => setEtiquetas(producto)}
+                            >
+                              <Tag
+                                aria-hidden="true"
+                                className="max-xl:hidden"
+                              />
+                              <span className="xl:hidden">Etiquetas</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              aria-label={
+                                eliminando === producto.id
+                                  ? "Eliminando..."
+                                  : "Eliminar"
+                              }
+                              title="Eliminar"
+                              className="xl:size-8 xl:px-0"
+                              disabled={eliminando !== null}
+                              onClick={() => void handleDelete(producto)}
+                            >
+                              <Trash2
+                                aria-hidden="true"
+                                className="max-xl:hidden"
+                              />
+                              <span className="xl:hidden">
+                                {eliminando === producto.id
+                                  ? "Eliminando..."
+                                  : "Eliminar"}
+                              </span>
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="max-xl:flex-1"
+                            disabled={eliminando !== null}
+                            onClick={() => void handleReactivar(producto)}
+                          >
+                            <RotateCcw aria-hidden="true" />
                             {eliminando === producto.id
-                              ? "Eliminando..."
-                              : "Eliminar"}
-                          </span>
-                        </Button>
+                              ? "Reactivando..."
+                              : "Reactivar"}
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   )}
@@ -404,7 +485,9 @@ export function ProductosTable({
                   colSpan={puedeGestionar ? 7 : 4}
                   className="py-10 text-center whitespace-normal text-muted-foreground max-xl:block"
                 >
-                  {filtroStock !== "todos" && !busqueda.trim()
+                  {!mostrandoInactivos &&
+                  filtroStock !== "todos" &&
+                  !busqueda.trim()
                     ? "No hay productos con este filtro."
                     : "No se encontraron productos."}
                 </TableCell>

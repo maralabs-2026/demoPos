@@ -73,7 +73,9 @@ export async function getProductosAContar(
     .from("productos")
     .select("id, nombre, codigo_barras")
     // Un servicio (0031) no lleva stock: no se cuenta.
-    .eq("controla_stock", true);
+    .eq("controla_stock", true)
+    // Un producto desactivado (0042) no se cuenta.
+    .eq("activo", true);
   const { data, error } = await (
     categoriaId
       ? consulta.eq("categoria_id", categoriaId)

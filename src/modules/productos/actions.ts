@@ -9,6 +9,7 @@ import { crearCategoria } from "@/modules/config";
 import { registrarIngreso } from "@/modules/stock";
 import {
   actualizarPreciosSchema,
+  cambiarActivoSchema,
   esJpeg,
   FOTO_TIPO,
   FOTOS_BUCKET,
@@ -25,6 +26,8 @@ import {
 export type PreciosActualizados = { actualizados: number };
 // `aviso`: el producto se guardó, pero algo posterior (el stock inicial) no.
 export type ProductoGuardado = { id: string; aviso?: string };
+// `enUso`: tiene ventas, movimientos, promos o combos; no se borró y se puede desactivar.
+export type ProductoEliminado = { id: string; enUso: boolean };
 export type CategoriaCreada = { id: string; nombre: string };
 export type ProductosImportados = { creados: number; actualizados: number };
 
@@ -250,7 +253,7 @@ export async function editarProducto(
 
 export async function eliminarProducto(
   id: string,
-): Promise<ActionResult<ProductoGuardado>> {
+): Promise<ActionResult<ProductoEliminado>> {
   if (!id) return fail("El producto no es válido");
 
   const auth = await requireRolCatalogo("Tu rol no puede gestionar productos.");
@@ -265,11 +268,8 @@ export async function eliminarProducto(
     .select("id, foto_path");
 
   if (error) {
-    if (error.code === PG_FOREIGN_KEY_VIOLATION) {
-      return fail(
-        "No se puede eliminar: el producto tiene ventas o movimientos de stock, o está en una promo o un combo.",
-      );
-    }
+    // No es un error: quien lo pidió decide si desactivarlo.
+    if (error.code === PG_FOREIGN_KEY_VIOLATION) return ok({ id, enUso: true });
     return fail("No se pudo eliminar el producto. Probá de nuevo.");
   }
   if (!data || data.length === 0) {
@@ -280,7 +280,41 @@ export async function eliminarProducto(
   if (fotoPath) await supabase.storage.from(FOTOS_BUCKET).remove([fotoPath]);
 
   revalidarCatalogo();
-  return ok({ id });
+  return ok({ id, enUso: false });
+}
+
+// Un producto con historia no se borra: se desactiva (0042). Deja de ofrecerse al vender y de
+// contar para reponer y auditar; sigue en ventas pasadas, reportes y movimientos.
+export async function cambiarProductoActivo(
+  id: string,
+  activo: boolean,
+): Promise<ActionResult<ProductoGuardado>> {
+  const parsed = cambiarActivoSchema.safeParse({ id, activo });
+  if (!parsed.success) return fail("El producto no es válido");
+
+  const auth = await requireRolCatalogo("Tu rol no puede gestionar productos.");
+  if (!auth.ok) return auth;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("productos")
+    .update({ activo: parsed.data.activo })
+    .eq("id", parsed.data.id)
+    .select("id");
+  if (error) {
+    return fail(
+      parsed.data.activo
+        ? "No se pudo reactivar el producto. Probá de nuevo."
+        : "No se pudo desactivar el producto. Probá de nuevo.",
+    );
+  }
+  if (!data || data.length === 0) {
+    return fail("El producto ya no existe. Recargá la página.");
+  }
+
+  revalidarCatalogo();
+  revalidatePath("/stock/reposicion");
+  return ok({ id: parsed.data.id });
 }
 
 // Cada foto tiene un nombre nuevo para que nadie siga viendo la anterior por la caché de la URL.

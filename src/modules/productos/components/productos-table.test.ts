@@ -10,7 +10,10 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
   useSearchParams: () => new URLSearchParams(url.query),
 }));
-vi.mock("../actions", () => ({ eliminarProducto: vi.fn() }));
+vi.mock("../actions", () => ({
+  eliminarProducto: vi.fn(),
+  cambiarProductoActivo: vi.fn(),
+}));
 vi.mock("./producto-form", () => ({ ProductoForm: () => null }));
 vi.mock("./etiquetas-dialog", () => ({ EtiquetasDialog: () => null }));
 
@@ -29,6 +32,7 @@ const producto: Producto = {
   proveedorId: null,
   unidadVenta: "unidad",
   fotoUrl: null,
+  activo: true,
 };
 
 function render(puedeGestionar: boolean, productos = [producto]) {
@@ -87,6 +91,43 @@ describe("ProductosTable", () => {
 
     it("oculta lo que tiene stock suficiente", () => {
       expect(render(true, [producto])).not.toContain("Coca-Cola");
+    });
+  });
+
+  describe("con productos desactivados", () => {
+    const inactivo: Producto = {
+      ...producto,
+      id: "2",
+      nombre: "Pepsi 500ml",
+      codigoBarras: "7790000000002",
+      stockActual: 0,
+      activo: false,
+    };
+
+    it("quien gestiona no los ve en la lista, pero tiene el acceso a verlos", () => {
+      const html = render(true, [producto, inactivo]);
+
+      expect(html).toContain("Coca-Cola");
+      expect(html).not.toContain("Pepsi");
+      expect(html).toContain("Desactivados (1)");
+    });
+
+    it("no cuentan como faltantes", () => {
+      const html = render(true, [producto, inactivo]);
+
+      expect(html).not.toContain("stock bajo");
+      expect(html).not.toContain("Sin stock");
+    });
+
+    it("el cajero no los ve ni tiene el acceso", () => {
+      const html = render(false, [producto, inactivo]);
+
+      expect(html).not.toContain("Pepsi");
+      expect(html).not.toContain("Desactivados");
+    });
+
+    it("sin desactivados no aparece el acceso", () => {
+      expect(render(true, [producto])).not.toContain("Desactivados");
     });
   });
 });

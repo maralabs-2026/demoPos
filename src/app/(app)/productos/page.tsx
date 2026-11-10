@@ -13,7 +13,7 @@ export default async function ProductosPage() {
   const [profile, productosResult, categoriasResult, proveedores] =
     await Promise.all([
       getAuthProfile(),
-      getProductos(undefined, true),
+      getProductos(undefined, true, true),
       getCategorias(),
       getProveedores(),
     ]);

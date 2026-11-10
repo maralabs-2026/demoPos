@@ -245,11 +245,13 @@ export function PromocionesScreen({
               >
                 <option value="">Elegí…</option>
                 {alcance === "producto"
-                  ? productos.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.nombre}
-                      </option>
-                    ))
+                  ? productos
+                      .filter((p) => p.activo || p.id === objetivo)
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.nombre}
+                        </option>
+                      ))
                   : categorias.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.nombre}

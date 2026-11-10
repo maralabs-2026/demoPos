@@ -7,6 +7,7 @@ import {
   esJpeg,
   FOTO_LADO_MAX,
   FOTO_MAX_BYTES,
+  cambiarActivoSchema,
   fotoProductoSchema,
   medidasFoto,
   precioActualizado,
@@ -424,5 +425,27 @@ describe("stockInicialSchema", () => {
       false,
     );
     expect(stockInicialSchema.safeParse(Number.NaN).success).toBe(false);
+  });
+});
+
+describe("cambiarActivoSchema", () => {
+  const id = "3f1c7a52-8f0e-4d55-9a3b-2b6f0f1e9c11";
+
+  it("acepta desactivar y reactivar", () => {
+    expect(cambiarActivoSchema.safeParse({ id, activo: false }).success).toBe(
+      true,
+    );
+    expect(cambiarActivoSchema.safeParse({ id, activo: true }).success).toBe(
+      true,
+    );
+  });
+
+  it("rechaza un id que no es uuid o un estado que no es booleano", () => {
+    expect(
+      cambiarActivoSchema.safeParse({ id: "abc", activo: false }).success,
+    ).toBe(false);
+    expect(cambiarActivoSchema.safeParse({ id, activo: "no" }).success).toBe(
+      false,
+    );
   });
 });
