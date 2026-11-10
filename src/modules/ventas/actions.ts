@@ -196,9 +196,7 @@ export async function registrarVenta(
           "Un producto del ticket ya no existe. Recargá la pantalla.",
         );
       case PV_PRODUCTO_INACTIVO:
-        return fail(
-          `${error.message} y ya no se vende. Quitalo del ticket.`,
-        );
+        return fail(`${error.message} y ya no se vende. Quitalo del ticket.`);
       case PV_DESCUENTO_EXCEDIDO:
         return fail(
           `Ese descuento supera tu tope de ${error.details ?? "10"} %. Pedile a un encargado que lo haga.`,
