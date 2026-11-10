@@ -81,14 +81,14 @@ Panel para nosotros: comercios, estado de suscripción, soporte. Rol de platafor
 
 Antes de la fase indicada. No las definas por tu cuenta:
 
-| Fase | Decisión                                                                                                                                           |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B0   | Nombre del repo y del producto                                                                                                                     |
-| B3   | Qué incluye la venta directa: precio, mantenimiento, quién paga Vercel y Supabase                                                                  |
-| B4   | Planes, precios y días de prueba                                                                                                                   |
-| B5   | Proveedor de cobro. Mercado Pago está excluido del producto actual en `CLAUDE.md`, pero acá sería para cobrar la suscripción. Hay que confirmarlo. |
-| B5   | Días de gracia y qué se bloquea                                                                                                                    |
-| B6   | Términos, privacidad y quién responde el soporte                                                                                                   |
+| Fase | Decisión                                                                                                                                                                                      |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B0   | Nombre del repo y del producto                                                                                                                                                                |
+| B3   | Qué incluye la venta directa: precio, mantenimiento, quién paga Vercel y Supabase                                                                                                             |
+| B4   | Planes, precios y días de prueba                                                                                                                                                              |
+| B5   | Proveedor de cobro. En `CLAUDE.md`, Mercado Pago solo está aprobado para cobrar ventas con QR (desde el 2026-11-08). Usarlo para cobrar la suscripción es otra decisión: hay que confirmarlo. |
+| B5   | Días de gracia y qué se bloquea                                                                                                                                                               |
+| B6   | Términos, privacidad y quién responde el soporte                                                                                                                                              |
 
 ## 6. Mientras tanto
 
