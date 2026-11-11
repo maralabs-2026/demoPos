@@ -14,6 +14,7 @@ export const GUIAS_NEGOCIO: readonly Guia[] = [
     roles: GESTION,
     pasos: [
       "Entrá a Inicio para ver lo vendido hoy y el efectivo de las cajas abiertas.",
+      "Tocá «Ver detalle» en cada tarjeta: el efectivo se abre caja por caja (fondo, ventas en efectivo, ingresos y retiros) y las otras dos te llevan al reporte.",
       "En «Pendientes», tocá cada aviso para ir a resolverlo.",
       "Más abajo, en «Actividad reciente», ves lo último que pasó.",
     ],
