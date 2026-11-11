@@ -79,7 +79,7 @@ export type VentaDetalle = {
   qrManual: { revisada: { fecha: string; por: string } | null } | null;
   // Solo si se cobró sin conexión (0028); revisada, cuando el dueño o el encargado la marcaron (0030).
   sinConexion: {
-    avisos: ("precio" | "stock")[];
+    avisos: ("precio" | "stock" | "inactivo")[];
     revisada: { fecha: string; por: string } | null;
   } | null;
 };
@@ -97,7 +97,7 @@ type VentaDetalleRow = {
   revisor: Persona;
   sin_conexion: boolean;
   qr_manual: boolean;
-  avisos_sin_conexion: ("precio" | "stock")[];
+  avisos_sin_conexion: ("precio" | "stock" | "inactivo")[];
   revisada_at: string | null;
   venta_items: {
     nombre: string;

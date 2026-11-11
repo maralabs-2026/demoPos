@@ -83,7 +83,7 @@ type VencimientoRow = {
   vencido: boolean;
 };
 
-export type AvisoSinConexion = "precio" | "stock";
+export type AvisoSinConexion = "precio" | "stock" | "inactivo";
 
 // Hasta cuántas muestra el inicio: el resto aparece cuando se revisan las primeras.
 const VENTAS_A_REVISAR_MAX = 20;

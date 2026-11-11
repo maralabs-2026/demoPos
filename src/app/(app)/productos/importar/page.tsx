@@ -7,8 +7,9 @@ export const dynamic = "force-dynamic";
 export default async function ImportarProductosPage() {
   await requireRol("/productos/importar");
 
+  // Con los desactivados: si el archivo trae su código, la importación lo actualiza (sigue inactivo).
   const [productosResult, categoriasResult] = await Promise.all([
-    getProductos(),
+    getProductos(undefined, false, true),
     getCategorias(),
   ]);
 

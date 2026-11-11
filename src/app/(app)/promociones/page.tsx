@@ -13,7 +13,8 @@ export default async function PromocionesPage() {
     await Promise.all([
       getPromociones(),
       getCombos(),
-      getProductos(),
+      // Con los desactivados, para mostrar el nombre en las promos y combos que ya los tienen.
+      getProductos(undefined, false, true),
       getCategorias(),
     ]);
   const error = !promosResult.ok

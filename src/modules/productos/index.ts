@@ -1,6 +1,7 @@
 // Public API of the productos module. Other modules import only from here.
 export {
   actualizarPrecios,
+  cambiarProductoActivo,
   crearCategoriaRapida,
   crearProducto,
   editarProducto,
@@ -12,6 +13,7 @@ export {
 export type {
   CategoriaCreada,
   PreciosActualizados,
+  ProductoEliminado,
   ProductoGuardado,
   ProductosImportados,
 } from "./actions";

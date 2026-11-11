@@ -127,6 +127,12 @@ export default async function VentaDetallePage({
                 Stock.
               </p>
             )}
+            {sinConexion.avisos.includes("inactivo") && (
+              <p className="text-sm font-medium text-warning-foreground">
+                Vendió un producto que estaba desactivado. Si se sigue
+                vendiendo, reactivalo en Productos.
+              </p>
+            )}
             {sinConexion.revisada && (
               <p className="text-xs text-muted-foreground">
                 Revisada por {sinConexion.revisada.por} ·{" "}

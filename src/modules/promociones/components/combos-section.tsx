@@ -193,34 +193,36 @@ export function CombosSection({
           <fieldset className="flex flex-col gap-2">
             <legend className="text-sm">Productos del combo (mínimo 2)</legend>
             <ul className="grid max-h-64 gap-1 overflow-y-auto">
-              {productos.map((p) => {
-                const marcado = p.id in elegidos;
-                return (
-                  <li key={p.id} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      aria-label={`Incluir ${p.nombre}`}
-                      checked={marcado}
-                      onChange={() => alternarProducto(p.id)}
-                    />
-                    <span className="flex-1">{p.nombre}</span>
-                    {marcado && (
-                      <Input
-                        aria-label={`Cantidad de ${p.nombre}`}
-                        inputMode="numeric"
-                        className="w-20"
-                        value={elegidos[p.id]}
-                        onChange={(e) =>
-                          setElegidos((actual) => ({
-                            ...actual,
-                            [p.id]: e.target.value,
-                          }))
-                        }
+              {productos
+                .filter((p) => p.activo || p.id in elegidos)
+                .map((p) => {
+                  const marcado = p.id in elegidos;
+                  return (
+                    <li key={p.id} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        aria-label={`Incluir ${p.nombre}`}
+                        checked={marcado}
+                        onChange={() => alternarProducto(p.id)}
                       />
-                    )}
-                  </li>
-                );
-              })}
+                      <span className="flex-1">{p.nombre}</span>
+                      {marcado && (
+                        <Input
+                          aria-label={`Cantidad de ${p.nombre}`}
+                          inputMode="numeric"
+                          className="w-20"
+                          value={elegidos[p.id]}
+                          onChange={(e) =>
+                            setElegidos((actual) => ({
+                              ...actual,
+                              [p.id]: e.target.value,
+                            }))
+                          }
+                        />
+                      )}
+                    </li>
+                  );
+                })}
             </ul>
           </fieldset>
 

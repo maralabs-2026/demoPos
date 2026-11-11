@@ -938,6 +938,7 @@ export type Database = {
       };
       productos: {
         Row: {
+          activo: boolean;
           categoria_id: string | null;
           codigo_barras: string;
           comercio_id: string;
@@ -954,6 +955,7 @@ export type Database = {
           unidad_venta: string;
         };
         Insert: {
+          activo?: boolean;
           categoria_id?: string | null;
           codigo_barras: string;
           comercio_id: string;
@@ -970,6 +972,7 @@ export type Database = {
           unidad_venta?: string;
         };
         Update: {
+          activo?: boolean;
           categoria_id?: string | null;
           codigo_barras?: string;
           comercio_id?: string;

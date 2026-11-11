@@ -95,6 +95,7 @@ const PV_PAGO_INVALIDO = "PV003";
 const PV_DATOS_INVALIDOS = "PV004";
 const PV_PRODUCTO_INEXISTENTE = "PV005";
 const PV_DESCUENTO_EXCEDIDO = "PV011";
+const PV_PRODUCTO_INACTIVO = "PV033";
 
 type RpcResult = {
   venta_id: string;
@@ -194,6 +195,8 @@ export async function registrarVenta(
         return fail(
           "Un producto del ticket ya no existe. Recargá la pantalla.",
         );
+      case PV_PRODUCTO_INACTIVO:
+        return fail(`${error.message} y ya no se vende. Quitalo del ticket.`);
       case PV_DESCUENTO_EXCEDIDO:
         return fail(
           `Ese descuento supera tu tope de ${error.details ?? "10"} %. Pedile a un encargado que lo haga.`,
@@ -253,7 +256,7 @@ export async function registrarVenta(
 // entrado. "rechazada" es definitiva: la base no la va a aceptar aunque se reintente (por ejemplo,
 // la caja ya se cerró), así que el dispositivo deja de reenviarla y la muestra. Un fail es
 // transitorio (sin red, sesión vencida): el dispositivo la reintenta más tarde.
-export type AvisoSinConexion = "precio" | "stock";
+export type AvisoSinConexion = "precio" | "stock" | "inactivo";
 export type EnvioSinConexion =
   | {
       estado: "registrada";

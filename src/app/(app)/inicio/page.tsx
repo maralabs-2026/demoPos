@@ -21,6 +21,7 @@ export const dynamic = "force-dynamic";
 const AVISO: Record<AvisoSinConexion, string> = {
   precio: "precio distinto del catálogo",
   stock: "dejó stock negativo",
+  inactivo: "vendió un producto desactivado",
 };
 
 const ACTIVIDAD: Record<TipoActividad, string> = {
