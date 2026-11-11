@@ -7,7 +7,7 @@ import { PackagePlus, RotateCcw, Search, Tag, Trash2 } from "lucide-react";
 import { FotoProducto } from "@/components/foto-producto";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ConfirmDialog, Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -92,6 +92,12 @@ export function ProductosTable({
   const [eliminando, setEliminando] = useState<string | null>(null);
   // Los desactivados (0042) se ven aparte, solo quien gestiona el catálogo.
   const [verInactivos, setVerInactivos] = useState(false);
+  // Diálogo de eliminar; si el producto tiene historia, pasa a "desactivar".
+  const [confirmacion, setConfirmacion] = useState<{
+    producto: Producto;
+    paso: "eliminar" | "desactivar";
+  } | null>(null);
+  const [errorConfirmacion, setErrorConfirmacion] = useState("");
   const [etiquetas, setEtiquetas] = useState<Producto | null>(null);
   const router = useRouter();
   // El filtro vive en la URL: sigue puesto al volver de cargar stock.
@@ -141,40 +147,52 @@ export function ProductosTable({
     router.refresh();
   }
 
-  // Si el producto tiene historia no se borra: se ofrece desactivarlo.
-  async function handleDelete(producto: Producto) {
-    if (!window.confirm(`¿Eliminar ${producto.nombre}?`)) return;
-
+  function pedirEliminar(producto: Producto) {
     setError("");
+    setErrorConfirmacion("");
+    setConfirmacion({ producto, paso: "eliminar" });
+  }
+
+  function terminarConfirmacion(producto: Producto) {
+    setConfirmacion(null);
+    // Si el producto eliminado o desactivado estaba abierto en el formulario, se cierra.
+    setFormulario((actual) =>
+      actual !== null && actual !== "nuevo" && actual.id === producto.id
+        ? null
+        : actual,
+    );
+    router.refresh();
+  }
+
+  // Si el producto tiene historia no se borra: el mismo diálogo pasa a ofrecer desactivarlo.
+  async function confirmar() {
+    if (!confirmacion) return;
+    const { producto, paso } = confirmacion;
+    setErrorConfirmacion("");
     setEliminando(producto.id);
     try {
-      const result = await eliminarProducto(producto.id);
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      if (result.data.enUso) {
-        const desactivar = window.confirm(
-          `${producto.nombre} no se puede eliminar porque tiene ventas o movimientos de stock, o está en una promo o un combo.
-
-¿Querés desactivarlo? Deja de aparecer al vender y en la reposición, pero queda en el historial y lo podés reactivar.`,
-        );
-        if (!desactivar) return;
-        const desactivado = await cambiarProductoActivo(producto.id, false);
-        if (!desactivado.ok) {
-          setError(desactivado.error);
+      if (paso === "eliminar") {
+        const result = await eliminarProducto(producto.id);
+        if (!result.ok) {
+          setErrorConfirmacion(result.error);
+          return;
+        }
+        if (result.data.enUso) {
+          setConfirmacion({ producto, paso: "desactivar" });
+          return;
+        }
+      } else {
+        const result = await cambiarProductoActivo(producto.id, false);
+        if (!result.ok) {
+          setErrorConfirmacion(result.error);
           return;
         }
       }
-      // Si el producto borrado estaba abierto en el formulario, se cierra.
-      setFormulario((actual) =>
-        actual !== null && actual !== "nuevo" && actual.id === producto.id
-          ? null
-          : actual,
-      );
-      router.refresh();
+      terminarConfirmacion(producto);
     } catch {
-      setError("No se pudo conectar. Revisá la conexión y probá de nuevo.");
+      setErrorConfirmacion(
+        "No se pudo conectar. Revisá la conexión y probá de nuevo.",
+      );
     } finally {
       setEliminando(null);
     }
@@ -306,6 +324,59 @@ export function ProductosTable({
           producto={etiquetas}
           onClose={() => setEtiquetas(null)}
         />
+      )}
+
+      {puedeGestionar && (
+        <ConfirmDialog
+          open={confirmacion !== null}
+          onOpenChange={(abierto) => {
+            if (!abierto) setConfirmacion(null);
+          }}
+          title={
+            confirmacion?.paso === "desactivar"
+              ? "No se puede eliminar"
+              : "¿Eliminar el producto?"
+          }
+          description={
+            confirmacion?.paso === "desactivar"
+              ? "Tiene ventas o movimientos de stock, o está en una promo o un combo. Podés desactivarlo: deja de aparecer al vender, en la reposición y en la auditoría, pero queda en el historial y lo podés reactivar cuando quieras."
+              : "Se borra del catálogo. Si ya tiene historia, te ofrecemos desactivarlo."
+          }
+          confirmLabel={
+            confirmacion?.paso === "desactivar" ? "Desactivar" : "Eliminar"
+          }
+          pendingLabel={
+            confirmacion?.paso === "desactivar"
+              ? "Desactivando..."
+              : "Eliminando..."
+          }
+          destructive={confirmacion?.paso !== "desactivar"}
+          closeOnConfirm={false}
+          pending={
+            eliminando !== null && eliminando === confirmacion?.producto.id
+          }
+          error={errorConfirmacion}
+          onConfirm={() => void confirmar()}
+        >
+          {confirmacion && (
+            <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-3">
+              <FotoProducto
+                src={confirmacion.producto.fotoUrl}
+                className="size-12"
+              />
+              <div className="min-w-0">
+                <div className="font-semibold">
+                  {confirmacion.producto.nombre}
+                </div>
+                <div className="text-xs text-muted-foreground tabular-nums">
+                  {confirmacion.producto.codigoBarras}
+                  {" · "}
+                  {formatCurrency(confirmacion.producto.precio)}
+                </div>
+              </div>
+            </div>
+          )}
+        </ConfirmDialog>
       )}
 
       {error && (
@@ -446,7 +517,7 @@ export function ProductosTable({
                               title="Eliminar"
                               className="xl:size-8 xl:px-0"
                               disabled={eliminando !== null}
-                              onClick={() => void handleDelete(producto)}
+                              onClick={() => pedirEliminar(producto)}
                             >
                               <Trash2
                                 aria-hidden="true"

@@ -43,20 +43,35 @@ test("producto con ventas: eliminar ofrece desactivar, deja de venderse y se rea
     page.getByRole("heading", { name: "Venta cobrada" }),
   ).toBeVisible({ timeout: 20_000 });
 
-  // Eliminar: el primer confirm es "¿Eliminar?"; el segundo ofrece desactivarlo.
+  // Eliminar abre el diálogo propio (no el confirm del navegador); como tiene una venta, el
+  // mismo diálogo pasa a ofrecer desactivarlo.
   await page.goto("/productos");
   await page.getByLabel("Buscar producto").fill(nombre);
   const fila = page.getByRole("row").filter({ hasText: nombre });
-  const dialogos: string[] = [];
   page.on("dialog", (dialog) => {
-    dialogos.push(dialog.message());
-    void dialog.accept();
+    throw new Error(`Apareció un diálogo del navegador: ${dialog.message()}`);
   });
   await fila.getByRole("button", { name: "Eliminar" }).click();
-  await expect(fila).toHaveCount(0, { timeout: 20_000 });
-  expect(dialogos).toHaveLength(2);
-  expect(dialogos[1]).toContain("no se puede eliminar");
-  expect(dialogos[1]).toContain("desactivarlo");
+  const confirmacion = page.getByRole("alertdialog");
+  await expect(confirmacion).toContainText("¿Eliminar el producto?");
+  await expect(confirmacion).toContainText(nombre);
+  // El foco arranca en Cancelar: un Enter por error no borra.
+  await expect(
+    confirmacion.getByRole("button", { name: "Cancelar" }),
+  ).toBeFocused();
+  await page.screenshot({
+    path: "test-results/productos-confirmar-eliminar.png",
+  });
+  await confirmacion.getByRole("button", { name: "Eliminar" }).click();
+  await expect(confirmacion).toContainText("No se puede eliminar", {
+    timeout: 20_000,
+  });
+  await page.screenshot({
+    path: "test-results/productos-confirmar-desactivar.png",
+  });
+  await confirmacion.getByRole("button", { name: "Desactivar" }).click();
+  await expect(confirmacion).toBeHidden({ timeout: 20_000 });
+  await expect(fila).toHaveCount(0);
 
   // Aparece entre los desactivados, marcado.
   await page.getByRole("button", { name: /^Desactivados \(\d+\)$/ }).click();
