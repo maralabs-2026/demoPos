@@ -47,7 +47,18 @@ test.describe("Ayuda en escritorio", () => {
     await expect(page.getByText("Hacé una auditoría de stock")).toBeVisible();
     await expect(page.getByText("Registrá una compra")).toHaveCount(0);
 
-    await page.getByRole("link", { name: "Ver en la pantalla" }).click();
+    // Otras guías pueden nombrar la auditoría (y con varios resultados ninguna se abre sola):
+    // se abre la suya y se entra desde ahí.
+    const guia = page
+      .getByRole("listitem")
+      .filter({ hasText: "Hacé una auditoría de stock" });
+    const verEnPantalla = guia.getByRole("link", {
+      name: "Ver en la pantalla",
+    });
+    if (!(await verEnPantalla.isVisible())) {
+      await guia.getByText("Hacé una auditoría de stock").click();
+    }
+    await verEnPantalla.click();
     await expect(page).toHaveURL(/\/stock\/auditoria$/, { timeout: 20_000 });
   });
 
