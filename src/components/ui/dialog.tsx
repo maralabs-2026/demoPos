@@ -108,6 +108,17 @@ type ConfirmDialogProps = {
   /** Pinta la confirmación en rojo, para acciones que no se pueden deshacer. */
   destructive?: boolean;
   onConfirm: () => void;
+  /** Contenido extra entre el texto y los botones (por ejemplo, qué se va a eliminar). */
+  children?: React.ReactNode;
+  /**
+   * false: confirmar no cierra; quien lo usa lo cierra cuando termina la acción. Mientras
+   * `pending`, los botones se bloquean y no se puede cerrar.
+   */
+  closeOnConfirm?: boolean;
+  pending?: boolean;
+  pendingLabel?: string;
+  /** Error de la acción, dentro del diálogo para que se vea junto a lo que falló. */
+  error?: string;
 };
 
 /**
@@ -123,10 +134,20 @@ function ConfirmDialog({
   cancelLabel = "Cancelar",
   destructive = false,
   onConfirm,
+  children,
+  closeOnConfirm = true,
+  pending = false,
+  pendingLabel,
+  error,
 }: ConfirmDialogProps) {
   const cancelRef = React.useRef<HTMLButtonElement>(null);
   return (
-    <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
+    <AlertDialog.Root
+      open={open}
+      onOpenChange={(abierto) => {
+        if (!pending) onOpenChange(abierto);
+      }}
+    >
       <AlertDialog.Portal>
         <AlertDialog.Backdrop className={backdropClass} />
         <AlertDialog.Popup
@@ -144,21 +165,29 @@ function ConfirmDialog({
               </AlertDialog.Description>
             )}
           </div>
+          {children}
+          {error && (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
           <DialogFooter>
             <AlertDialog.Close
               ref={cancelRef}
+              disabled={pending}
               render={<Button variant="outline" />}
             >
               {cancelLabel}
             </AlertDialog.Close>
             <Button
               variant={destructive ? "destructive-solid" : "default"}
+              disabled={pending}
               onClick={() => {
                 onConfirm();
-                onOpenChange(false);
+                if (closeOnConfirm) onOpenChange(false);
               }}
             >
-              {confirmLabel}
+              {pending && pendingLabel ? pendingLabel : confirmLabel}
             </Button>
           </DialogFooter>
         </AlertDialog.Popup>
