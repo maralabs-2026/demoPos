@@ -48,3 +48,20 @@ export async function pausarPromosDeEnsayo(page: Page) {
     await expect(pausar).toHaveCount(antes - 1, { timeout: 15_000 });
   }
 }
+
+// Borra desde /productos un producto sin historia, con el diálogo de confirmación de la app.
+// Falla si el producto tiene historia: el diálogo pasaría a ofrecer desactivarlo.
+export async function eliminarProducto(page: Page, nombre: string) {
+  await page
+    .getByRole("row")
+    .filter({ hasText: nombre })
+    .getByRole("button", { name: "Eliminar" })
+    .click();
+  const confirmacion = page.getByRole("alertdialog");
+  await expect(confirmacion).toContainText("¿Eliminar el producto?");
+  await confirmacion.getByRole("button", { name: "Eliminar" }).click();
+  await expect(confirmacion).toBeHidden({ timeout: 20_000 });
+  await expect(page.getByRole("row").filter({ hasText: nombre })).toHaveCount(
+    0,
+  );
+}

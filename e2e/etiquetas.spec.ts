@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { abrirCajaSiHaceFalta, login, passwordDe } from "./helpers";
+import {
+  abrirCajaSiHaceFalta,
+  eliminarProducto,
+  login,
+  passwordDe,
+} from "./helpers";
 
 // Bloque 3.1: el dueño genera un código interno para un producto sin código de fábrica, lo
 // encuentra por ese código en la venta y prepara sus etiquetas. El producto no tiene movimientos,
@@ -71,14 +76,5 @@ test("códigos internos: genera el código, se vende por ese código y se arman 
   // Limpieza: sin movimientos, el producto se puede borrar.
   await page.goto("/productos");
   await page.waitForLoadState("networkidle");
-  page.once("dialog", (d) => void d.accept());
-  await page
-    .getByRole("row")
-    .filter({ hasText: nombre })
-    .getByRole("button", { name: "Eliminar" })
-    .click();
-  await expect(page.getByRole("row").filter({ hasText: nombre })).toHaveCount(
-    0,
-    { timeout: 20_000 },
-  );
+  await eliminarProducto(page, nombre);
 });

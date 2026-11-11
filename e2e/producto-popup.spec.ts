@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { login, passwordDe } from "./helpers";
+import { eliminarProducto, login, passwordDe } from "./helpers";
 
 // Popup de producto: precio desde el margen, ganancia, categoría nueva, stock inicial y cancelar.
 // El producto con stock inicial no se puede borrar (tiene un movimiento), así que queda en la base
@@ -14,19 +14,6 @@ async function abrirNuevo(page: Page) {
     popup.getByRole("heading", { name: "Agregar producto" }),
   ).toBeVisible();
   return popup;
-}
-
-async function eliminar(page: Page, nombre: string) {
-  page.once("dialog", (d) => void d.accept());
-  await page
-    .getByRole("row")
-    .filter({ hasText: nombre })
-    .getByRole("button", { name: "Eliminar" })
-    .click();
-  await expect(page.getByRole("row").filter({ hasText: nombre })).toHaveCount(
-    0,
-    { timeout: 20_000 },
-  );
 }
 
 test("producto: el popup calcula el precio, crea la categoría y carga el stock inicial", async ({
@@ -114,7 +101,7 @@ test("producto: el popup calcula el precio, crea la categoría y carga el stock 
   ).toContainText("6 unidad");
 
   // Limpieza: el producto sin movimientos y su categoría.
-  await eliminar(page, nombre);
+  await eliminarProducto(page, nombre);
   await page.goto("/config/categorias");
   await page.waitForLoadState("networkidle");
   await page
