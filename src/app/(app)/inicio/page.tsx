@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Store } from "lucide-react";
+import { ChevronRight, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardEyebrow } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
@@ -7,11 +7,13 @@ import { formatDate, formatDateTime, todayISO } from "@/lib/date";
 import { requireRol } from "@/modules/auth";
 import { estaVencido } from "@/modules/caja";
 import { DiferenciaBadge } from "@/modules/caja/components/diferencia-badge";
+import { getCorteDiaComercial } from "@/modules/config";
 import {
   gananciaNeta,
   getInicio,
   sinCostosCargados,
   type AvisoSinConexion,
+  type CajaInicio,
   type Inicio,
   type TipoActividad,
 } from "@/modules/reportes";
@@ -70,9 +72,87 @@ function Pendiente({
   );
 }
 
+// Una tarjeta del resumen que lleva a su detalle.
+function KpiLink({
+  href,
+  label,
+  children,
+}: {
+  href: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      className="group rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+    >
+      <Card className="h-full gap-1 p-4 transition-colors group-hover:bg-muted">
+        {children}
+        <span className="mt-auto flex items-center gap-0.5 pt-1 text-xs font-semibold text-primary">
+          Ver detalle
+          <ChevronRight className="size-3.5" aria-hidden />
+        </span>
+      </Card>
+    </Link>
+  );
+}
+
+function FilaDesglose({ label, monto }: { label: string; monto: string }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="tabular-nums">{monto}</dd>
+    </div>
+  );
+}
+
+// De dónde sale el efectivo de una caja, con la misma cuenta que el esperado del cierre.
+function DesgloseCaja({ caja }: { caja: CajaInicio }) {
+  return (
+    <div className="flex flex-col gap-1 border-t border-border pt-2">
+      <div className="flex items-center justify-between gap-3 text-xs font-semibold">
+        <span className="min-w-0 break-words">{caja.titular}</span>
+        <Link
+          href={caja.propia ? "/caja" : `/caja/cerrar/${caja.cajaId}`}
+          className="shrink-0 text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          Ver movimientos
+        </Link>
+      </div>
+      <dl className="flex flex-col gap-0.5 text-xs">
+        <FilaDesglose
+          label="Fondo inicial"
+          monto={formatCurrency(caja.fondo)}
+        />
+        <FilaDesglose
+          label="Ventas en efectivo"
+          monto={`+ ${formatCurrency(caja.ventasEfectivo)}`}
+        />
+        <FilaDesglose
+          label="Ingresos"
+          monto={`+ ${formatCurrency(caja.ingresos)}`}
+        />
+        <FilaDesglose
+          label="Retiros y gastos"
+          monto={`− ${formatCurrency(caja.retiros)}`}
+        />
+        <div className="flex justify-between gap-3 font-semibold">
+          <dt>Efectivo</dt>
+          <dd className="tabular-nums">{formatCurrency(caja.efectivo)}</dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
 export default async function InicioPage() {
   const profile = await requireRol("/inicio");
-  const result = await getInicio();
+  const [result, corte] = await Promise.all([
+    getInicio(),
+    getCorteDiaComercial(),
+  ]);
 
   if (!result.ok) {
     return (
@@ -84,6 +164,8 @@ export default async function InicioPage() {
 
   const inicio = result.data;
   const hoy = todayISO();
+  // Los reportes usan el día comercial, igual que lo que suma el inicio.
+  const hoyComercial = todayISO(new Date(), corte.ok ? corte.data : 0);
   const efectivo = inicio.cajas.reduce(
     (acc, c) => acc + Math.round(c.efectivo * 100),
     0,
@@ -113,7 +195,10 @@ export default async function InicioPage() {
       </div>
 
       <section aria-label="Resumen" className="grid gap-3 sm:grid-cols-3">
-        <Card className="gap-1 p-4">
+        <KpiLink
+          href={`/reportes?desde=${hoyComercial}&hasta=${hoyComercial}&agrupar=dia`}
+          label="Ver el reporte de lo vendido hoy"
+        >
           <CardEyebrow>Vendido hoy</CardEyebrow>
           <p className="text-2xl font-bold tracking-tight tabular-nums">
             {formatCurrency(inicio.hoy.total)}
@@ -121,7 +206,7 @@ export default async function InicioPage() {
           <p className="text-xs text-muted-foreground">
             {inicio.hoy.ventas} {inicio.hoy.ventas === 1 ? "venta" : "ventas"}
           </p>
-        </Card>
+        </KpiLink>
         <Card className="gap-1 p-4">
           <CardEyebrow>Efectivo en caja</CardEyebrow>
           <p className="text-2xl font-bold tracking-tight tabular-nums">
@@ -139,8 +224,27 @@ export default async function InicioPage() {
               No incluye tu caja: la contás a ciegas al cerrar.
             </p>
           )}
+          {inicio.cajas.length > 0 && (
+            <details className="group mt-auto pt-1">
+              <summary className="flex cursor-pointer list-none items-center gap-0.5 text-xs font-semibold text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+                Ver detalle
+                <ChevronRight
+                  className="size-3.5 transition-transform group-open:rotate-90"
+                  aria-hidden
+                />
+              </summary>
+              <div className="mt-2 flex flex-col gap-2">
+                {inicio.cajas.map((c) => (
+                  <DesgloseCaja key={c.cajaId} caja={c} />
+                ))}
+              </div>
+            </details>
+          )}
         </Card>
-        <Card className="gap-1 p-4">
+        <KpiLink
+          href={`/reportes?desde=${hoyComercial.slice(0, 8)}01&hasta=${hoyComercial}&agrupar=dia`}
+          label="Ver el reporte del mes"
+        >
           <CardEyebrow>Ganancia neta del mes</CardEyebrow>
           <p className="text-2xl font-bold tracking-tight tabular-nums">
             {neta === null ? "Sin costos" : formatCurrency(neta)}
@@ -156,7 +260,7 @@ export default async function InicioPage() {
               no entran.
             </p>
           )}
-        </Card>
+        </KpiLink>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">

@@ -10,9 +10,21 @@ export type TipoActividad =
   | "ajuste_ingreso"
   | "gasto";
 
+// efectivo = fondo + ventasEfectivo + ingresos − retiros (0043).
+export type CajaInicio = {
+  cajaId: string;
+  titular: string;
+  propia: boolean;
+  efectivo: number;
+  fondo: number;
+  ventasEfectivo: number;
+  ingresos: number;
+  retiros: number;
+};
+
 export type Inicio = {
   hoy: { ventas: number; total: number };
-  cajas: { cajaId: string; titular: string; efectivo: number }[];
+  cajas: CajaInicio[];
   cajaPropiaOculta: boolean;
   mes: {
     total: number;
@@ -100,7 +112,16 @@ type VentaARevisarRow = {
 
 type InicioRow = {
   hoy: { ventas: number; total: number };
-  cajas: { caja_id: string; titular: string; efectivo: number }[];
+  cajas: {
+    caja_id: string;
+    titular: string;
+    propia: boolean;
+    efectivo: number;
+    fondo: number;
+    ventas_efectivo: number;
+    ingresos: number;
+    retiros: number;
+  }[];
   caja_propia_oculta: boolean;
   mes: {
     total: number;
@@ -198,7 +219,12 @@ export async function getInicio(): Promise<ActionResult<Inicio>> {
     cajas: r.cajas.map((c) => ({
       cajaId: c.caja_id,
       titular: c.titular,
+      propia: c.propia,
       efectivo: Number(c.efectivo),
+      fondo: Number(c.fondo),
+      ventasEfectivo: Number(c.ventas_efectivo),
+      ingresos: Number(c.ingresos),
+      retiros: Number(c.retiros),
     })),
     cajaPropiaOculta: r.caja_propia_oculta,
     mes: {
