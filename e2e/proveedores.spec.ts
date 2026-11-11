@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { login, passwordDe } from "./helpers";
+import { eliminarProducto, login, passwordDe } from "./helpers";
 
 // Bloque 3.4a: alta de proveedor, proveedor habitual del producto y pedido por WhatsApp desde la
 // reposición. El proveedor y el producto quedan en la base de pruebas, desactivado y borrado
@@ -68,16 +68,7 @@ test("proveedores: el pedido de reposición sale agrupado y va al teléfono del 
   // Limpieza: el producto sin movimientos se borra y el proveedor se desactiva.
   await page.goto("/productos");
   await page.waitForLoadState("networkidle");
-  page.once("dialog", (d) => void d.accept());
-  await page
-    .getByRole("row")
-    .filter({ hasText: producto })
-    .getByRole("button", { name: "Eliminar" })
-    .click();
-  await expect(page.getByRole("row").filter({ hasText: producto })).toHaveCount(
-    0,
-    { timeout: 20_000 },
-  );
+  await eliminarProducto(page, producto);
   await page.goto("/stock/proveedores");
   await page.waitForLoadState("networkidle");
   await fila.getByRole("button", { name: "Desactivá" }).click();
