@@ -22,7 +22,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b", className)}
+      className={cn("[&_tr]:border-0 [&_tr]:hover:bg-transparent", className)}
       {...props}
     />
   );
@@ -69,7 +69,8 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-11 px-4 text-left align-middle text-[0.625rem] font-bold tracking-widest whitespace-nowrap text-muted-foreground uppercase [&:has([role=checkbox])]:pr-0",
+        // Encabezado en franja suave con puntas redondeadas, como las píldoras de la referencia.
+        "h-10 bg-muted px-4 text-left align-middle text-xs font-semibold whitespace-nowrap text-muted-foreground first:rounded-l-full last:rounded-r-full [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}

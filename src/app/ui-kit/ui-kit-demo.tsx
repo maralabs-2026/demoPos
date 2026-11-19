@@ -164,7 +164,7 @@ export function UiKitDemo() {
         </div>
       </Section>
 
-      <Section id="tipografia" title="Tipografía · DM Sans">
+      <Section id="tipografia" title="Tipografía · Urbanist">
         <Card>
           <p className="text-5xl font-semibold tracking-tight">$ 7.450,00</p>
           <p className="text-2xl font-semibold tracking-tight">
