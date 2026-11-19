@@ -147,4 +147,23 @@ test("cierre: compara lo contado con lo esperado, sin mostrarlo antes", async ({
   await expect(page.getByRole("listitem").first()).toContainText(
     "Falta $ 100,00",
   );
+
+  // Y en el cierre del día: la última caja cerrada hoy es esta, y su link lleva al cierre.
+  await page.getByRole("link", { name: "Día", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Cierre del día" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("list", { name: "Arqueo por medio de pago" }),
+  ).toContainText("Efectivo");
+  const cajaDelDia = page
+    .getByRole("list", { name: "Cajas del día" })
+    .getByRole("listitem")
+    .last();
+  await expect(cajaDelDia).toContainText("Falta $ 100,00");
+  await cajaDelDia.getByRole("link").click();
+  await expect(
+    page.getByRole("heading", { name: "Caja cerrada" }),
+  ).toBeVisible();
+  await expect(page.getByText("Faltó cambio")).toBeVisible();
 });

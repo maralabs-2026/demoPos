@@ -6,6 +6,7 @@ const TABS: { href: AppRoute; label: string }[] = [
   { href: "/caja", label: "Caja" },
   { href: "/caja/gastos", label: "Gastos" },
   { href: "/caja/historial", label: "Historial" },
+  { href: "/caja/dia", label: "Día" },
 ];
 
 // Pestañas de toda la sección. Cada página sigue validando su propio acceso con requireRol.

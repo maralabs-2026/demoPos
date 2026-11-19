@@ -10,11 +10,13 @@ export {
   registrarMovimiento,
 } from "./actions";
 export {
+  contarCajasAbiertas,
   getCajaAbierta,
   getCajaAbiertaPorId,
   getCajaCerrada,
   getCajasAbiertasDeOtros,
   getCajasParaPagar,
+  getCierresEntre,
   getGastos,
   getHistorialCajas,
   getMediosAContar,
@@ -30,11 +32,17 @@ export type {
   MedioAContar,
   MovimientoCaja,
 } from "./queries";
-export { desgloseCierre, estadoDiferencia, totalesCierre } from "./cierre";
+export {
+  desgloseCierre,
+  estadoDiferencia,
+  resumenDelDia,
+  totalesCierre,
+} from "./cierre";
 export type {
   DesgloseMedio,
   EstadoDiferencia,
   LineaCierre,
+  LineaDelDia,
   VentaDeCaja,
 } from "./cierre";
 export { estaVencido } from "./gastos";

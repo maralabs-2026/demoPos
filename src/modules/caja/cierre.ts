@@ -134,3 +134,66 @@ export function desgloseCierre(
   }
   return resultado;
 }
+
+// --- Cierre del día ---
+// Junta los cierres de las cajas cerradas en un día comercial. No guarda nada: es una consulta
+// sobre caja_cierres, así que siempre coincide con el cierre de cada caja.
+
+export type LineaDelDia = {
+  medioPagoId: string;
+  nombre: string;
+  esperado: number;
+  contado: number;
+  diferencia: number;
+  // En cuántas cajas tuvo diferencia este medio.
+  cajasConDiferencia: number;
+};
+
+export function resumenDelDia(cierres: { lineas: LineaCierre[] }[]) {
+  const porMedio = new Map<
+    string,
+    {
+      nombre: string;
+      esperado: number;
+      contado: number;
+      diferencia: number;
+      cajas: number;
+    }
+  >();
+  for (const cierre of cierres) {
+    for (const l of cierre.lineas) {
+      const acc = porMedio.get(l.medioPagoId) ?? {
+        nombre: l.nombre,
+        esperado: 0,
+        contado: 0,
+        diferencia: 0,
+        cajas: 0,
+      };
+      acc.esperado += centavos(l.esperado);
+      acc.contado += centavos(l.contado);
+      acc.diferencia += centavos(l.diferencia);
+      if (centavos(l.diferencia) !== 0) acc.cajas += 1;
+      porMedio.set(l.medioPagoId, acc);
+    }
+  }
+
+  const medios: LineaDelDia[] = [...porMedio.entries()]
+    .map(([medioPagoId, m]) => ({
+      medioPagoId,
+      nombre: m.nombre,
+      esperado: m.esperado / 100,
+      contado: m.contado / 100,
+      diferencia: m.diferencia / 100,
+      cajasConDiferencia: m.cajas,
+    }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+
+  return {
+    medios,
+    totales: totalesCierre(medios),
+    // Una caja con faltante en un medio y sobrante en otro también tiene diferencia.
+    cajasConDiferencia: cierres.filter((c) =>
+      c.lineas.some((l) => centavos(l.diferencia) !== 0),
+    ).length,
+  };
+}
