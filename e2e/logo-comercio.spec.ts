@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { login, passwordDe } from "./helpers";
 
-// El dueño cambia el nombre y sube el logo; se ven en el menú y vuelven a como estaban.
+// El dueño cambia el nombre y sube el logo; se ven en la barra superior y vuelven a como estaban.
 // Los tests SQL buscan el comercio por el nombre "Kiosko Demo": el test lo restaura siempre.
 
 const DUENO = "dueno@kiosko.demo";
@@ -13,7 +13,7 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("comercio: el dueño cambia el nombre y el logo, y se ven en el menú", async ({
+test("comercio: el dueño cambia el nombre y el logo, y se ven en la barra superior", async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -21,7 +21,8 @@ test("comercio: el dueño cambia el nombre y el logo, y se ven en el menú", asy
   await page.goto("/config");
   await page.waitForLoadState("networkidle");
 
-  const menu = page.getByRole("complementary");
+  // El nombre o el logo del comercio van en la barra superior (el <header> de la app).
+  const menu = page.getByRole("banner");
   const campoNombre = page.getByLabel("Nombre del comercio");
   const guardarNombre = page.getByRole("button", { name: "Guardá el nombre" });
 
@@ -59,7 +60,7 @@ test("comercio: el dueño cambia el nombre y el logo, y se ven en el menú", asy
     await expect(page.getByText("Logo guardado").first()).toBeVisible({
       timeout: 20_000,
     });
-    // Con logo, el menú muestra la imagen con el nombre como texto alternativo.
+    // Con logo, la barra muestra la imagen con el nombre como texto alternativo.
     await expect(menu.getByRole("img", { name: "Zona 24/7" })).toBeVisible({
       timeout: 20_000,
     });

@@ -5,6 +5,9 @@ import { login, passwordDe } from "./helpers";
 
 async function irAAyuda(page: Page) {
   // La navegación vive en el panel lateral: se abre con la hamburguesa de la barra superior.
+  // Antes se espera a que termine la redirección del login: el panel se cierra al cambiar de
+  // pantalla y el link desaparecería en medio del clic.
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page
     .getByRole("navigation", { name: "Principal" })
