@@ -188,4 +188,30 @@ export const GUIAS_NEGOCIO: readonly Guia[] = [
     ],
     nota: "Una caja cuenta en el día en que se cerró. Lo que se vende en una caja abierta entra recién cuando se cierra.",
   },
+  {
+    id: "verificar-transferencias",
+    seccion: "negocio",
+    titulo: "Verificá las transferencias",
+    resumen:
+      "Controlá que la plata de cada venta por transferencia haya llegado a la cuenta.",
+    palabras: [
+      "transferencia",
+      "banco",
+      "cuenta",
+      "comprobante",
+      "llego",
+      "verificar",
+      "alias",
+      "cvu",
+    ],
+    ruta: "/caja/transferencias",
+    roles: GESTION,
+    pasos: [
+      "Abrí la cuenta donde recibís las transferencias (el banco o la billetera).",
+      "En Caja, entrá a Transferencias. Arranca en hoy y muestra las que faltan revisar.",
+      "Buscá cada monto en la cuenta. Si está, tocá «Llegó»; si no, «No llegó».",
+      "Las que no llegaron quedan en Inicio hasta que las marques como llegadas.",
+    ],
+    nota: "Marcar no cambia la venta ni la caja. Si te equivocaste, marcá lo contrario: queda registrado quién marcó cada cosa. Hacelo todos los días: un comprobante falso solo se descubre mirando la cuenta.",
+  },
 ];

@@ -135,3 +135,18 @@ export const pagarGastoSchema = z.object({
 });
 
 export type PagarGastoInput = z.infer<typeof pagarGastoSchema>;
+
+// Verificación de una transferencia: si la plata llegó o no a la cuenta.
+export const ESTADOS_VERIFICACION = ["llego", "no_llego"] as const;
+export type EstadoVerificacion = (typeof ESTADOS_VERIFICACION)[number];
+
+export const verificarTransferenciaSchema = z.object({
+  ventaPagoId: z.uuid({ error: "El pago no es válido" }),
+  estado: z.enum(ESTADOS_VERIFICACION, {
+    error: "Elegí si llegó o no llegó",
+  }),
+});
+
+export type VerificarTransferenciaInput = z.infer<
+  typeof verificarTransferenciaSchema
+>;

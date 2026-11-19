@@ -1,6 +1,7 @@
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import type { LineaCierre, VentaDeCaja } from "./cierre";
+import type { Transferencia } from "./transferencias";
 import { hrefDeCaja } from "./gastos";
 
 export type CajaAbierta = {
@@ -449,4 +450,64 @@ export async function contarCajasAbiertas(): Promise<ActionResult<number>> {
 
   if (error) return fail("No se pudieron contar las cajas abiertas.");
   return ok(count ?? 0);
+}
+
+type TransferenciaRow = {
+  id: string;
+  monto: number;
+  medio: { nombre: string; tipo: string };
+  venta: {
+    id: string;
+    created_at: string;
+    cajero: Persona;
+  };
+  pago_verificaciones: {
+    estado: "llego" | "no_llego";
+    created_at: string;
+    autor: Persona;
+  }[];
+};
+
+// Los pagos por transferencia de las ventas completadas entre dos instantes, con todas sus
+// marcas. Las anuladas no aparecen: esa plata no se espera. Solo dueño y encargado leen las marcas
+// (RLS de pago_verificaciones).
+export async function getTransferencias(
+  desde: string,
+  hasta: string,
+): Promise<ActionResult<Transferencia[]>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("venta_pagos")
+    .select(
+      `id, monto,
+       medio:medios_pago!inner(nombre, tipo),
+       venta:ventas!inner(id, created_at, cajero:perfiles!ventas_usuario_id_comercio_id_fkey(nombre)),
+       pago_verificaciones(estado, created_at, autor:perfiles!pago_verificaciones_usuario_id_comercio_id_fkey(nombre))`,
+    )
+    .eq("medio.tipo", "transferencia")
+    .eq("venta.estado", "completada")
+    .gte("venta.created_at", desde)
+    .lt("venta.created_at", hasta)
+    .overrideTypes<TransferenciaRow[]>();
+
+  if (error) return fail("No se pudieron leer las transferencias.");
+  return ok(
+    data
+      .map((p) => ({
+        ventaPagoId: p.id,
+        ventaId: p.venta.id,
+        createdAt: p.venta.created_at,
+        monto: Number(p.monto),
+        medio: p.medio.nombre,
+        cajero: p.venta.cajero?.nombre ?? "Otro usuario",
+        verificaciones: p.pago_verificaciones
+          .map((v) => ({
+            estado: v.estado,
+            createdAt: v.created_at,
+            autor: v.autor?.nombre ?? "Otro usuario",
+          }))
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+      }))
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+  );
 }

@@ -3,9 +3,20 @@ import { ChevronRight, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardEyebrow } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
-import { formatDate, formatDateTime, todayISO } from "@/lib/date";
+import {
+  finDelDia,
+  formatDate,
+  formatDateTime,
+  inicioDelDia,
+  sumarDias,
+  todayISO,
+} from "@/lib/date";
 import { requireRol } from "@/modules/auth";
-import { estaVencido } from "@/modules/caja";
+import {
+  estaVencido,
+  getTransferencias,
+  transferenciasPorResolver,
+} from "@/modules/caja";
 import { DiferenciaBadge } from "@/modules/caja/components/diferencia-badge";
 import { getCorteDiaComercial } from "@/modules/config";
 import {
@@ -19,6 +30,8 @@ import {
 } from "@/modules/reportes";
 
 export const dynamic = "force-dynamic";
+
+const DIAS_TRANSFERENCIAS = 30;
 
 const AVISO: Record<AvisoSinConexion, string> = {
   precio: "precio distinto del catálogo",
@@ -165,7 +178,21 @@ export default async function InicioPage() {
   const inicio = result.data;
   const hoy = todayISO();
   // Los reportes usan el día comercial, igual que lo que suma el inicio.
-  const hoyComercial = todayISO(new Date(), corte.ok ? corte.data : 0);
+  const corteHoras = corte.ok ? corte.data : 0;
+  const hoyComercial = todayISO(new Date(), corteHoras);
+  // Transferencias de los últimos 30 días que no llegaron o siguen sin verificar.
+  const transferencias = await getTransferencias(
+    inicioDelDia(
+      sumarDias(hoyComercial, -(DIAS_TRANSFERENCIAS - 1)),
+      corteHoras,
+    ),
+    finDelDia(hoyComercial, corteHoras),
+  );
+  const porResolver = transferencias.ok
+    ? transferenciasPorResolver(transferencias.data, hoyComercial, (iso) =>
+        todayISO(new Date(iso), corteHoras),
+      )
+    : null;
   const efectivo = inicio.cajas.reduce(
     (acc, c) => acc + Math.round(c.efectivo * 100),
     0,
@@ -178,7 +205,9 @@ export default async function InicioPage() {
     inicio.ventasSinConexion.length === 0 &&
     inicio.ventasQrManual.length === 0 &&
     inicio.cobrosSinVenta.length === 0 &&
-    inicio.vencimientos.length === 0;
+    inicio.vencimientos.length === 0 &&
+    !porResolver?.noLlego.cantidad &&
+    !porResolver?.sinVerificar.cantidad;
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-4 p-4 sm:p-6 lg:p-8">
@@ -288,6 +317,30 @@ export default async function InicioPage() {
                   destacado={<DiferenciaBadge diferencia={c.diferencia} />}
                 />
               ))}
+              {porResolver && porResolver.noLlego.cantidad > 0 && (
+                <Pendiente
+                  href={`/caja/transferencias?fecha=${porResolver.noLlego.desde}&ver=todas`}
+                  titulo={`${porResolver.noLlego.cantidad} ${porResolver.noLlego.cantidad === 1 ? "transferencia que no llegó" : "transferencias que no llegaron"}`}
+                  detalle={`Desde el ${formatDate(porResolver.noLlego.desde ?? hoyComercial)} · reclamala o anulá la venta`}
+                  destacado={
+                    <span className="text-sm font-semibold text-destructive tabular-nums">
+                      {formatCurrency(porResolver.noLlego.monto)}
+                    </span>
+                  }
+                />
+              )}
+              {porResolver && porResolver.sinVerificar.cantidad > 0 && (
+                <Pendiente
+                  href={`/caja/transferencias?fecha=${porResolver.sinVerificar.desde}`}
+                  titulo={`${porResolver.sinVerificar.cantidad} ${porResolver.sinVerificar.cantidad === 1 ? "transferencia sin verificar" : "transferencias sin verificar"}`}
+                  detalle={`Desde el ${formatDate(porResolver.sinVerificar.desde ?? hoyComercial)} · fijate si llegaron a la cuenta`}
+                  destacado={
+                    <span className="text-sm font-semibold tabular-nums">
+                      {formatCurrency(porResolver.sinVerificar.monto)}
+                    </span>
+                  }
+                />
+              )}
               {inicio.ventasSinConexion.map((v) => (
                 <Pendiente
                   key={v.ventaId}

@@ -13,6 +13,7 @@ import {
   registrarAjusteSchema,
   registrarGastoSchema,
   registrarMovimientoSchema,
+  verificarTransferenciaSchema,
   type AbrirCajaInput,
   type CerrarCajaInput,
   type GenerarCodigoAjusteInput,
@@ -20,6 +21,7 @@ import {
   type RegistrarAjusteInput,
   type RegistrarGastoInput,
   type RegistrarMovimientoInput,
+  type VerificarTransferenciaInput,
 } from "./schemas";
 
 const PG_UNIQUE_VIOLATION = "23505"; // cajas_una_abierta_por_usuario_idx
@@ -339,4 +341,42 @@ export async function abrirCaja(
 
   revalidatePath("/vender");
   return ok(caja.data);
+}
+
+const PV_PAGO_NO_VERIFICABLE = "PV034";
+
+// Deja constancia de si una transferencia llegó a la cuenta. No cambia la venta ni la caja: la
+// base guarda cada marca y el estado es la última.
+export async function verificarTransferencia(
+  input: VerificarTransferenciaInput,
+): Promise<ActionResult<null>> {
+  const parsed = verificarTransferenciaSchema.safeParse(input);
+  if (!parsed.success) {
+    return fail(parsed.error.issues[0]?.message ?? "Datos inválidos");
+  }
+  if (!isSupabaseConfigured()) {
+    return fail("Falta configurar Supabase en .env.local");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("verificar_pago", {
+    p_venta_pago_id: parsed.data.ventaPagoId,
+    p_estado: parsed.data.estado,
+  });
+  if (error) {
+    switch (error.code) {
+      case PG_SIN_PERMISO:
+        return fail("No tenés permiso para verificar transferencias.");
+      case PV_PAGO_NO_VERIFICABLE:
+        return fail(
+          "Ese pago ya no se puede verificar: puede que la venta se haya anulado.",
+        );
+      default:
+        return fail("No se pudo guardar la verificación. Probá de nuevo.");
+    }
+  }
+
+  revalidatePath("/caja/transferencias");
+  revalidatePath("/inicio");
+  return ok(null);
 }

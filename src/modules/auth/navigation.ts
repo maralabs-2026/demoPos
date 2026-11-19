@@ -57,6 +57,7 @@ export const ROUTE_ROLES = {
   "/caja/historial": TODOS,
   "/caja/cerrar": ["dueno", "encargado"],
   "/caja/dia": ["dueno", "encargado"],
+  "/caja/transferencias": ["dueno", "encargado"],
   "/caja/gastos": ["dueno", "encargado"],
   "/productos": TODOS,
   "/productos/precios": ["dueno", "encargado"],

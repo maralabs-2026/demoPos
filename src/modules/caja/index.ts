@@ -8,6 +8,7 @@ export {
   registrarAjusteCaja,
   registrarGasto,
   registrarMovimiento,
+  verificarTransferencia,
 } from "./actions";
 export {
   contarCajasAbiertas,
@@ -21,6 +22,7 @@ export {
   getHistorialCajas,
   getMediosAContar,
   getMovimientosCaja,
+  getTransferencias,
   getVentasCaja,
 } from "./queries";
 export type {
@@ -47,6 +49,16 @@ export type {
 } from "./cierre";
 export { estaVencido } from "./gastos";
 export {
+  estadoTransferencia,
+  resumenTransferencias,
+  transferenciasPorResolver,
+} from "./transferencias";
+export type {
+  EstadoTransferencia,
+  PorResolver,
+  Transferencia,
+} from "./transferencias";
+export {
   abrirCajaSchema,
   cerrarCajaSchema,
   DESCRIPCION_GASTO_MAX,
@@ -57,6 +69,7 @@ export {
   registrarAjusteSchema,
   registrarGastoSchema,
   registrarMovimientoSchema,
+  verificarTransferenciaSchema,
 } from "./schemas";
 export type {
   AbrirCajaInput,
@@ -66,4 +79,5 @@ export type {
   RegistrarAjusteInput,
   RegistrarGastoInput,
   RegistrarMovimientoInput,
+  VerificarTransferenciaInput,
 } from "./schemas";
