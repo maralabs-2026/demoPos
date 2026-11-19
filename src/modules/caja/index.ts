@@ -8,6 +8,7 @@ export {
   registrarAjusteCaja,
   registrarGasto,
   registrarMovimiento,
+  verificarTransferencia,
 } from "./actions";
 export {
   contarCajasAbiertas,
@@ -21,6 +22,7 @@ export {
   getHistorialCajas,
   getMediosAContar,
   getMovimientosCaja,
+  getTransferencias,
   getVentasCaja,
 } from "./queries";
 export type {
@@ -46,6 +48,8 @@ export type {
   VentaDeCaja,
 } from "./cierre";
 export { estaVencido } from "./gastos";
+export { estadoTransferencia, resumenTransferencias } from "./transferencias";
+export type { EstadoTransferencia, Transferencia } from "./transferencias";
 export {
   abrirCajaSchema,
   cerrarCajaSchema,
@@ -57,6 +61,7 @@ export {
   registrarAjusteSchema,
   registrarGastoSchema,
   registrarMovimientoSchema,
+  verificarTransferenciaSchema,
 } from "./schemas";
 export type {
   AbrirCajaInput,
@@ -66,4 +71,5 @@ export type {
   RegistrarAjusteInput,
   RegistrarGastoInput,
   RegistrarMovimientoInput,
+  VerificarTransferenciaInput,
 } from "./schemas";

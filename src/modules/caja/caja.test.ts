@@ -9,6 +9,11 @@ import {
 } from "./cierre";
 import { estaVencido, hrefDeCaja } from "./gastos";
 import {
+  estadoTransferencia,
+  resumenTransferencias,
+  type Transferencia,
+} from "./transferencias";
+import {
   cerrarCajaSchema,
   CONTEOS_CIERRE_MAX,
   DESCRIPCION_GASTO_MAX,
@@ -18,6 +23,7 @@ import {
   registrarAjusteSchema,
   registrarGastoSchema,
   registrarMovimientoSchema,
+  verificarTransferenciaSchema,
 } from "./schemas";
 
 const CAJA = "7d3f9a52-1c64-4b8e-9f21-3a5c7e9d1b20";
@@ -529,5 +535,93 @@ describe("resumenDelDia", () => {
     expect(r.medios).toEqual([]);
     expect(r.totales).toEqual({ esperado: 0, contado: 0, diferencia: 0 });
     expect(r.cajasConDiferencia).toBe(0);
+  });
+});
+
+describe("transferencias", () => {
+  const t = (
+    id: string,
+    monto: number,
+    verificaciones: Transferencia["verificaciones"] = [],
+  ): Transferencia => ({
+    ventaPagoId: id,
+    ventaId: id,
+    createdAt: "2026-11-19T14:00:00.000Z",
+    monto,
+    medio: "Transferencia",
+    cajero: "Ana",
+    verificaciones,
+  });
+
+  it("el estado es la última marca, sin importar el orden en que llegan", () => {
+    expect(estadoTransferencia(t("a", 100))).toBe("pendiente");
+    expect(
+      estadoTransferencia(
+        t("b", 100, [
+          {
+            estado: "no_llego",
+            createdAt: "2026-11-19T15:00:00.000Z",
+            autor: "Encargado",
+          },
+          {
+            estado: "llego",
+            createdAt: "2026-11-19T18:00:00.000Z",
+            autor: "Dueño",
+          },
+        ]),
+      ),
+    ).toBe("llego");
+  });
+
+  it("suma cantidad y monto por estado, en centavos", () => {
+    const r = resumenTransferencias([
+      t("a", 100.1),
+      t("b", 200.2),
+      t("c", 50, [
+        {
+          estado: "llego",
+          createdAt: "2026-11-19T15:00:00.000Z",
+          autor: "Dueño",
+        },
+      ]),
+      t("d", 30, [
+        {
+          estado: "no_llego",
+          createdAt: "2026-11-19T15:00:00.000Z",
+          autor: "Dueño",
+        },
+      ]),
+    ]);
+    expect(r).toEqual({
+      llego: { cantidad: 1, monto: 50 },
+      no_llego: { cantidad: 1, monto: 30 },
+      pendiente: { cantidad: 2, monto: 300.3 },
+    });
+  });
+});
+
+describe("verificarTransferenciaSchema", () => {
+  it("acepta un pago con llegó o no llegó", () => {
+    for (const estado of ["llego", "no_llego"]) {
+      expect(
+        verificarTransferenciaSchema.safeParse({ ventaPagoId: CAJA, estado })
+          .success,
+      ).toBe(true);
+    }
+  });
+
+  it("rechaza un estado inventado o un pago que no es un id", () => {
+    expect(
+      verificarTransferenciaSchema.safeParse({
+        ventaPagoId: CAJA,
+        estado: "quizas",
+      }).success,
+    ).toBe(false);
+    expect(
+      verificarTransferenciaSchema.safeParse({
+        ventaPagoId: "123",
+        estado: "llego",
+      }).success,
+    ).toBe(false);
   });
 });

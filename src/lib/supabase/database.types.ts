@@ -901,6 +901,55 @@ export type Database = {
           },
         ];
       };
+      pago_verificaciones: {
+        Row: {
+          comercio_id: string;
+          created_at: string;
+          estado: string;
+          id: string;
+          usuario_id: string;
+          venta_pago_id: string;
+        };
+        Insert: {
+          comercio_id: string;
+          created_at?: string;
+          estado: string;
+          id?: string;
+          usuario_id: string;
+          venta_pago_id: string;
+        };
+        Update: {
+          comercio_id?: string;
+          created_at?: string;
+          estado?: string;
+          id?: string;
+          usuario_id?: string;
+          venta_pago_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "pago_verificaciones_comercio_id_fkey";
+            columns: ["comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "comercios";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "pago_verificaciones_usuario_id_comercio_id_fkey";
+            columns: ["usuario_id", "comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "perfiles";
+            referencedColumns: ["id", "comercio_id"];
+          },
+          {
+            foreignKeyName: "pago_verificaciones_venta_pago_id_comercio_id_fkey";
+            columns: ["venta_pago_id", "comercio_id"];
+            isOneToOne: false;
+            referencedRelation: "venta_pagos";
+            referencedColumns: ["id", "comercio_id"];
+          },
+        ];
+      };
       perfiles: {
         Row: {
           activo: boolean;
@@ -1668,6 +1717,10 @@ export type Database = {
       };
       siguiente_codigo_interno: { Args: never; Returns: string };
       vencimientos_proximos: { Args: never; Returns: Json };
+      verificar_pago: {
+        Args: { p_estado: string; p_venta_pago_id: string };
+        Returns: Json;
+      };
     };
     Enums: {
       rol_usuario: "dueno" | "encargado" | "cajero";
