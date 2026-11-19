@@ -2,12 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardEyebrow } from "@/components/ui/card";
-import { requireRol } from "@/modules/auth";
+import { canAccess, requireRol } from "@/modules/auth";
 import {
+  desgloseCierre,
   getCajaCerrada,
   getMovimientosCaja,
+  getVentasCaja,
   totalesCierre,
+  type MovimientoCaja,
 } from "@/modules/caja";
+import { DetalleMedio } from "@/modules/caja/components/detalle-medio";
 import { DiferenciaBadge } from "@/modules/caja/components/diferencia-badge";
 import { MovimientosLista } from "@/modules/caja/components/movimientos-lista";
 import { formatCurrency } from "@/lib/currency";
@@ -17,19 +21,32 @@ export const dynamic = "force-dynamic";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// En centavos, como el resto del cierre.
+function sumarMovimientos(
+  movimientos: MovimientoCaja[],
+  tipo: MovimientoCaja["tipo"],
+): number {
+  return (
+    movimientos
+      .filter((m) => m.tipo === tipo)
+      .reduce((acc, m) => acc + Math.round(m.monto * 100), 0) / 100
+  );
+}
+
 // Resultado de un cierre: acá se ve el esperado y la diferencia.
 export default async function CierreCajaPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireRol("/caja/historial");
+  const perfil = await requireRol("/caja/historial");
   const { id } = await params;
   if (!UUID.test(id)) notFound();
 
-  const [result, movimientos] = await Promise.all([
+  const [result, movimientos, ventas] = await Promise.all([
     getCajaCerrada(id),
     getMovimientosCaja(id),
+    getVentasCaja(id),
   ]);
   if (result.ok && !result.data) notFound();
   if (!result.ok || !result.data) {
@@ -44,6 +61,17 @@ export default async function CierreCajaPage({
 
   const caja = result.data;
   const totales = totalesCierre(caja.lineas);
+  const verVenta = canAccess(perfil.rol, "/reportes/ventas");
+  // Sin ventas o sin movimientos no se puede rearmar el esperado: se muestra solo el cierre.
+  const desglose =
+    ventas.ok && movimientos.ok
+      ? desgloseCierre(caja.lineas, ventas.data, {
+          cerradaAt: caja.cerradaAt,
+          fondo: caja.montoInicial,
+          ingresos: sumarMovimientos(movimientos.data, "ingreso"),
+          retiros: sumarMovimientos(movimientos.data, "retiro"),
+        })
+      : null;
 
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-4 p-4 sm:p-6 lg:p-8">
@@ -74,23 +102,24 @@ export default async function CierreCajaPage({
             Esta caja se cerró sin conteo, antes de que existiera el arqueo.
           </p>
         ) : (
-          <ul className="flex flex-col">
-            {caja.lineas.map((linea) => (
-              <li
-                key={linea.medioPagoId}
-                className="flex flex-col gap-1.5 border-b border-border py-3 last:border-0"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold">{linea.nombre}</p>
-                  <DiferenciaBadge diferencia={linea.diferencia} />
-                </div>
-                <div className="flex justify-between gap-3 text-sm text-muted-foreground tabular-nums">
-                  <span>Esperado {formatCurrency(linea.esperado)}</span>
-                  <span>Contado {formatCurrency(linea.contado)}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <>
+            <p className="text-xs text-muted-foreground">
+              Tocá un medio para ver las ventas que forman su esperado.
+            </p>
+            <ul className="flex flex-col">
+              {caja.lineas.map((linea) => (
+                <DetalleMedio
+                  key={linea.medioPagoId}
+                  linea={linea}
+                  desglose={desglose?.get(linea.medioPagoId)}
+                  verVenta={verVenta}
+                />
+              ))}
+            </ul>
+            {!ventas.ok && (
+              <p className="text-sm text-destructive">{ventas.error}</p>
+            )}
+          </>
         )}
 
         {caja.lineas.length > 0 && (

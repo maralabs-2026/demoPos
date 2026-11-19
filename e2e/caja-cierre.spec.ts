@@ -111,6 +111,31 @@ test("cierre: compara lo contado con lo esperado, sin mostrarlo antes", async ({
   await expect(debito).toContainText("Cuadra");
   await expect(page.getByText("Faltó cambio")).toBeVisible();
 
+  // Cada medio se despliega con las ventas y los movimientos que forman su esperado.
+  await efectivo.getByText("Efectivo", { exact: true }).click();
+  const armadoEfectivo = page.getByLabel(
+    "Cómo se armó el esperado de Efectivo",
+  );
+  await expect(armadoEfectivo).toContainText("Fondo inicial$ 1.000,00");
+  await expect(armadoEfectivo).toContainText("Ventas (2)+ $ 5.000,00");
+  await expect(armadoEfectivo).toContainText("Ingresos+ $ 200,00");
+  await expect(armadoEfectivo).toContainText("Retiros− $ 1.000,00");
+  await expect(
+    page
+      .getByRole("list", { name: "Ventas de Efectivo" })
+      .getByRole("listitem"),
+  ).toHaveCount(2);
+
+  await debito.getByText("Débito", { exact: true }).click();
+  await expect(
+    page.getByLabel("Cómo se armó el esperado de Débito"),
+  ).toContainText("Ventas (1)$ 2.500,00");
+  const ventasDebito = page.getByRole("list", { name: "Ventas de Débito" });
+  await expect(ventasDebito.getByRole("listitem")).toHaveCount(1);
+  // El encargado puede abrir la venta desde el cierre.
+  await ventasDebito.getByRole("link").click();
+  await expect(page).toHaveURL(/\/reportes\/ventas\/[0-9a-f-]{36}$/);
+
   // Sin caja abierta, para vender hay que volver a abrir.
   await page.goto("/vender");
   await expect(
