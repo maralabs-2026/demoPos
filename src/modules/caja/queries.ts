@@ -418,3 +418,35 @@ export async function getVentasCaja(
     })),
   );
 }
+
+// Cajas cerradas entre dos instantes (el día comercial), de la más vieja a la más nueva. La caja
+// es del día en que se cerró: un turno que cruza la medianoche cuenta en el día de su cierre.
+export async function getCierresEntre(
+  desde: string,
+  hasta: string,
+): Promise<ActionResult<CajaCerrada[]>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("cajas")
+    .select(SELECT_CERRADA)
+    .eq("estado", "cerrada")
+    .gte("cerrada_at", desde)
+    .lt("cerrada_at", hasta)
+    .order("cerrada_at", { ascending: true })
+    .overrideTypes<CajaCerradaRow[]>();
+
+  if (error) return fail("No se pudieron leer los cierres del día.");
+  return ok(data.map(aCajaCerrada));
+}
+
+// Cuántas cajas siguen abiertas: sus ventas todavía no entran en ningún arqueo.
+export async function contarCajasAbiertas(): Promise<ActionResult<number>> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("cajas")
+    .select("id", { count: "exact", head: true })
+    .eq("estado", "abierta");
+
+  if (error) return fail("No se pudieron contar las cajas abiertas.");
+  return ok(count ?? 0);
+}

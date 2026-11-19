@@ -112,6 +112,9 @@ describe("canAccess", () => {
     expect(canAccess("cajero", "/caja/historial")).toBe(true);
     expect(canAccess("cajero", "/caja/cerrar")).toBe(false);
     expect(canAccess("encargado", "/caja/cerrar")).toBe(true);
+    expect(canAccess("cajero", "/caja/dia")).toBe(false);
+    expect(canAccess("encargado", "/caja/dia")).toBe(true);
+    expect(canAccess("dueno", "/caja/dia")).toBe(true);
     expect(canAccess("cajero", "/caja/gastos")).toBe(false);
     expect(canAccess("encargado", "/caja/gastos")).toBe(true);
     expect(canAccess("dueno", "/caja/gastos")).toBe(true);

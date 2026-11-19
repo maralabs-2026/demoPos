@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   desgloseCierre,
   estadoDiferencia,
+  resumenDelDia,
   totalesCierre,
   type PagoDeVenta,
   type VentaDeCaja,
@@ -449,5 +450,84 @@ describe("desgloseCierre", () => {
       retiros: 0,
     });
     expect(d.get(DEBITO)!.sinDetalle).toBe(50);
+  });
+});
+
+describe("resumenDelDia", () => {
+  const EFECTIVO = "11111111-1111-4111-8111-111111111111";
+  const DEBITO = "22222222-2222-4222-8222-222222222222";
+  const linea = (
+    medioPagoId: string,
+    nombre: string,
+    esperado: number,
+    contado: number,
+  ) => ({
+    medioPagoId,
+    nombre,
+    esperado,
+    contado,
+    diferencia: Math.round((contado - esperado) * 100) / 100,
+  });
+
+  it("suma por medio las cajas del día y cuenta las que tuvieron diferencia", () => {
+    const r = resumenDelDia([
+      {
+        lineas: [
+          linea(EFECTIVO, "Efectivo", 5200, 5100),
+          linea(DEBITO, "Débito", 2500, 2500),
+        ],
+      },
+      {
+        lineas: [
+          linea(EFECTIVO, "Efectivo", 1000.1, 1000.1),
+          linea(DEBITO, "Débito", 300.2, 300.2),
+        ],
+      },
+      { lineas: [] },
+    ]);
+    expect(r.medios).toEqual([
+      {
+        medioPagoId: DEBITO,
+        nombre: "Débito",
+        esperado: 2800.2,
+        contado: 2800.2,
+        diferencia: 0,
+        cajasConDiferencia: 0,
+      },
+      {
+        medioPagoId: EFECTIVO,
+        nombre: "Efectivo",
+        esperado: 6200.1,
+        contado: 6100.1,
+        diferencia: -100,
+        cajasConDiferencia: 1,
+      },
+    ]);
+    expect(r.totales).toEqual({
+      esperado: 9000.3,
+      contado: 8900.3,
+      diferencia: -100,
+    });
+    expect(r.cajasConDiferencia).toBe(1);
+  });
+
+  it("una caja con faltante y sobrante que se compensan igual tiene diferencia", () => {
+    const r = resumenDelDia([
+      {
+        lineas: [
+          linea(EFECTIVO, "Efectivo", 1000, 900),
+          linea(DEBITO, "Débito", 500, 600),
+        ],
+      },
+    ]);
+    expect(r.totales.diferencia).toBe(0);
+    expect(r.cajasConDiferencia).toBe(1);
+  });
+
+  it("sin cierres, todo en cero", () => {
+    const r = resumenDelDia([]);
+    expect(r.medios).toEqual([]);
+    expect(r.totales).toEqual({ esperado: 0, contado: 0, diferencia: 0 });
+    expect(r.cajasConDiferencia).toBe(0);
   });
 });

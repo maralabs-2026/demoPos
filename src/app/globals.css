@@ -108,14 +108,34 @@
   --sidebar-ring: #2f54eb;
 }
 
-/* Al imprimir sale solo el ticket: el resto de la app queda invisible. */
+/* Al imprimir sale solo el ticket (o el reporte de la pantalla): el resto de la app queda
+   invisible. */
 @media print {
   body * {
     visibility: hidden;
   }
   .ticket-print,
-  .ticket-print * {
+  .ticket-print *,
+  .reporte-print,
+  .reporte-print * {
     visibility: visible;
+  }
+  /* En hoja A4, en negro sobre blanco aunque la app esté en modo oscuro. */
+  .reporte-print {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+  .reporte-print,
+  .reporte-print * {
+    color: #000 !important;
+    background: transparent !important;
+    border-color: #999 !important;
+    box-shadow: none !important;
+  }
+  .reporte-print .print\:hidden {
+    display: none !important;
   }
   .ticket-print {
     position: absolute;
