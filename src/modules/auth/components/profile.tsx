@@ -1,20 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Building2, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
 import { ROL_LABELS, rolBadgeVariant } from "@/modules/auth/roles";
 import type { SessionProfile } from "@/modules/auth/session";
-import { borrarPaginasGuardadas } from "@/lib/service-worker";
-
-function initials(nombre: string): string {
-  const parts = nombre.trim().split(/\s+/);
-  const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
-  return (first + last).toUpperCase();
-}
+import { iniciales, useCerrarSesion } from "./use-cerrar-sesion";
 
 function Field({
   label,
@@ -34,18 +25,10 @@ function Field({
 }
 
 export function Profile({ profile: usuario }: { profile: SessionProfile }) {
-  const router = useRouter();
-
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    await borrarPaginasGuardadas();
-    router.replace("/login");
-    router.refresh();
-  }
+  const handleLogout = useCerrarSesion();
 
   return (
-    <main className="mx-auto flex min-h-[calc(100dvh-8rem)] w-full max-w-[672px] flex-col p-4 sm:p-6 lg:min-h-dvh lg:p-8">
+    <main className="mx-auto flex min-h-[calc(100dvh-8rem)] w-full max-w-[672px] flex-col p-4 sm:p-6 lg:min-h-[calc(100dvh-4rem)] lg:p-8">
       <div className="flex flex-col gap-0.5 md:items-center md:gap-1">
         <h1 className="text-3xl">Mi perfil</h1>
         <p className="text-[14px] text-muted-foreground">
@@ -58,7 +41,7 @@ export function Profile({ profile: usuario }: { profile: SessionProfile }) {
         <div className="flex w-full items-center gap-4 rounded-xl bg-accent p-4">
           <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground md:size-14">
             <span className="text-base font-semibold md:text-lg">
-              {initials(usuario.nombre)}
+              {iniciales(usuario.nombre)}
             </span>
           </div>
           <div className="flex min-w-0 flex-col gap-0.5">

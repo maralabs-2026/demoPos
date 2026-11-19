@@ -833,7 +833,7 @@ export function VentaScreen({
       <section
         aria-label="Catálogo"
         inert={panel !== null}
-        className="flex min-w-0 flex-[999_1_560px] flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-8rem)] lg:gap-0 lg:overflow-hidden lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:shadow-[0_1px_2px_rgba(15,23,42,0.06)]"
+        className="flex min-w-0 flex-[999_1_560px] flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-12rem)] lg:gap-0 lg:overflow-hidden lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:shadow-[0_1px_2px_rgba(15,23,42,0.06)]"
       >
         <div className="relative lg:m-4 lg:mb-0">
           <Search
@@ -975,7 +975,7 @@ export function VentaScreen({
         role={panel ? "dialog" : undefined}
         aria-modal={panel ? true : undefined}
         className={cn(
-          "w-full min-w-0 gap-2.5 p-4 lg:static lg:flex lg:max-h-none lg:min-h-[calc(100dvh-8rem)] lg:max-w-[460px] lg:flex-[1_1_360px] lg:overflow-visible lg:rounded-2xl",
+          "w-full min-w-0 gap-2.5 p-4 lg:static lg:flex lg:max-h-none lg:min-h-[calc(100dvh-12rem)] lg:max-w-[460px] lg:flex-[1_1_360px] lg:overflow-visible lg:rounded-2xl",
           panel
             ? "fixed inset-x-0 bottom-0 z-50 max-h-[88dvh] overflow-y-auto rounded-t-3xl rounded-b-none pb-[calc(1rem+env(safe-area-inset-bottom))]"
             : "hidden",

@@ -4,7 +4,12 @@ import { login, passwordDe } from "./helpers";
 // La ayuda es de solo lectura: estos tests entran con cada rol y no tocan datos.
 
 async function irAAyuda(page: Page) {
-  await page.getByRole("link", { name: "Ayuda" }).first().click();
+  // La navegación vive en el panel lateral: se abre con la hamburguesa de la barra superior.
+  await page.getByRole("button", { name: "Abrir menú" }).click();
+  await page
+    .getByRole("navigation", { name: "Principal" })
+    .getByRole("link", { name: "Ayuda" })
+    .click();
   await expect(page).toHaveURL(/\/ayuda$/, { timeout: 20_000 });
   await expect(page.getByRole("heading", { name: "Ayuda" })).toBeVisible();
 }

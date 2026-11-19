@@ -1,17 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 // Imports por archivo y no por el barrel: el index arrastra queries.ts (next/headers) al cliente.
 import { splitBrandName } from "@/modules/auth/brand";
@@ -20,11 +13,12 @@ import {
   getNavLinks,
   type NavLink,
 } from "@/modules/auth/navigation";
-import { ROL_LABELS, rolBadgeVariant } from "@/modules/auth/roles";
-import type { Rol, SessionProfile } from "@/modules/auth/session";
-import { esPantallaCompleta, useMenuLateral } from "./menu-lateral";
+import { ROL_LABELS } from "@/modules/auth/roles";
+import type { SessionProfile } from "@/modules/auth/session";
+import { useMenuLateral } from "./menu-lateral";
+import { iniciales, useCerrarSesion } from "./use-cerrar-sesion";
 
-function AppBrand({
+export function AppBrand({
   comercioNombre,
   logoUrl,
   className,
@@ -50,7 +44,7 @@ function AppBrand({
   const { first, rest } = splitBrandName(comercioNombre);
   return (
     <div className="flex min-w-0 items-center gap-2.5">
-      {/* Isotipo del UI kit: tres barras, la del medio en lima. */}
+      {/* Isotipo del UI kit: tres barras, la del medio en verde. */}
       <div
         aria-hidden="true"
         className="flex h-7 shrink-0 items-center gap-0.5"
@@ -67,134 +61,164 @@ function AppBrand({
   );
 }
 
-function RoleBadge({ rol }: { rol: Rol }) {
-  return <Badge variant={rolBadgeVariant(rol)}>{ROL_LABELS[rol]}</Badge>;
-}
-
-function SidebarLink({ link, active }: { link: NavLink; active: boolean }) {
+function MenuLink({ link, active }: { link: NavLink; active: boolean }) {
   const Icon = link.icon;
   return (
     <Link
       href={link.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "relative flex h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors",
+        "flex h-12 items-center gap-3 rounded-full pr-4 pl-1.5 text-[15px] transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
         active
-          ? "bg-accent font-bold text-primary"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          ? "bg-accent font-semibold text-accent-foreground"
+          : "text-foreground hover:bg-muted",
       )}
     >
-      <Icon size={18} aria-hidden="true" />
+      <span
+        className={cn(
+          "grid size-9 shrink-0 place-items-center rounded-full",
+          active ? "bg-primary text-primary-foreground" : "bg-muted",
+        )}
+      >
+        <Icon size={18} aria-hidden="true" />
+      </span>
       {link.label}
-      {active && (
-        <span
-          aria-hidden="true"
-          className="absolute right-0 h-4.5 w-[3px] rounded-l-sm bg-primary"
-        />
-      )}
     </Link>
   );
 }
 
-export function Navigation({ profile }: { profile: SessionProfile }) {
+// Panel que se abre encima de la pantalla, en todos los tamaños: el contenido usa todo el ancho.
+function MenuLateralPanel({
+  profile,
+  links,
+  activeHref,
+}: {
+  profile: SessionProfile;
+  links: readonly NavLink[];
+  activeHref: string | undefined;
+}) {
   const pathname = usePathname();
-  const rol = profile.rol;
-  const comercioNombre = profile.comercio;
-  const logoUrl = profile.logo_url;
-
-  const links = getNavLinks(rol);
-  const { barra, mas } = getMobileNav(rol);
-  const [masAbierto, setMasAbierto] = useState(false);
-  const activeHref = links.find(
-    (link) => pathname === link.href || pathname.startsWith(`${link.href}/`),
-  )?.href;
-
-  const masActivo = mas.some((link) => link.href === activeHref);
-
-  // En el punto de venta la barra no queda fija: se abre encima con el botón Menú.
-  const flotante = esPantallaCompleta(pathname);
   const { abiertoEn, setAbiertoEn } = useMenuLateral();
-  const menuAbierto = flotante && abiertoEn === pathname;
-  const asideRef = useRef<HTMLElement>(null);
-  const cerrarMenu = () => setAbiertoEn(null);
+  const abierto = abiertoEn === pathname;
+  const panelRef = useRef<HTMLElement>(null);
+  const cerrarSesion = useCerrarSesion();
+  const cerrar = () => setAbiertoEn(null);
 
   useEffect(() => {
-    if (!menuAbierto) return;
-    asideRef.current?.querySelector<HTMLElement>("a")?.focus();
+    if (!abierto) return;
+    // Al cerrar, el foco vuelve a donde estaba (la hamburguesa o "Más").
+    const previo = document.activeElement as HTMLElement | null;
+    panelRef.current
+      ?.querySelector<HTMLElement>("a[aria-current=page], a")
+      ?.focus();
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") setAbiertoEn(null);
     }
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [menuAbierto, setAbiertoEn]);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      previo?.focus();
+    };
+  }, [abierto, setAbiertoEn]);
+
+  if (!abierto) return null;
 
   return (
     <>
-      {menuAbierto && (
-        <div
-          aria-hidden="true"
-          onClick={cerrarMenu}
-          className="fixed inset-0 z-40 hidden bg-foreground/40 lg:block"
-        />
-      )}
-
-      {/* Escritorio: barra lateral fija; en el punto de venta, panel que se abre encima. */}
+      <div
+        aria-hidden="true"
+        onClick={cerrar}
+        className="fixed inset-0 z-50 bg-foreground/30 backdrop-blur-[2px] animate-in fade-in-0 print:hidden"
+      />
       <aside
-        ref={asideRef}
+        ref={panelRef}
         id="menu-lateral"
-        role={flotante ? "dialog" : undefined}
-        aria-modal={menuAbierto ? true : undefined}
-        aria-label={flotante ? "Menú" : undefined}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menú"
         onClick={(e) => {
           // Elegir una opción cierra el panel, también si es la pantalla actual.
-          if ((e.target as HTMLElement).closest("a")) cerrarMenu();
+          if ((e.target as HTMLElement).closest("a")) cerrar();
         }}
-        className={cn(
-          "fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar px-4 pt-7 pb-5",
-          flotante
-            ? cn("z-50 shadow-xl", menuAbierto && "lg:flex")
-            : "z-40 lg:flex",
-        )}
+        className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col gap-6 bg-sidebar p-3 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-2xl animate-in slide-in-from-left duration-200 print:hidden"
       >
-        <div className="px-2">
-          <AppBrand
-            comercioNombre={comercioNombre}
-            logoUrl={logoUrl}
-            className="max-h-24"
-          />
+        <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-muted p-1.5 pr-4">
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+              {iniciales(profile.nombre)}
+            </span>
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate text-sm font-semibold">
+                {profile.nombre}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {ROL_LABELS[profile.rol]}
+              </span>
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={cerrar}
+            aria-label="Cerrar menú"
+            className="grid size-11 shrink-0 place-items-center rounded-full bg-destructive-soft text-destructive transition-colors hover:bg-destructive/15 focus-visible:ring-2 focus-visible:ring-destructive focus-visible:outline-none"
+          >
+            <X aria-hidden="true" className="size-5" />
+          </button>
         </div>
-        <nav aria-label="Principal" className="mt-8 flex flex-col gap-1">
-          <span className="px-3 pb-2 text-[0.625rem] font-bold tracking-widest text-muted-foreground uppercase">
-            Menú
-          </span>
+
+        <nav
+          aria-label="Principal"
+          className="-mx-1 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-1"
+        >
           {links.map((link) => (
-            <SidebarLink
+            <MenuLink
               key={link.href}
               link={link}
               active={activeHref === link.href}
             />
           ))}
         </nav>
-        <div className="mt-auto flex items-center gap-2.5 border-t border-border px-1 pt-4">
-          <span className="text-xs text-muted-foreground">Ingresaste como</span>
-          <RoleBadge rol={rol} />
-        </div>
+
+        <button
+          type="button"
+          onClick={cerrarSesion}
+          className="flex h-13 items-center justify-between rounded-full bg-muted pr-1.5 pl-4 text-[15px] font-medium transition-colors hover:bg-destructive-soft focus-visible:ring-2 focus-visible:ring-destructive focus-visible:outline-none"
+        >
+          Cerrar sesión
+          <span className="grid size-10 place-items-center rounded-full bg-destructive text-white">
+            <LogOut aria-hidden="true" className="size-4" />
+          </span>
+        </button>
       </aside>
+    </>
+  );
+}
 
-      {/* Celular y tablet: cabecera */}
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-2 border-b border-border bg-card/90 px-4 backdrop-blur-md lg:hidden">
-        <AppBrand
-          comercioNombre={comercioNombre}
-          logoUrl={logoUrl}
-          className="max-h-11"
-        />
-        <RoleBadge rol={rol} />
-      </header>
+export function Navigation({ profile }: { profile: SessionProfile }) {
+  const pathname = usePathname();
+  const rol = profile.rol;
 
-      {/* Celular y tablet: navegación inferior */}
+  const links = getNavLinks(rol);
+  const { barra, mas } = getMobileNav(rol);
+  const { abiertoEn, setAbiertoEn } = useMenuLateral();
+  const activeHref = links.find(
+    (link) => pathname === link.href || pathname.startsWith(`${link.href}/`),
+  )?.href;
+
+  const masActivo = mas.some((link) => link.href === activeHref);
+
+  return (
+    <>
+      <MenuLateralPanel
+        profile={profile}
+        links={links}
+        activeHref={activeHref}
+      />
+
+      {/* Celular y tablet: navegación inferior, a mano del pulgar. "Más" abre el mismo panel. */}
       <nav
-        aria-label="Principal"
-        className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(4rem+env(safe-area-inset-bottom))] items-center border-t border-border bg-card px-2 pb-[env(safe-area-inset-bottom)] lg:hidden print:hidden"
+        aria-label="Accesos"
+        className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(4rem+env(safe-area-inset-bottom))] items-center bg-card px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_0_var(--border),0_-6px_16px_rgba(16,24,40,0.04)] lg:hidden print:hidden"
       >
         {barra.map((link) => {
           const active = activeHref === link.href;
@@ -208,17 +232,19 @@ export function Navigation({ profile }: { profile: SessionProfile }) {
             >
               <span
                 className={cn(
-                  "grid h-7 w-12 place-items-center rounded-full transition-colors",
-                  active ? "bg-accent text-primary" : "text-muted-foreground",
+                  "grid h-8 w-12 place-items-center rounded-full transition-colors",
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground",
                 )}
               >
                 <Icon size={19} aria-hidden="true" />
               </span>
               <span
                 className={cn(
-                  "text-[10px] leading-none",
+                  "text-[11px] leading-none",
                   active
-                    ? "font-bold text-primary"
+                    ? "font-semibold text-accent-foreground"
                     : "font-medium text-muted-foreground",
                 )}
               >
@@ -230,22 +256,26 @@ export function Navigation({ profile }: { profile: SessionProfile }) {
         {mas.length > 0 && (
           <button
             type="button"
-            onClick={() => setMasAbierto(true)}
+            aria-expanded={abiertoEn === pathname}
+            aria-controls="menu-lateral"
+            onClick={() => setAbiertoEn(pathname)}
             className="flex flex-1 flex-col items-center justify-center gap-1 py-1"
           >
             <span
               className={cn(
-                "grid h-7 w-12 place-items-center rounded-full transition-colors",
-                masActivo ? "bg-accent text-primary" : "text-muted-foreground",
+                "grid h-8 w-12 place-items-center rounded-full transition-colors",
+                masActivo
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground",
               )}
             >
               <Menu size={19} aria-hidden="true" />
             </span>
             <span
               className={cn(
-                "text-[10px] leading-none",
+                "text-[11px] leading-none",
                 masActivo
-                  ? "font-bold text-primary"
+                  ? "font-semibold text-accent-foreground"
                   : "font-medium text-muted-foreground",
               )}
             >
@@ -254,21 +284,6 @@ export function Navigation({ profile }: { profile: SessionProfile }) {
           </button>
         )}
       </nav>
-
-      <Dialog open={masAbierto} onOpenChange={setMasAbierto}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Más opciones</DialogTitle>
-          </DialogHeader>
-          <nav aria-label="Más opciones" className="flex flex-col gap-1">
-            {mas.map((link) => (
-              <span key={link.href} onClick={() => setMasAbierto(false)}>
-                <SidebarLink link={link} active={activeHref === link.href} />
-              </span>
-            ))}
-          </nav>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

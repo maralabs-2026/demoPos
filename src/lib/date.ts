@@ -28,6 +28,18 @@ export function formatTime(iso: string): string {
   return timeFormatter.format(new Date(iso));
 }
 
+const fechaCortaFormatter = new Intl.DateTimeFormat("es-AR", {
+  timeZone: TIME_ZONE,
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+});
+
+// "jue 19 nov", para la barra superior.
+export function formatFechaCorta(now: Date = new Date()): string {
+  return fechaCortaFormatter.format(now).replace(",", "");
+}
+
 // Una fecha sin hora ("2026-10-24") a "24/10/2026". No pasa por Date: no tiene zona horaria que
 // convertir, y hacerlo la correría un día.
 export function formatDate(fecha: string): string {

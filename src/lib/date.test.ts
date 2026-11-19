@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { finDelDia, formatDateTime, inicioDelDia, todayISO } from "./date";
+import {
+  finDelDia,
+  formatDateTime,
+  formatFechaCorta,
+  inicioDelDia,
+  todayISO,
+} from "./date";
 
 describe("formatDateTime", () => {
   it("muestra la hora de Córdoba (UTC-3)", () => {
@@ -26,5 +32,17 @@ describe("día comercial con hora de corte", () => {
     expect(todayISO(madrugada, 6)).toBe("2026-02-09");
     // 10/02 a las 6:00 en Argentina: ya es el martes.
     expect(todayISO(new Date("2026-02-10T09:00:00Z"), 6)).toBe("2026-02-10");
+  });
+});
+
+describe("formatFechaCorta", () => {
+  it("muestra día de la semana, día y mes en la hora de Córdoba", () => {
+    expect(formatFechaCorta(new Date("2026-11-19T15:00:00Z"))).toBe(
+      "jue 19 nov",
+    );
+    // 01:30 UTC del 20 todavía es el 19 en Córdoba.
+    expect(formatFechaCorta(new Date("2026-11-20T01:30:00Z"))).toBe(
+      "jue 19 nov",
+    );
   });
 });
