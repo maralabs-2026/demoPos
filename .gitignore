@@ -50,3 +50,6 @@ next-env.d.ts
 
 # supabase cli
 /supabase/.temp/
+
+# claude code (local config and worktrees)
+.claude/
