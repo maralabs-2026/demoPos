@@ -11,6 +11,7 @@ import { estaVencido, hrefDeCaja } from "./gastos";
 import {
   estadoTransferencia,
   resumenTransferencias,
+  transferenciasPorResolver,
   type Transferencia,
 } from "./transferencias";
 import {
@@ -623,5 +624,51 @@ describe("verificarTransferenciaSchema", () => {
         estado: "llego",
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("transferenciasPorResolver", () => {
+  const t = (
+    createdAt: string,
+    monto: number,
+    estado?: "llego" | "no_llego",
+  ): Transferencia => ({
+    ventaPagoId: createdAt,
+    ventaId: createdAt,
+    createdAt,
+    monto,
+    medio: "Transferencia",
+    cajero: "Ana",
+    verificaciones: estado
+      ? [{ estado, createdAt: "2026-11-19T20:00:00.000Z", autor: "Dueño" }]
+      : [],
+  });
+  const diaDe = (iso: string) => iso.slice(0, 10);
+
+  it("las no llegadas de cualquier día y las sin verificar de días anteriores", () => {
+    const r = transferenciasPorResolver(
+      [
+        t("2026-11-19T10:00:00.000Z", 100), // hoy, sin verificar: no avisa
+        t("2026-11-18T10:00:00.000Z", 200.5),
+        t("2026-11-16T10:00:00.000Z", 300),
+        t("2026-11-19T11:00:00.000Z", 50, "no_llego"),
+        t("2026-11-17T11:00:00.000Z", 70, "no_llego"),
+        t("2026-11-15T11:00:00.000Z", 999, "llego"),
+      ],
+      "2026-11-19",
+      diaDe,
+    );
+    expect(r.sinVerificar).toEqual({
+      cantidad: 2,
+      monto: 500.5,
+      desde: "2026-11-16",
+    });
+    expect(r.noLlego).toEqual({ cantidad: 2, monto: 120, desde: "2026-11-17" });
+  });
+
+  it("sin nada por resolver, vacío", () => {
+    const r = transferenciasPorResolver([], "2026-11-19", diaDe);
+    expect(r.sinVerificar).toEqual({ cantidad: 0, monto: 0, desde: null });
+    expect(r.noLlego).toEqual({ cantidad: 0, monto: 0, desde: null });
   });
 });

@@ -48,8 +48,16 @@ export type {
   VentaDeCaja,
 } from "./cierre";
 export { estaVencido } from "./gastos";
-export { estadoTransferencia, resumenTransferencias } from "./transferencias";
-export type { EstadoTransferencia, Transferencia } from "./transferencias";
+export {
+  estadoTransferencia,
+  resumenTransferencias,
+  transferenciasPorResolver,
+} from "./transferencias";
+export type {
+  EstadoTransferencia,
+  PorResolver,
+  Transferencia,
+} from "./transferencias";
 export {
   abrirCajaSchema,
   cerrarCajaSchema,
