@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { estadoDiferencia, totalesCierre } from "./cierre";
+import {
+  desgloseCierre,
+  estadoDiferencia,
+  totalesCierre,
+  type PagoDeVenta,
+  type VentaDeCaja,
+} from "./cierre";
 import { estaVencido, hrefDeCaja } from "./gastos";
 import {
   cerrarCajaSchema,
@@ -299,5 +305,149 @@ describe("estadoDiferencia", () => {
     expect(estadoDiferencia(0)).toBe("cuadra");
     expect(estadoDiferencia(0.01)).toBe("sobra");
     expect(estadoDiferencia(-0.01)).toBe("falta");
+  });
+});
+
+describe("desgloseCierre", () => {
+  const EFECTIVO = "11111111-1111-4111-8111-111111111111";
+  const DEBITO = "22222222-2222-4222-8222-222222222222";
+  const CERRADA = "2026-11-18T20:00:00.000Z";
+
+  const venta = (
+    id: string,
+    createdAt: string,
+    pagos: PagoDeVenta[],
+    extra: Partial<VentaDeCaja> = {},
+  ): VentaDeCaja => ({
+    id,
+    createdAt,
+    cajero: "Ana",
+    anulada: false,
+    anuladaAt: null,
+    pagos,
+    ...extra,
+  });
+
+  const lineas = (efectivo: number, debito: number) => [
+    {
+      medioPagoId: EFECTIVO,
+      nombre: "Efectivo",
+      esperado: efectivo,
+      contado: 0,
+      diferencia: 0,
+    },
+    {
+      medioPagoId: DEBITO,
+      nombre: "Débito",
+      esperado: debito,
+      contado: 0,
+      diferencia: 0,
+    },
+  ];
+
+  it("arma el esperado con ventas, fondo, ingresos y retiros", () => {
+    const ventas = [
+      venta("b", "2026-11-18T15:00:00.000Z", [
+        { medioPagoId: EFECTIVO, monto: 2500 },
+      ]),
+      venta("a", "2026-11-18T14:00:00.000Z", [
+        { medioPagoId: EFECTIVO, monto: 2500 },
+      ]),
+      venta("c", "2026-11-18T16:00:00.000Z", [
+        { medioPagoId: DEBITO, monto: 2500 },
+      ]),
+    ];
+    const d = desgloseCierre(lineas(5200, 2500), ventas, {
+      cerradaAt: CERRADA,
+      fondo: 1000,
+      ingresos: 200,
+      retiros: 1000,
+    });
+    const efectivo = d.get(EFECTIVO)!;
+    expect(efectivo.ventas.map((v) => v.id)).toEqual(["a", "b"]);
+    expect(efectivo.totalVentas).toBe(5000);
+    expect(efectivo.caja).toEqual({
+      fondo: 1000,
+      ingresos: 200,
+      retiros: 1000,
+    });
+    expect(efectivo.sinDetalle).toBe(0);
+    const debito = d.get(DEBITO)!;
+    expect(debito.totalVentas).toBe(2500);
+    expect(debito.caja).toBeNull();
+    expect(debito.sinDetalle).toBe(0);
+  });
+
+  it("reparte un pago combinado entre sus medios", () => {
+    const ventas = [
+      venta("a", "2026-11-18T14:00:00.000Z", [
+        { medioPagoId: EFECTIVO, monto: 1000.1 },
+        { medioPagoId: DEBITO, monto: 1500.2 },
+      ]),
+    ];
+    const d = desgloseCierre(lineas(1000.1, 1500.2), ventas, {
+      cerradaAt: CERRADA,
+      fondo: 0,
+      ingresos: 0,
+      retiros: 0,
+    });
+    expect(d.get(EFECTIVO)!.ventas[0]).toMatchObject({
+      monto: 1000.1,
+      combinado: true,
+    });
+    expect(d.get(DEBITO)!.ventas[0]).toMatchObject({
+      monto: 1500.2,
+      combinado: true,
+    });
+    expect(d.get(EFECTIVO)!.caja).toBeNull();
+    expect(d.get(DEBITO)!.sinDetalle).toBe(0);
+  });
+
+  it("una anulada antes del cierre no suma; una anulada después, sí", () => {
+    const ventas = [
+      venta(
+        "antes",
+        "2026-11-18T14:00:00.000Z",
+        [{ medioPagoId: DEBITO, monto: 700 }],
+        {
+          anulada: true,
+          anuladaAt: "2026-11-18T19:00:00.000Z",
+        },
+      ),
+      venta(
+        "despues",
+        "2026-11-18T15:00:00.000Z",
+        [{ medioPagoId: DEBITO, monto: 300 }],
+        {
+          anulada: true,
+          anuladaAt: "2026-11-19T10:00:00.000Z",
+        },
+      ),
+    ];
+    const d = desgloseCierre(lineas(0, 300), ventas, {
+      cerradaAt: CERRADA,
+      fondo: 0,
+      ingresos: 0,
+      retiros: 0,
+    });
+    const debito = d.get(DEBITO)!;
+    expect(debito.ventas.map((v) => v.anulada)).toEqual(["antes", "despues"]);
+    expect(debito.totalVentas).toBe(300);
+    expect(debito.sinDetalle).toBe(0);
+  });
+
+  it("lo que no se explica queda a la vista", () => {
+    const d = desgloseCierre(lineas(1000, 50), [], {
+      cerradaAt: CERRADA,
+      fondo: 1000,
+      ingresos: 0,
+      retiros: 0,
+    });
+    expect(d.get(EFECTIVO)!.caja).toEqual({
+      fondo: 1000,
+      ingresos: 0,
+      retiros: 0,
+    });
+    expect(d.get(DEBITO)!.sinDetalle).toBe(50);
   });
 });

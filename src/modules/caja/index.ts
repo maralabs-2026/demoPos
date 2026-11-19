@@ -19,6 +19,7 @@ export {
   getHistorialCajas,
   getMediosAContar,
   getMovimientosCaja,
+  getVentasCaja,
 } from "./queries";
 export type {
   CajaAbierta,
@@ -29,8 +30,13 @@ export type {
   MedioAContar,
   MovimientoCaja,
 } from "./queries";
-export { estadoDiferencia, totalesCierre } from "./cierre";
-export type { EstadoDiferencia, LineaCierre } from "./cierre";
+export { desgloseCierre, estadoDiferencia, totalesCierre } from "./cierre";
+export type {
+  DesgloseMedio,
+  EstadoDiferencia,
+  LineaCierre,
+  VentaDeCaja,
+} from "./cierre";
 export { estaVencido } from "./gastos";
 export {
   abrirCajaSchema,

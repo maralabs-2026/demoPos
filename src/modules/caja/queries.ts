@@ -1,6 +1,6 @@
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import type { LineaCierre } from "./cierre";
+import type { LineaCierre, VentaDeCaja } from "./cierre";
 import { hrefDeCaja } from "./gastos";
 
 export type CajaAbierta = {
@@ -373,4 +373,48 @@ export async function getCajaCerrada(
 
   if (error) return fail("No se pudo leer el cierre.");
   return ok(data ? aCajaCerrada(data) : null);
+}
+
+type VentaCajaRow = {
+  id: string;
+  created_at: string;
+  estado: string;
+  anulada_at: string | null;
+  cajero: Persona;
+  venta_pagos: { medio_pago_id: string; monto: number }[];
+};
+
+// Tope de seguridad: un turno de kiosco no llega ni cerca.
+const VENTAS_CAJA_LIMITE = 5000;
+
+// Las ventas de una caja con sus pagos, para mostrar qué forma el esperado de cada medio. La RLS
+// decide cuáles se ven: el cajero, las suyas; dueño y encargado, todas.
+export async function getVentasCaja(
+  cajaId: string,
+): Promise<ActionResult<VentaDeCaja[]>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("ventas")
+    .select(
+      "id, created_at, estado, anulada_at, cajero:perfiles!ventas_usuario_id_comercio_id_fkey(nombre), venta_pagos(medio_pago_id, monto)",
+    )
+    .eq("caja_id", cajaId)
+    .order("created_at", { ascending: true })
+    .limit(VENTAS_CAJA_LIMITE)
+    .overrideTypes<VentaCajaRow[]>();
+
+  if (error) return fail("No se pudieron leer las ventas de la caja.");
+  return ok(
+    data.map((v) => ({
+      id: v.id,
+      createdAt: v.created_at,
+      cajero: v.cajero?.nombre ?? "Otro usuario",
+      anulada: v.estado === "anulada",
+      anuladaAt: v.anulada_at,
+      pagos: v.venta_pagos.map((p) => ({
+        medioPagoId: p.medio_pago_id,
+        monto: Number(p.monto),
+      })),
+    })),
+  );
 }
