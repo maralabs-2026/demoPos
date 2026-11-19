@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { History, Receipt, Truck, Wallet, type LucideIcon } from "lucide-react";
-import { BotonMenu, canAccess, type AppRoute, type Rol } from "@/modules/auth";
+import { canAccess, type AppRoute, type Rol } from "@/modules/auth";
 import { cn } from "@/lib/utils";
 
 type Acceso = {
@@ -36,8 +36,6 @@ export function AccesosVenta({ rol }: { rol: Rol }) {
       aria-label="Accesos rápidos"
       className="hidden items-center gap-2 lg:flex"
     >
-      {/* Sin barra lateral en el punto de venta: el resto de la app se abre desde acá. */}
-      <BotonMenu className="shrink-0" />
       <ul className="grid flex-1 auto-cols-fr grid-flow-col gap-2">
         {accesos.map(({ href, label, icon: Icon, color }) => (
           <li key={href}>

@@ -7,21 +7,28 @@ import "./globals.css";
 // next/font/google el build bajaba los archivos de Google en cada deploy y fallaba si Google
 // respondía raro; así el build no depende de un servicio externo.
 
-// DM Sans: tipografía del UI kit POS. Archivo variable: cubre todos los pesos.
-const dmSans = localFont({
-  variable: "--font-sans",
-  src: "./fonts/dm-sans-latin-variable.woff2",
-  weight: "100 1000",
+// Urbanist: tipografía de la interfaz. Archivo variable: cubre todos los pesos.
+const urbanist = localFont({
+  variable: "--font-urbanist",
+  src: "./fonts/urbanist-latin-variable.woff2",
+  weight: "100 900",
   display: "swap",
 });
 
-// Manrope para montos y títulos; IBM Plex Mono para códigos de barras y atajos (Mostrador).
-const manrope = localFont({
-  variable: "--font-manrope",
+// Urbanist no tiene números de ancho fijo (tabular-nums no hace nada) y los montos tienen que
+// quedar alineados en tablas y tickets. Por eso los dígitos salen de Manrope: esta cara cubre
+// solo 0-9 y va primera en la pila de fuentes (globals.css).
+const digits = localFont({
+  variable: "--font-digits",
   src: "./fonts/manrope-latin-variable.woff2",
   weight: "200 800",
   display: "swap",
+  declarations: [{ prop: "unicode-range", value: "U+0030-0039" }],
+  // Sin esto next/font suma un respaldo Arial que cubre todas las letras y le gana a Urbanist.
+  adjustFontFallback: false,
 });
+
+// IBM Plex Mono para códigos de barras y atajos.
 
 const plexMono = localFont({
   variable: "--font-plex-mono",
@@ -49,7 +56,7 @@ export default function RootLayout({
   return (
     <html
       lang="es-AR"
-      className={`${dmSans.variable} ${manrope.variable} ${plexMono.variable}`}
+      className={`${urbanist.variable} ${digits.variable} ${plexMono.variable}`}
     >
       <body className="antialiased">
         {children}

@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CategoryTabs } from "@/components/ui/category-tabs";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
@@ -30,7 +29,6 @@ import { QuickAmounts } from "@/components/ui/quick-amounts";
 import { toast } from "@/components/ui/toaster";
 import type { MedioPago } from "@/modules/config";
 import { CamaraCodigo } from "@/components/camara-codigo";
-import { FotoProducto } from "@/components/foto-producto";
 import type { Producto } from "@/modules/productos";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
@@ -57,6 +55,11 @@ import {
   type LineaCobrada,
 } from "../sin-conexion";
 import { AvisoSinConexion } from "./aviso-sin-conexion";
+import {
+  CategoriasVenta,
+  TarjetaProducto,
+  VisualProducto,
+} from "./catalogo-venta";
 import { CobroQr, type ConfigQr } from "./cobro-qr";
 import { ComprobanteView } from "./comprobante-view";
 
@@ -112,71 +115,6 @@ const SIN_LIMITE = 9999;
 
 function disponible(producto: Producto): number {
   return producto.controlaStock ? producto.stockActual : SIN_LIMITE;
-}
-
-// Stock del celular: corto, con el mismo color de alerta que el StockChip.
-function StockCorto({ producto }: { producto: Producto }) {
-  if (!producto.controlaStock) {
-    return (
-      <span className="text-xs whitespace-nowrap text-muted-foreground lg:hidden">
-        Servicio
-      </span>
-    );
-  }
-  const sin = producto.stockActual <= 0;
-  const bajo = !sin && producto.stockActual < producto.stockMinimo;
-  return (
-    <span
-      className={cn(
-        "text-xs whitespace-nowrap tabular-nums lg:hidden",
-        sin
-          ? "font-semibold text-destructive"
-          : bajo
-            ? "font-semibold text-warning-foreground"
-            : "text-muted-foreground",
-      )}
-    >
-      {sin ? "Sin stock" : `${producto.stockActual} u.`}
-    </span>
-  );
-}
-
-// Estado del stock como en el StockChip de Mostrador: al día, bajo el mínimo o sin stock.
-function StockChip({ producto }: { producto: Producto }) {
-  if (!producto.controlaStock) {
-    return (
-      <span className="inline-flex h-[22px] items-center self-start rounded-full border border-border bg-card px-2 text-xs font-semibold whitespace-nowrap text-muted-foreground">
-        Servicio
-      </span>
-    );
-  }
-  const sin = producto.stockActual <= 0;
-  const bajo = !sin && producto.stockActual < producto.stockMinimo;
-  return (
-    <span
-      className={cn(
-        "inline-flex h-[22px] items-center gap-1.5 self-start rounded-full px-2 text-xs font-semibold whitespace-nowrap tabular-nums",
-        sin
-          ? "bg-destructive-soft text-destructive"
-          : bajo
-            ? "bg-warning-soft text-warning-foreground"
-            : "border border-border bg-card text-muted-foreground",
-      )}
-    >
-      <span
-        aria-hidden="true"
-        className={cn(
-          "size-1.5 rounded-full",
-          sin ? "bg-destructive" : bajo ? "bg-warning" : "bg-success",
-        )}
-      />
-      {sin
-        ? "Sin stock"
-        : bajo
-          ? `Bajo · ${producto.stockActual}`
-          : `Stock ${producto.stockActual}`}
-    </span>
-  );
 }
 
 function KeyHint({ children }: { children: React.ReactNode }) {
@@ -803,6 +741,18 @@ export function VentaScreen({
       ),
     ),
   ];
+  // Índice de cada categoría (sin "Todos"): fija su color en las tarjetas y en el ticket.
+  const indiceCategoria = new Map(categorias.slice(1).map((c, i) => [c, i]));
+  const indiceDe = (nombre: string | null) =>
+    nombre ? (indiceCategoria.get(nombre) ?? 0) : 0;
+  const categoriasConCantidad = categorias.map((c) => ({
+    nombre: c,
+    cantidad:
+      c === TODAS
+        ? productos.length
+        : productos.filter((p) => p.categoriaNombre === c).length,
+  }));
+  const productoPorId = new Map(productos.map((p) => [p.id, p]));
   const termino = busqueda.trim().toLowerCase();
   const catalogo = productos.filter(
     (p) =>
@@ -833,9 +783,9 @@ export function VentaScreen({
       <section
         aria-label="Catálogo"
         inert={panel !== null}
-        className="flex min-w-0 flex-[999_1_560px] flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-8rem)] lg:gap-0 lg:overflow-hidden lg:rounded-2xl lg:border lg:border-border lg:bg-card lg:shadow-[0_1px_2px_rgba(15,23,42,0.06)]"
+        className="flex min-w-0 flex-[999_1_560px] flex-col gap-3 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-12rem)] lg:gap-0 lg:overflow-hidden"
       >
-        <div className="relative lg:m-4 lg:mb-0">
+        <div className="relative">
           <Search
             aria-hidden="true"
             className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground"
@@ -852,7 +802,7 @@ export function VentaScreen({
                 handleBuscarSubmit();
               }
             }}
-            className="h-12 rounded-xl border-primary pr-12 pl-12 text-base shadow-[0_0_0_3px_var(--accent)] sm:pr-20 md:text-base"
+            className="h-12 rounded-full border-primary pr-12 pl-12 text-base shadow-[0_0_0_3px_var(--accent)] sm:pr-20 md:text-base"
           />
           <span className="absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-1 text-muted-foreground">
             <CamaraCodigo onCodigo={(codigo) => handleBuscarSubmit(codigo)} />
@@ -865,92 +815,40 @@ export function VentaScreen({
         {error && !panel && (
           <p
             role="alert"
-            className="flex items-center gap-2 rounded-lg bg-destructive-soft px-4 py-3 text-sm font-medium text-destructive lg:mx-4 lg:mt-3"
+            className="flex items-center gap-2 rounded-lg bg-destructive-soft px-4 py-3 text-sm font-medium text-destructive lg:mt-3"
           >
             <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
             {error}
           </p>
         )}
 
-        <div className="lg:mt-4 lg:border-y lg:border-border lg:px-4 lg:py-3">
-          <CategoryTabs
-            items={categorias.map((c) => ({ value: c, label: c }))}
-            value={categoria}
-            onValueChange={setCategoria}
-            // En escritorio, píldoras sueltas con borde, como chips.
-            className="lg:gap-2 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:[&>button]:h-9 lg:[&>button]:border lg:[&>button]:border-border lg:[&>button]:px-4 lg:[&>button]:text-sm lg:[&>button[aria-pressed=true]]:border-foreground lg:[&>button[aria-pressed=false]]:text-foreground lg:[&>button[aria-pressed=false]]:hover:bg-muted"
+        <div className="lg:mt-4">
+          <CategoriasVenta
+            categorias={categoriasConCantidad}
+            todas={TODAS}
+            valor={categoria}
+            onCambiar={setCategoria}
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(176px,1fr))] lg:min-h-0 lg:flex-1 lg:auto-rows-max lg:content-start lg:overflow-y-auto lg:bg-muted lg:p-4">
-          {catalogo.map((producto) => {
-            const sinStock = disponible(producto) <= 0;
-            const enTicket =
-              cart.find((i) => i.productoId === producto.id)?.cantidad ?? 0;
-            return (
-              <button
-                key={producto.id}
-                type="button"
-                aria-disabled={sinStock}
-                onClick={() => {
-                  agregarAlCarrito(producto);
-                  // Cierra el teclado si estaba buscando; en escritorio el foco vuelve enseguida.
-                  inputRef.current?.blur();
-                  enfocarBusqueda();
-                }}
-                className={cn(
-                  "relative flex min-w-0 flex-col gap-1.5 rounded-2xl border border-border bg-card p-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-colors hover:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none lg:gap-1 lg:overflow-hidden lg:p-0",
-                  enTicket > 0 &&
-                    "border-primary ring-1 ring-primary hover:border-primary",
-                  sinStock && "cursor-not-allowed opacity-55",
-                )}
-              >
-                <FotoProducto
-                  src={producto.fotoUrl}
-                  entera
-                  className="mb-1 h-28 w-full lg:mb-2 lg:h-[104px] lg:rounded-none lg:border-b lg:border-border lg:p-2"
-                />
-                <span className="absolute top-2 right-2 hidden lg:block">
-                  <StockChip producto={producto} />
-                </span>
-                {/* En escritorio, el texto va con margen propio: la foto ocupa el ancho de la tarjeta. */}
-                {enTicket > 0 && (
-                  <span className="absolute top-2 right-2 grid size-7 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground tabular-nums lg:right-auto lg:left-2">
-                    <span className="sr-only">En el ticket: </span>
-                    {enTicket}
-                  </span>
-                )}
-                {producto.categoriaNombre && (
-                  <span className="hidden truncate px-3 text-[11px] font-bold tracking-wide text-muted-foreground uppercase lg:block">
-                    {producto.categoriaNombre}
-                  </span>
-                )}
-                <span className="line-clamp-2 min-h-[38px] text-sm leading-[19px] font-semibold lg:px-3 lg:uppercase">
-                  {producto.nombre}
-                </span>
-                <span className="hidden truncate px-3 font-mono text-xs text-muted-foreground lg:block">
-                  {producto.codigoBarras}
-                </span>
-                <span className="mt-0.5 flex items-center justify-between gap-2 lg:mt-2 lg:items-center lg:border-t lg:border-border lg:px-3 lg:py-2.5">
-                  <span className="font-display text-lg leading-[22px] font-extrabold tabular-nums lg:text-xl">
-                    {formatCurrency(producto.precio, { decimals: 0 })}
-                  </span>
-                  <StockCorto producto={producto} />
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "hidden size-9 place-items-center rounded-[10px] lg:grid",
-                      sinStock
-                        ? "bg-muted text-muted-foreground"
-                        : "bg-primary text-primary-foreground",
-                    )}
-                  >
-                    <Plus className="size-4" />
-                  </span>
-                </span>
-              </button>
-            );
-          })}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] lg:min-h-0 lg:flex-1 lg:auto-rows-max lg:content-start lg:overflow-y-auto lg:px-1 lg:pt-3 lg:pb-2">
+          {catalogo.map((producto) => (
+            <TarjetaProducto
+              key={producto.id}
+              producto={producto}
+              indiceCategoria={indiceDe(producto.categoriaNombre)}
+              sinStock={disponible(producto) <= 0}
+              enTicket={
+                cart.find((i) => i.productoId === producto.id)?.cantidad ?? 0
+              }
+              onAgregar={() => {
+                agregarAlCarrito(producto);
+                // Cierra el teclado si estaba buscando; en escritorio el foco vuelve enseguida.
+                inputRef.current?.blur();
+                enfocarBusqueda();
+              }}
+            />
+          ))}
           {catalogo.length === 0 && (
             <p className="col-span-full py-10 text-center text-sm text-muted-foreground">
               No hay productos que coincidan con la búsqueda.
@@ -975,7 +873,7 @@ export function VentaScreen({
         role={panel ? "dialog" : undefined}
         aria-modal={panel ? true : undefined}
         className={cn(
-          "w-full min-w-0 gap-2.5 p-4 lg:static lg:flex lg:max-h-none lg:min-h-[calc(100dvh-8rem)] lg:max-w-[460px] lg:flex-[1_1_360px] lg:overflow-visible lg:rounded-2xl",
+          "w-full min-w-0 gap-2.5 p-4 lg:static lg:flex lg:max-h-none lg:min-h-[calc(100dvh-12rem)] lg:max-w-[460px] lg:flex-[1_1_360px] lg:overflow-visible lg:rounded-2xl",
           panel
             ? "fixed inset-x-0 bottom-0 z-50 max-h-[88dvh] overflow-y-auto rounded-t-3xl rounded-b-none pb-[calc(1rem+env(safe-area-inset-bottom))]"
             : "hidden",
@@ -1044,7 +942,7 @@ export function VentaScreen({
         )}
 
         {cart.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 border-y border-border py-8 text-center lg:flex-1 lg:justify-center">
+          <div className="flex flex-col items-center gap-2 border-t border-dashed border-border py-8 text-center lg:flex-1 lg:justify-center">
             {logoUrl ? (
               // Logo del comercio en grises, como en el ticket impreso. Decorativo: el texto explica.
               <Image
@@ -1081,103 +979,120 @@ export function VentaScreen({
                 comboDescuento: beneficio?.comboDescuento ?? 0,
                 promoDescuento: beneficio?.promoDescuento ?? 0,
               });
+              const producto = productoPorId.get(item.productoId);
               return (
                 <li
                   key={item.productoId}
-                  className="flex flex-col gap-1.5 border-b border-border py-2.5 last:border-0"
+                  className="flex gap-3 border-b border-dashed border-border py-3 last:border-0"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="line-clamp-2 min-w-0 text-sm leading-[19px] font-semibold">
-                      {item.nombre}
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={`Quitar ${item.nombre}`}
-                      className="-mt-1 -mr-1 shrink-0"
-                      onClick={() => quitarDelCarrito(item.productoId)}
-                    >
-                      <X />
-                    </Button>
-                  </div>
-                  {beneficio?.nombre && (
-                    <p className="flex items-start gap-1.5 self-start rounded-md bg-success-soft px-2 py-1 text-xs leading-4 font-semibold text-success-text">
-                      <Tag
-                        aria-hidden="true"
-                        className="mt-0.5 size-3 shrink-0"
-                      />
-                      <span className="min-w-0 break-words">
-                        Promo: {beneficio.nombre}
-                      </span>
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                    {item.precioLibre ? (
-                      <label className="flex items-center gap-1">
-                        Precio
-                        <MoneyInput
-                          id={`precio-${item.productoId}`}
-                          aria-label={`Precio de ${item.nombre}`}
-                          placeholder="$ 0"
-                          value={item.precio > 0 ? item.precio : null}
-                          onValueChange={(valor) =>
-                            cambiarPrecioLinea(item.productoId, valor)
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              enfocarBusqueda();
-                            }
-                          }}
-                          className="h-7 w-24 text-right text-sm font-semibold tabular-nums"
-                        />
-                        c/u
-                      </label>
-                    ) : (
-                      <span className="tabular-nums">
-                        {formatCurrency(item.precio, { decimals: 0 })} c/u
-                      </span>
+                  <VisualProducto
+                    producto={{
+                      nombre: item.nombre,
+                      fotoUrl: producto?.fotoUrl ?? null,
+                    }}
+                    indiceCategoria={indiceDe(
+                      producto?.categoriaNombre ?? null,
                     )}
-                    <label className="flex items-center gap-1">
-                      Desc.
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        aria-label={`Descuento de ${item.nombre} en porcentaje`}
-                        placeholder="0"
-                        value={item.descuentoPct || ""}
-                        onChange={(e) =>
-                          cambiarDescuentoLinea(item.productoId, e.target.value)
-                        }
-                        className="h-6 w-11 rounded-md border border-input bg-card px-1.5 text-right text-xs tabular-nums focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                      />
-                      %
-                    </label>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <QuantityStepper
-                      value={item.cantidad}
-                      max={item.stockDisponible}
-                      label={item.nombre}
-                      onDecrement={() =>
-                        actualizarCantidad(item.productoId, item.cantidad - 1)
-                      }
-                      onIncrement={() =>
-                        actualizarCantidad(item.productoId, item.cantidad + 1)
-                      }
-                      onValueChange={(n) =>
-                        actualizarCantidad(item.productoId, n)
-                      }
-                      onEnter={enfocarBusqueda}
-                    />
-                    <p className="text-right font-display text-[15px] font-bold tabular-nums">
-                      {descuentoLinea > 0 && (
-                        <span className="block text-xs font-medium text-muted-foreground line-through">
-                          {formatCurrency(bruto, { decimals: 0 })}
+                    chico
+                    className="size-14"
+                  />
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="line-clamp-2 min-w-0 text-sm leading-[19px] font-semibold">
+                        {item.nombre}
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Quitar ${item.nombre}`}
+                        className="-mt-1 -mr-1 shrink-0"
+                        onClick={() => quitarDelCarrito(item.productoId)}
+                      >
+                        <X />
+                      </Button>
+                    </div>
+                    {beneficio?.nombre && (
+                      <p className="flex items-start gap-1.5 self-start rounded-md bg-success-soft px-2 py-1 text-xs leading-4 font-semibold text-success-text">
+                        <Tag
+                          aria-hidden="true"
+                          className="mt-0.5 size-3 shrink-0"
+                        />
+                        <span className="min-w-0 break-words">
+                          Promo: {beneficio.nombre}
+                        </span>
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                      {item.precioLibre ? (
+                        <label className="flex items-center gap-1">
+                          Precio
+                          <MoneyInput
+                            id={`precio-${item.productoId}`}
+                            aria-label={`Precio de ${item.nombre}`}
+                            placeholder="$ 0"
+                            value={item.precio > 0 ? item.precio : null}
+                            onValueChange={(valor) =>
+                              cambiarPrecioLinea(item.productoId, valor)
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                enfocarBusqueda();
+                              }
+                            }}
+                            className="h-7 w-24 text-right text-sm font-semibold tabular-nums"
+                          />
+                          c/u
+                        </label>
+                      ) : (
+                        <span className="tabular-nums">
+                          {formatCurrency(item.precio, { decimals: 0 })} c/u
                         </span>
                       )}
-                      {formatCurrency(bruto - descuentoLinea)}
-                    </p>
+                      <label className="flex items-center gap-1">
+                        Desc.
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          aria-label={`Descuento de ${item.nombre} en porcentaje`}
+                          placeholder="0"
+                          value={item.descuentoPct || ""}
+                          onChange={(e) =>
+                            cambiarDescuentoLinea(
+                              item.productoId,
+                              e.target.value,
+                            )
+                          }
+                          className="h-6 w-11 rounded-md border border-input bg-card px-1.5 text-right text-xs tabular-nums focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        />
+                        %
+                      </label>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <QuantityStepper
+                        value={item.cantidad}
+                        max={item.stockDisponible}
+                        label={item.nombre}
+                        onDecrement={() =>
+                          actualizarCantidad(item.productoId, item.cantidad - 1)
+                        }
+                        onIncrement={() =>
+                          actualizarCantidad(item.productoId, item.cantidad + 1)
+                        }
+                        onValueChange={(n) =>
+                          actualizarCantidad(item.productoId, n)
+                        }
+                        onEnter={enfocarBusqueda}
+                      />
+                      <p className="text-right font-display text-[15px] font-bold tabular-nums">
+                        {descuentoLinea > 0 && (
+                          <span className="block text-xs font-medium text-muted-foreground line-through">
+                            {formatCurrency(bruto, { decimals: 0 })}
+                          </span>
+                        )}
+                        {formatCurrency(bruto - descuentoLinea)}
+                      </p>
+                    </div>
                   </div>
                 </li>
               );
@@ -1425,11 +1340,12 @@ export function VentaScreen({
 
         <div
           className={cn(
-            "flex flex-col gap-1 rounded-2xl border border-border bg-card px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.06)]",
+            // Resumen sin caja propia: separado del ticket con una línea punteada, como un ticket impreso.
+            "flex flex-col gap-1 border-t border-dashed border-border pt-3",
             panel === "cobro" && "hidden lg:flex",
           )}
         >
-          <div className="flex items-baseline justify-between border-b border-border pb-2 text-sm text-muted-foreground tabular-nums">
+          <div className="flex items-baseline justify-between pb-1 text-sm text-muted-foreground tabular-nums">
             <span>Artículos</span>
             <span
               data-testid="articulos-venta"
@@ -1477,7 +1393,7 @@ export function VentaScreen({
           </Button>
           <Button
             className={cn(
-              "h-14 w-full rounded-2xl text-[17px] shadow-[0_6px_16px_rgba(15,122,85,0.28)] disabled:shadow-none",
+              "h-14 w-full rounded-2xl text-[17px] shadow-[0_6px_16px_rgba(28,131,112,0.28)] disabled:shadow-none",
               panel === "carrito" && "hidden lg:inline-flex",
             )}
             variant="success"

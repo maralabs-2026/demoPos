@@ -110,13 +110,13 @@ test("celular: los accesos que no entran quedan en Más", async ({ page }) => {
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(360);
 
-  const barra = page.getByRole("navigation", { name: "Principal" }).last();
+  const barra = page.getByRole("navigation", { name: "Accesos" });
   await expect(barra.getByRole("link", { name: "Vender" })).toBeVisible();
   await expect(barra.getByRole("link", { name: "Reportes" })).toHaveCount(0);
 
   await barra.getByRole("button", { name: "Más" }).click();
   await page
-    .getByRole("navigation", { name: "Más opciones" })
+    .getByRole("navigation", { name: "Principal" })
     .getByRole("link", { name: "Reportes" })
     .click();
   await expect(page).toHaveURL(/\/reportes$/);

@@ -1,33 +1,29 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { usePathname } from "next/navigation";
 import { Navigation } from "@/modules/auth/components/navigation";
+import { MenuLateralProvider } from "@/modules/auth/components/menu-lateral";
 import {
-  esPantallaCompleta,
-  MenuLateralProvider,
-} from "@/modules/auth/components/menu-lateral";
+  BarraSuperior,
+  type EstadoCaja,
+} from "@/modules/auth/components/barra-superior";
 import type { SessionProfile } from "@/modules/auth/session";
-import { cn } from "@/lib/utils";
 
 export function AppShell({
   profile,
+  cajaAbierta,
   children,
 }: Readonly<{
   profile: SessionProfile;
+  cajaAbierta: EstadoCaja;
   children: ReactNode;
 }>) {
-  const pathname = usePathname();
+  // Sin barra lateral fija: el menú se abre encima y el contenido usa todo el ancho.
   return (
     <MenuLateralProvider>
       <Navigation profile={profile} />
-      <div
-        className={cn(
-          "pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0",
-          // En el punto de venta la pantalla usa todo el ancho: el menú se abre encima.
-          !esPantallaCompleta(pathname) && "lg:pl-60",
-        )}
-      >
+      <BarraSuperior profile={profile} cajaAbierta={cajaAbierta} />
+      <div className="pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
         {children}
       </div>
     </MenuLateralProvider>

@@ -37,7 +37,7 @@ function CategoryTabs<T extends string>({
             className={cn(
               "h-8 shrink-0 rounded-full px-3.5 text-xs whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-ring/25 focus-visible:outline-none",
               active
-                ? "bg-foreground font-semibold text-card"
+                ? "bg-primary font-semibold text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >

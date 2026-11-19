@@ -6,7 +6,7 @@ import { cn } from "cn";
 import { Minus, Plus } from "lucide-react";
 
 const stepperVariants = cva(
-  "inline-flex items-center justify-between rounded-full border border-border bg-card",
+  "inline-flex items-center justify-between rounded-full bg-muted",
   {
     variants: {
       size: {
@@ -70,7 +70,7 @@ function QuantityStepper({
   }
 
   const buttonClass =
-    "grid shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-40 aria-disabled:hover:bg-primary";
+    "grid shrink-0 place-items-center rounded-full border border-border bg-card text-foreground shadow-[0_1px_2px_rgba(16,24,40,0.06)] transition-colors hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-muted focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-40 aria-disabled:hover:border-border aria-disabled:hover:text-foreground";
   // aria-disabled y no disabled: un botón deshabilitado pierde el foco y el teclado queda en <body>.
   const puedeRestar = value > min;
   const puedeSumar = max === undefined || value < max;
@@ -103,7 +103,7 @@ function QuantityStepper({
             setDraft(String(value));
             e.target.select();
           }}
-          onChange={(e) => setDraft(e.target.value.replace(/D/g, ""))}
+          onChange={(e) => setDraft(e.target.value.replace(/\D/g, ""))}
           onBlur={confirmar}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
