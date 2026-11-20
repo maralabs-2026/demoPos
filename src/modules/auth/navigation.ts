@@ -74,6 +74,7 @@ export const ROUTE_ROLES = {
   "/usuarios": ["dueno", "encargado"],
   "/config": ["dueno"],
   "/ayuda": TODOS,
+  "/ayuda/control": TODOS,
   "/perfil": TODOS,
 } as const satisfies Record<string, readonly Rol[]>;
 
