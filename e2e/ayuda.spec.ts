@@ -134,6 +134,19 @@ test.describe("Ayuda en 360 px", () => {
     );
     await sinScrollHorizontal(page);
 
+    // El control diario le muestra solo los pasos de su turno.
+    await page.getByRole("link", { name: /Control diario/ }).click();
+    await expect(page).toHaveURL(/\/ayuda\/control$/, { timeout: 20_000 });
+    await expect(page.getByRole("heading", { name: "Al abrir" })).toBeVisible();
+    await expect(page.getByRole("tab")).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { name: "Control del día" }),
+    ).toHaveCount(0);
+    expect(await page.content()).not.toMatch(
+      /Auditá una categoría|ganancia|reporte/i,
+    );
+    await sinScrollHorizontal(page);
+
     // No se borra: se desactiva, para no dejar usuarios activos en la base de pruebas.
     await dueno.reload();
     await dueno.waitForLoadState("networkidle");
@@ -162,6 +175,40 @@ test.describe("Ayuda en 360 px", () => {
 
     await page.getByText("Cerrá la caja", { exact: true }).click();
     await expect(page.getByText("Confirmá el cierre").first()).toBeVisible();
+    await sinScrollHorizontal(page);
+  });
+
+  test("el dueño tilda un paso del control diario y queda tildado", async ({
+    page,
+  }) => {
+    await login(page, "dueno@kiosko.demo", passwordDe("E2E_DUENO_PASSWORD"));
+    await page.getByRole("button", { name: /más/i }).click();
+    await irAAyuda(page);
+    await page.getByRole("link", { name: /Control diario/ }).click();
+    await expect(page).toHaveURL(/\/ayuda\/control$/, { timeout: 20_000 });
+
+    await expect(
+      page.getByRole("heading", { name: "Control del día" }),
+    ).toBeVisible();
+    const paso = page.getByRole("checkbox", {
+      name: /Revisá el cierre del día/,
+    });
+    await expect(paso).not.toBeChecked();
+    await page.getByText(/Revisá el cierre del día/).click();
+    await expect(paso).toBeChecked();
+    await expect(page.getByRole("status")).toContainText("1 de");
+
+    // Se guarda en el dispositivo: sigue tildado al volver a entrar.
+    await page.reload();
+    await expect(
+      page.getByRole("checkbox", { name: /Revisá el cierre del día/ }),
+    ).toBeChecked();
+
+    await page.getByRole("tab", { name: "Por semana" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Una vez por semana" }),
+    ).toBeVisible();
+    await expect(page.getByRole("status")).toContainText("0 de");
     await sinScrollHorizontal(page);
   });
 });
