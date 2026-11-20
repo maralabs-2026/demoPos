@@ -182,8 +182,9 @@ test.describe("Ayuda en 360 px", () => {
     page,
   }) => {
     await login(page, "dueno@kiosko.demo", passwordDe("E2E_DUENO_PASSWORD"));
-    await page.getByRole("button", { name: /más/i }).click();
-    await irAAyuda(page);
+    // Se entra directo a Ayuda: el menú ya lo prueban los otros tests.
+    await page.waitForLoadState("networkidle");
+    await page.goto("/ayuda");
     await page.getByRole("link", { name: /Control diario/ }).click();
     await expect(page).toHaveURL(/\/ayuda\/control$/, { timeout: 20_000 });
 
