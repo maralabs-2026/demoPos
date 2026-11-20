@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,23 @@ export function AyudaScreen({ guias }: { guias: readonly Guia[] }) {
           Buscá lo que querés hacer y seguí los pasos.
         </p>
       </div>
+
+      <Link
+        href="/ayuda/control"
+        className="flex min-h-11 items-center justify-between gap-3 rounded-xl border bg-card p-4 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      >
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span className="font-semibold">Control diario</span>
+          <span className="text-sm text-muted-foreground">
+            Lo que hay que revisar cada día para que el stock y la caja cierren
+            bien.
+          </span>
+        </span>
+        <ChevronRight
+          aria-hidden="true"
+          className="size-5 shrink-0 text-muted-foreground"
+        />
+      </Link>
 
       <Input
         type="search"
